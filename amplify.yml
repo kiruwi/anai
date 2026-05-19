@@ -7,8 +7,10 @@ frontend:
     build:
       commands:
         - npm run generate
+        - rm -rf dist
+        - cp -R .output/public dist
   artifacts:
-    baseDirectory: .output/public
+    baseDirectory: dist
     files:
       - '**/*'
   cache:
