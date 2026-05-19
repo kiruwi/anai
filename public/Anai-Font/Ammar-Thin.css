@@ -1,0 +1,12 @@
+/* Webfont: Ammar-Thin */@font-face {
+    font-family: 'Ammar3';
+    src: url('Ammar-Thin.eot'); /* IE9 Compat Modes */
+    src: url('Ammar-Thin.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+         url('Ammar-Thin.woff') format('woff'), /* Modern Browsers */
+         url('Ammar-Thin.ttf') format('truetype'), /* Safari, Android, iOS */
+         url('Ammar-Thin.svg#Ammar-Thin') format('svg'); /* Legacy iOS */
+    font-style: normal;
+    font-weight: normal;
+    text-rendering: optimizeLegibility;
+}
+

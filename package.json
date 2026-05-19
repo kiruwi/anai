@@ -1,0 +1,37 @@
+{
+  "name": "anai-store",
+  "version": "1.0.0",
+  "description": "ANAI athleisure ecommerce storefront",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "keywords": [
+    "anai",
+    "nuxt",
+    "ecommerce"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@nuxtjs/supabase": "^2.0.8",
+    "@paystack/inline-js": "^2.22.8",
+    "@sentry/nuxt": "^10.53.1",
+    "@supabase/supabase-js": "^2.105.4",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.23",
+    "nuxt": "^4.4.5",
+    "resend": "^6.12.3",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.2.9"
+  }
+}

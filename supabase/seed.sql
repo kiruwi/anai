@@ -1,0 +1,1 @@
+-- Product seed data and schema migrations will be added after the Supabase project is configured.

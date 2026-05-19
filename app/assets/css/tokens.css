@@ -1,0 +1,30 @@
+:root {
+  --colour-plum: #461828;
+  --colour-clay: #c66747;
+  --colour-cream: #d7c1a9;
+  --colour-olive: #4a481d;
+  --colour-black: #000000;
+  --colour-white: #ffffff;
+  --colour-surface: #ffffff;
+  --colour-border: #e8e1da;
+  --colour-muted: #6f6863;
+
+  --space-xs: 0.4rem;
+  --space-sm: 0.8rem;
+  --space-md: 1.6rem;
+  --space-lg: 2.4rem;
+  --space-xl: 4rem;
+  --space-2xl: 6.4rem;
+  --page-gutter: 3.2rem;
+
+  --radius-sm: 0.4rem;
+  --radius-md: 0.8rem;
+
+  --container-width: 128rem;
+}
+
+@media (max-width: 680px) {
+  :root {
+    --page-gutter: 1.6rem;
+  }
+}

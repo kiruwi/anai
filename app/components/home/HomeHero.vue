@@ -1,0 +1,338 @@
+<template>
+  <section
+    class="home-hero"
+    :class="{
+      'home-hero--pending': isRisePending,
+      'home-hero--docked': isLogoDocked,
+    }"
+  >
+    <h1>
+      <span
+        v-if="!hasPlayedIntro"
+        class="home-hero__preload-guard"
+        aria-hidden="true"
+      />
+      <NuxtLink
+        class="home-hero__logo"
+        :class="{
+          'home-hero__logo--pending': isRisePending,
+          'home-hero__logo--intro': isColourIntroAnimating,
+        }"
+        to="/"
+        aria-label="ANAI home"
+      >
+        <svg viewBox="0 0 340.64 92.85" role="img" aria-label="ANAI">
+          <path :ref="(element) => setLetterRef(element, 0)" class="home-hero__letter" d="M51.85,90.77l.21-1.57h3.23c2.02,0,3.34-.63,3.96-1.88.63-1.25.45-2.89-.52-4.9-1.25-2.64-2.54-5.32-3.86-8.03-1.32-2.71-2.61-5.39-3.86-8.03h-30.15l-6.05,14.5c-1.04,2.5-1.13,4.52-.26,6.05.87,1.53,2.56,2.29,5.06,2.29h2.5v1.57H0v-1.57h1.25c2.02,0,3.88-.63,5.58-1.88,1.7-1.25,3.01-2.89,3.91-4.9,4.45-10.36,8.88-20.71,13.3-31.03,4.42-10.33,8.85-20.67,13.3-31.03h2.61l30.36,62.8c2.23,4.03,5.53,6.05,9.91,6.05v1.57h-28.37ZM49.76,63.75l-15.02-30.88-12.83,30.88h27.85Z" />
+          <path :ref="(element) => setLetterRef(element, 1)" class="home-hero__letter" d="M106.28,23.48v-1.56h17.11l48.3,54.45V30.26c0-2.02-.61-3.65-1.83-4.9-1.22-1.25-2.83-1.88-4.85-1.88h-1.15v-1.56h18.78v1.56h-1.15c-2.02,0-3.63.63-4.85,1.88-1.22,1.25-1.83,2.89-1.83,4.9v62.59h-2.4c-9.25-10.43-18.45-20.81-27.59-31.14-9.15-10.33-18.34-20.71-27.59-31.14v51.85c0,2.02.61,3.65,1.83,4.9,1.22,1.25,2.83,1.88,4.85,1.88h1.15v1.57h-18.78v-1.57h1.15c2.02,0,3.63-.63,4.85-1.88,1.22-1.25,1.83-2.89,1.83-4.9V30.26c0-2.02-.61-3.65-1.83-4.9-1.22-1.25-2.83-1.88-4.85-1.88h-1.15Z" />
+          <path :ref="(element) => setLetterRef(element, 2)" class="home-hero__letter" d="M260.13,90.77l.21-1.57h3.23c2.02,0,3.34-.63,3.96-1.88.63-1.25.45-2.89-.52-4.9-1.25-2.64-2.54-5.32-3.86-8.03-1.32-2.71-2.61-5.39-3.86-8.03h-30.15l-6.05,14.5c-1.04,2.5-1.13,4.52-.26,6.05.87,1.53,2.56,2.29,5.06,2.29h2.5v1.57h-22.12v-1.57h1.25c2.02,0,3.88-.63,5.58-1.88,1.7-1.25,3.01-2.89,3.91-4.9,4.45-10.36,8.88-20.71,13.3-31.03,4.42-10.33,8.85-20.67,13.3-31.03h2.61l30.36,62.8c2.22,4.03,5.53,6.05,9.91,6.05v1.57h-28.38ZM258.04,63.75l-15.02-30.88-12.83,30.88h27.85Z" />
+          <path :ref="(element) => setLetterRef(element, 3)" class="home-hero__letter" d="M340.64,89.2v1.57h-26.08v-1.57h1.15c2.02,0,3.63-.63,4.85-1.88,1.22-1.25,1.83-2.89,1.83-4.9V30.26c0-2.02-.61-3.65-1.83-4.9-1.22-1.25-2.83-1.88-4.85-1.88h-1.15v-1.56h26.08v1.56h-1.15c-2.02,0-3.63.63-4.85,1.88-1.22,1.25-1.83,2.89-1.83,4.9v52.16c0,2.02.61,3.65,1.83,4.9,1.22,1.25,2.83,1.88,4.85,1.88h1.15Z" />
+          <path
+            ref="browElement"
+            class="home-hero__brow"
+            fill="currentColor"
+            d="M182.45,2.06c.66.64-3.74,5.72-4.53,6.46-16.2,15.08-36.43-10.39-51.12,1.21-1.02.81-.86,2.2-1.98,2.18.41-4.05,5.76-9.27,9.32-10.76,12.12-5.07,27.54,8.51,41.34,4.94,3.3-.85,4.08-3.2,6.96-4.03Z"
+          />
+        </svg>
+      </NuxtLink>
+      <span ref="underlineElement" class="home-hero__underline" aria-hidden="true" />
+    </h1>
+    <div ref="columnsElement" class="home-hero__columns">
+      <p>ANAI</p>
+      <div class="home-hero__why">
+        <h2>Why</h2>
+        <p>
+          <span>Anai / Enai is a Maa word meaning mine. My body,</span>
+          <span>my rhythm, my softness, my becoming. A quiet ownership of self. </span>
+        </p>
+      </div>
+      <p class="home-hero__meta">
+        <span>SHIPPING &amp; RETURNS</span>
+        <span>© 2026</span>
+      </p>
+    </div>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { gsap } from 'gsap'
+import type { ComponentPublicInstance } from 'vue'
+
+const hasPlayedIntro = useState('anai-logo-intro-played', () => false)
+const isLogoDocked = useState('anai-logo-docked', () => false)
+const isRisePending = ref(!hasPlayedIntro.value)
+const isColourIntroAnimating = ref(false)
+const letterElements = ref<SVGPathElement[]>([])
+const underlineElement = ref<HTMLSpanElement | null>(null)
+const browElement = ref<SVGPathElement | null>(null)
+const columnsElement = ref<HTMLDivElement | null>(null)
+let introAnimation: gsap.core.Tween | gsap.core.Timeline | undefined
+let rafId = 0
+
+const updateDockedLogo = () => {
+  cancelAnimationFrame(rafId)
+  rafId = requestAnimationFrame(() => {
+    isLogoDocked.value = window.scrollY > 32
+  })
+}
+
+watch(isLogoDocked, (docked) => {
+  gsap.to(underlineElement.value, {
+    scaleX: docked ? 0 : 1,
+    transformOrigin: 'left center',
+    duration: 0.58,
+    ease: 'power2.out',
+    overwrite: true,
+  })
+})
+
+const setLetterRef = (
+  element: Element | ComponentPublicInstance | null,
+  index: number,
+) => {
+  if (element instanceof SVGPathElement) {
+    letterElements.value[index] = element
+  }
+}
+
+onMounted(() => {
+  isLogoDocked.value = window.scrollY > 32
+  window.addEventListener('scroll', updateDockedLogo, { passive: true })
+
+  if (hasPlayedIntro.value) {
+    return
+  }
+
+  const letters = letterElements.value.filter(Boolean)
+  const randomLetters = gsap.utils.shuffle([...letters])
+  const columnItems = columnsElement.value
+    ? Array.from(columnsElement.value.children)
+    : []
+
+  gsap.set(letters, {
+    opacity: 0,
+    transformOrigin: '50% 50%',
+    y: 38,
+  })
+  gsap.set(underlineElement.value, {
+    scaleX: 0,
+    transformOrigin: 'left center',
+  })
+  gsap.set(browElement.value, {
+    opacity: 0,
+  })
+  gsap.set(columnItems, {
+    opacity: 0,
+    y: 28,
+  })
+
+  isRisePending.value = false
+  isColourIntroAnimating.value = true
+
+  const timeline = gsap.timeline({
+    onComplete: () => {
+      isColourIntroAnimating.value = false
+      hasPlayedIntro.value = true
+    },
+  })
+
+  timeline.to(underlineElement.value, {
+    scaleX: 1,
+    duration: 1.15,
+    ease: 'power2.out',
+  }, 0)
+
+  timeline.to(randomLetters, {
+    opacity: 1,
+    y: 0,
+    clearProps: 'opacity,transform',
+    duration: 0.8,
+    ease: 'power3.out',
+    stagger: 0.1,
+  }, 0)
+
+  timeline.to([...columnItems].reverse(), {
+    opacity: 1,
+    y: 0,
+    clearProps: 'opacity,transform',
+    duration: 0.74,
+    ease: 'power3.out',
+    stagger: 0.14,
+  }, 0.56)
+
+  timeline.to(browElement.value, {
+    opacity: 1,
+    clearProps: 'opacity',
+    duration: 0.45,
+    ease: 'power2.out',
+  }, 1.15)
+
+  introAnimation = timeline
+})
+
+onBeforeUnmount(() => {
+  if (introAnimation) {
+    introAnimation.kill()
+  }
+
+  cancelAnimationFrame(rafId)
+  window.removeEventListener('scroll', updateDockedLogo)
+  isLogoDocked.value = false
+  isRisePending.value = false
+  isColourIntroAnimating.value = false
+})
+</script>
+
+<style scoped>
+.home-hero {
+  width: 100%;
+  padding: 0 var(--page-gutter) var(--space-md);
+}
+
+h1 {
+  margin: 0;
+}
+
+.home-hero__underline {
+  display: block;
+  height: clamp(0.125rem, 0.375vw, 0.5rem);
+  margin-top: calc(var(--space-sm) * 2);
+  background: var(--colour-black);
+  transform-origin: left center;
+  transition: transform 640ms ease;
+}
+
+.home-hero__preload-guard ~ .home-hero__underline {
+  transform: scaleX(0);
+}
+
+.home-hero__logo {
+  display: block;
+  color: var(--colour-black);
+  transform-origin: left top;
+  transition:
+    opacity 420ms ease,
+    transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-hero__logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.home-hero__letter {
+  fill: var(--colour-black);
+  transform-box: fill-box;
+  transition: fill 320ms ease;
+}
+
+.home-hero__logo--pending .home-hero__letter {
+  opacity: 0;
+  transform: translateY(38px);
+}
+
+.home-hero--pending .home-hero__columns > * {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.home-hero__logo--pending .home-hero__brow {
+  opacity: 0;
+}
+
+.home-hero__letter:hover {
+  animation: anai-letter-colour 3.2s ease-in-out infinite;
+}
+
+.home-hero__logo--intro .home-hero__letter {
+  animation: anai-letter-colour 1.15s ease-in-out 1;
+}
+
+@keyframes anai-letter-colour {
+  0%,
+  100% {
+    fill: #461828;
+  }
+
+  25% {
+    fill: #c66747;
+  }
+
+  50% {
+    fill: #d7c1a9;
+  }
+
+  75% {
+    fill: #4a481d;
+  }
+}
+
+.home-hero__columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+  font-size: 1.56rem;
+  font-weight: 600;
+  line-height: 1.35;
+  transition:
+    opacity 420ms ease,
+    transform 520ms ease;
+}
+
+.home-hero--docked .home-hero__logo {
+  opacity: 0;
+  transform: translateY(calc(-1 * (7.2rem + var(--space-sm)))) scale(0.12);
+}
+
+.home-hero--docked .home-hero__underline {
+  transform: scaleX(0);
+}
+
+.home-hero--docked .home-hero__columns {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-1.2rem);
+}
+
+.home-hero__columns h2,
+.home-hero__columns p {
+  margin: 0;
+}
+
+.home-hero__columns h2 {
+  margin-bottom: var(--space-sm);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-transform: uppercase;
+}
+
+.home-hero__why {
+  grid-column: span 2;
+}
+
+.home-hero__why p {
+  font-weight: 400;
+}
+
+.home-hero__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+@media (max-width: 760px) {
+  .home-hero__underline {
+    height: clamp(0.25rem, 0.75vw, 1rem);
+  }
+
+  .home-hero__columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-hero--docked .home-hero__logo {
+    transform: translateY(calc(-1 * (6.4rem + var(--space-sm)))) scale(0.24);
+  }
+}
+</style>

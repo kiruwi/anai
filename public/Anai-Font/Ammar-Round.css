@@ -1,0 +1,12 @@
+/* Webfont: Ammar-Round */@font-face {
+    font-family: 'AmmarRound';
+    src: url('Ammar-Round.eot'); /* IE9 Compat Modes */
+    src: url('Ammar-Round.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+         url('Ammar-Round.woff') format('woff'), /* Modern Browsers */
+         url('Ammar-Round.ttf') format('truetype'), /* Safari, Android, iOS */
+         url('Ammar-Round.svg#Ammar-Round') format('svg'); /* Legacy iOS */
+    font-style: normal;
+    font-weight: normal;
+    text-rendering: optimizeLegibility;
+}
+

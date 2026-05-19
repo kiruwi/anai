@@ -1,0 +1,11 @@
+.nuxt
+.output
+.data
+dist
+node_modules
+.agents
+.codex
+.env
+.env.*
+!.env.example
+npm-debug.log*
