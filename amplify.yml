@@ -7,8 +7,12 @@ frontend:
     build:
       commands:
         - NITRO_PRESET=static npm run generate
+        - rm -rf .amplify-hosting
+        - mkdir -p .amplify-hosting/static
+        - cp -R .output/public/. .amplify-hosting/static/
+        - 'printf ''{"version":1,"routes":[{"path":"/*","target":{"kind":"Static"}}],"framework":{"name":"nuxt","version":"4.4.5"}}'' > .amplify-hosting/deploy-manifest.json'
   artifacts:
-    baseDirectory: .output/public
+    baseDirectory: .amplify-hosting
     files:
       - '**/*'
   cache:
