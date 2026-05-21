@@ -336,6 +336,16 @@ h1 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .home-hero__meta {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-hero__meta span:last-child {
+    justify-self: end;
+  }
+
   .home-hero--docked .home-hero__logo {
     transform: translateY(calc(-1 * (6.4rem + var(--space-sm)))) scale(0.24);
   }
