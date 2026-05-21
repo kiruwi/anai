@@ -300,10 +300,14 @@ h1 {
   margin: 0;
 }
 
+.home-hero__columns > p,
+.home-hero__columns h2 {
+  font-weight: 600;
+}
+
 .home-hero__columns h2 {
   margin-bottom: var(--space-sm);
   font-size: inherit;
-  font-weight: inherit;
   line-height: inherit;
   text-transform: uppercase;
 }
@@ -320,6 +324,7 @@ h1 {
   display: flex;
   justify-content: space-between;
   gap: var(--space-md);
+  font-weight: 600;
 }
 
 @media (max-width: 760px) {
