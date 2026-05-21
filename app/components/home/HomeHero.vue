@@ -273,7 +273,7 @@ h1 {
   gap: var(--space-lg);
   margin-top: var(--space-lg);
   font-size: 1.56rem;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.35;
   transition:
     opacity 420ms ease,

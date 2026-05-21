@@ -11,6 +11,13 @@
         :src="selectedImageUrl"
         :alt="product.name"
       />
+      <img
+        v-if="hoverImageUrl"
+        class="product-card__photo product-card__photo--hover"
+        :src="hoverImageUrl"
+        alt=""
+        aria-hidden="true"
+      />
       <span class="product-card__arrow" aria-hidden="true" />
     </NuxtLink>
     <div class="product-card__body">
@@ -49,6 +56,43 @@ const selectedImageUrl = ref(props.product.imageUrl)
 const isPhotoPending = ref(true)
 const photoElement = ref<HTMLImageElement | null>(null)
 let imageAnimation: gsap.core.Tween | undefined
+
+const hoverImageUrl = computed(() => {
+  const colourImages = props.product.colours
+    .filter((colour): colour is Exclude<ProductColour, string> =>
+      typeof colour !== 'string' && Boolean(colour.imageUrl),
+    )
+    .map((colour) => ({
+      ...colour,
+      imageUrl: colour.imageUrl as string,
+    }))
+
+  const getWarmColourPriority = (colour: (typeof colourImages)[number]) => {
+    const label = colour.name.toLowerCase()
+    const value = colour.value.toLowerCase()
+
+    if (label.includes('red') || label.includes('burgundy') || value.startsWith('#9') || value.startsWith('#a')) {
+      return 1
+    }
+
+    if (label.includes('pink') || label.includes('clay') || value.startsWith('#c6') || value.startsWith('#d8')) {
+      return 2
+    }
+
+    if (label.includes('brown') || value.startsWith('#6f')) {
+      return 3
+    }
+
+    return 0
+  }
+  const preferredColour = [...colourImages]
+    .filter((colour) => getWarmColourPriority(colour) > 0)
+    .sort((colourA, colourB) => getWarmColourPriority(colourA) - getWarmColourPriority(colourB))[0]
+  const fallbackColour = colourImages.find((colour) => colour.imageUrl !== selectedImageUrl.value)
+  const galleryFallback = props.product.galleryImages?.find((imageUrl) => imageUrl !== selectedImageUrl.value)
+
+  return preferredColour?.imageUrl ?? fallbackColour?.imageUrl ?? galleryFallback
+})
 
 watch(
   () => props.product.imageUrl,
@@ -124,6 +168,20 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.product-card__photo--hover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform: translateX(101%);
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.product-card:hover .product-card__photo--hover,
+.product-card:focus-within .product-card__photo--hover {
+  transform: translateX(0);
 }
 
 .product-card--pending .product-card__photo {
@@ -206,6 +264,7 @@ strong {
 
 h3 {
   font-weight: 400;
+  letter-spacing: 0.04em;
 }
 
 strong {

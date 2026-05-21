@@ -1,7 +1,6 @@
 <template>
   <NuxtLink class="image-tile" :style="tileStyle" :to="tile.href">
     <span>{{ tile.title }}</span>
-    <strong>View</strong>
   </NuxtLink>
 </template>
 
@@ -38,14 +37,9 @@ const tileStyle = computed(() => ({
 
 span {
   font-size: 2.4rem;
-  font-weight: 700;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-strong {
-  font-size: 1.2rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 </style>

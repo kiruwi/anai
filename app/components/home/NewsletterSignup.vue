@@ -2,7 +2,6 @@
   <section class="newsletter">
     <div class="newsletter__inner container">
       <div>
-        <p>Stay in the loop</p>
         <h2>Get first access to drops, restocks, and offers.</h2>
       </div>
       <form>
@@ -44,7 +43,10 @@ p {
 h2 {
   max-width: 74rem;
   margin-top: var(--space-sm);
+  font-family: var(--font-brand-display);
+  font-weight: 400;
   font-size: clamp(3.2rem, 5vw, 6.4rem);
+  letter-spacing: 0.055em;
   line-height: 0.98;
   text-transform: uppercase;
 }

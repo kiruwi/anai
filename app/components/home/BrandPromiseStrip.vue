@@ -45,7 +45,7 @@ span {
 
 p {
   margin: 0;
-  font-weight: 700;
+  font-weight: 400;
   text-transform: uppercase;
 }
 

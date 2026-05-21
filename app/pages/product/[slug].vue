@@ -241,10 +241,13 @@ onBeforeUnmount(() => {
 h1 {
   max-width: 58rem;
   margin: 0;
+  font-family: var(--font-brand-display);
   font-size: clamp(5.2rem, 6vw, 9.6rem);
   font-weight: 400;
-  letter-spacing: 0;
+  letter-spacing: 0.055em;
   line-height: 0.92;
+  text-align: start;
+  text-transform: uppercase;
 }
 
 .product-page__price {

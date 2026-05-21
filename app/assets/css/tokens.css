@@ -9,6 +9,8 @@
   --colour-border: #e8e1da;
   --colour-muted: #6f6863;
 
+  --font-brand-display: "Bodoni 72", Didot, "Bodoni MT", "Times New Roman", serif;
+
   --space-xs: 0.4rem;
   --space-sm: 0.8rem;
   --space-md: 1.6rem;

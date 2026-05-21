@@ -75,6 +75,7 @@ p {
 
 h3 {
   font-size: 2rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 

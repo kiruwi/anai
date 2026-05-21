@@ -60,6 +60,19 @@ main {
   min-height: 70vh;
 }
 
+:where(main h1, .section-header h2) {
+  font-family: var(--font-brand-display);
+  font-weight: 400;
+  letter-spacing: 0.055em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+:where(main h2, main h3) {
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
 .container {
   width: calc(100% - (var(--page-gutter) + var(--page-gutter)));
   margin: 0 auto;
