@@ -1,7 +1,16 @@
 <template>
   <section class="shop-the-look">
     <div class="shop-the-look__inner container">
-      <div class="shop-the-look__image" />
+      <div class="shop-the-look__image">
+        <img
+          src="/images/products/Nuru, Short Set/brown.webp"
+          alt="Nuru Short Set styling"
+          width="720"
+          height="720"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
       <div class="shop-the-look__content">
         <SectionHeader title="Shop the look" />
         <div class="shop-the-look__list">
@@ -41,13 +50,25 @@ defineProps<{
 }
 
 .shop-the-look__image {
+  position: relative;
   min-height: 62rem;
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.32)),
-    url('https://images.unsplash.com/photo-1518310383802-640c2de311b2?auto=format&fit=crop&w=1200&q=80'),
-    linear-gradient(135deg, var(--colour-plum), var(--colour-clay));
-  background-position: center;
-  background-size: cover;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--colour-plum), var(--colour-clay));
+}
+
+.shop-the-look__image::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.32));
+  pointer-events: none;
+}
+
+.shop-the-look__image img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
 }
 
 .shop-the-look__content {

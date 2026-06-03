@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
 type CheckoutItemInput = {
   slug?: unknown
   quantity?: unknown
+  size?: unknown
 }
 
 type CheckoutCustomerInput = {
@@ -49,6 +50,8 @@ const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim(
 
 const createReference = () => `ANAI-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`
 
+const validSizeLabels = new Set(['XS/6', 'S/8', 'M/10', 'L/12', 'XL/14'])
+
 const getVariantProduct = (variant: VariantRecord): ProductRecord | undefined =>
   Array.isArray(variant.products) ? variant.products[0] : variant.products
 
@@ -57,23 +60,39 @@ const normalizeItems = (items: CheckoutItemInput[] | undefined) => {
     return []
   }
 
-  const itemMap = new Map<string, number>()
+  const itemMap = new Map<string, {
+    slug: string
+    quantity: number
+    size: string
+  }>()
 
   for (const item of items) {
     const slug = cleanString(item.slug)
     const quantity = Number(item.quantity)
+    const size = cleanString(item.size)
 
     if (!slug || !Number.isFinite(quantity) || quantity < 1) {
       continue
     }
 
-    itemMap.set(slug, (itemMap.get(slug) || 0) + Math.min(Math.floor(quantity), 99))
+    if (!validSizeLabels.has(size)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Choose a valid size for ${slug}.`,
+      })
+    }
+
+    const itemKey = `${slug}:${size}`
+    const existingItem = itemMap.get(itemKey)
+
+    itemMap.set(itemKey, {
+      slug,
+      size,
+      quantity: Math.min((existingItem?.quantity || 0) + Math.floor(quantity), 99),
+    })
   }
 
-  return Array.from(itemMap.entries()).map(([slug, quantity]) => ({
-    slug,
-    quantity,
-  }))
+  return Array.from(itemMap.values())
 }
 
 export default defineEventHandler(async (event) => {
@@ -166,6 +185,7 @@ export default defineEventHandler(async (event) => {
       variant,
       product,
       quantity: item.quantity,
+      size: item.size,
       lineTotalKes: variant.price_kes * item.quantity,
     }
   })
@@ -226,7 +246,7 @@ export default defineEventHandler(async (event) => {
       product_name: line.product.name,
       sku: line.variant.sku,
       color: line.variant.color,
-      size: line.variant.size,
+      size: line.size,
       unit_price_kes: line.variant.price_kes,
       quantity: line.quantity,
       line_total_kes: line.lineTotalKes,

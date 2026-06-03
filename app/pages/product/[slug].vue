@@ -8,7 +8,15 @@
           :ref="(element) => setSlideRef(element, index)"
           class="product-page__slide"
         >
-          <img :src="imageUrl" :alt="`${product.name} photo ${index + 1}`" />
+          <img
+            :src="imageUrl"
+            :alt="`${product.name} photo ${index + 1}`"
+            width="720"
+            height="720"
+            :loading="index === 0 ? 'eager' : 'lazy'"
+            :fetchpriority="index === 0 ? 'high' : 'auto'"
+            decoding="async"
+          />
         </div>
       </div>
     </div>
@@ -30,7 +38,6 @@
 </template>
 
 <script setup lang="ts">
-import { gsap } from 'gsap'
 import type { ComponentPublicInstance } from 'vue'
 import { products } from '../../data/homeContent'
 
@@ -54,12 +61,14 @@ const colourImageUrls = product.colours
   .map((colour) => (typeof colour === 'string' ? undefined : colour.imageUrl))
   .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
 
-const galleryImages = [...new Set(product.galleryImages ?? [product.imageUrl, ...colourImageUrls])]
+const galleryImages = [
+  ...new Set(product.galleryImages ?? [product.imageUrl, ...colourImageUrls]),
+]
 const productPageElement = ref<HTMLElement | null>(null)
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = ref<HTMLDivElement[]>([])
 const hasJustAdded = ref(false)
-let galleryAnimation: gsap.core.Tween | undefined
+let galleryAnimation: { kill: () => void } | undefined
 let galleryWheelLock: number | undefined
 let addedTimer: number | undefined
 let galleryIndex = 0
@@ -149,21 +158,29 @@ const handleAddToCart = () => {
   }, 1600)
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('wheel', handleProductWheel, { capture: true, passive: false })
 
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const isMobile = window.matchMedia('(max-width: 980px)').matches
+
+  if (prefersReducedMotion || isMobile) {
+    return
+  }
+
+  const { gsap } = await import('gsap')
   const slides = slideElements.value.filter(Boolean)
   const randomSlides = gsap.utils.shuffle([...slides])
 
   gsap.set(slides, {
     opacity: 0,
-    x: -96,
+    x: -48,
   })
 
   galleryAnimation = gsap.to(randomSlides, {
     opacity: 1,
     x: 0,
-    duration: 0.95,
+    duration: 0.56,
     ease: 'power3.out',
     stagger: 0.12,
     clearProps: 'opacity,transform',

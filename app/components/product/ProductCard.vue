@@ -10,12 +10,20 @@
         class="product-card__photo"
         :src="selectedImageUrl"
         :alt="product.name"
+        width="341"
+        height="341"
+        loading="lazy"
+        decoding="async"
       />
       <img
         v-if="hoverImageUrl"
         class="product-card__photo product-card__photo--hover"
         :src="hoverImageUrl"
-        alt=""
+        :alt="`${product.name} alternate colour`"
+        width="341"
+        height="341"
+        loading="lazy"
+        decoding="async"
         aria-hidden="true"
       />
       <span class="product-card__arrow" aria-hidden="true" />
@@ -46,7 +54,6 @@
 </template>
 
 <script setup lang="ts">
-import { gsap } from 'gsap'
 import type { HomepageProduct, ProductColour } from '../../data/homeContent'
 
 const props = defineProps<{
@@ -58,11 +65,14 @@ const selectedImageUrl = ref(props.product.imageUrl)
 const isPhotoPending = ref(true)
 const photoElement = ref<HTMLImageElement | null>(null)
 const hasJustAdded = ref(false)
-const { addToCart } = useCart()
-let imageAnimation: gsap.core.Tween | undefined
+let imageAnimation: { kill: () => void } | undefined
 let addedTimer: number | undefined
 
 const hoverImageUrl = computed(() => {
+  if (props.product.hoverImageUrl && props.product.hoverImageUrl !== selectedImageUrl.value) {
+    return props.product.hoverImageUrl
+  }
+
   const colourImages = props.product.colours
     .filter((colour): colour is Exclude<ProductColour, string> =>
       typeof colour !== 'string' && Boolean(colour.imageUrl),
@@ -72,31 +82,11 @@ const hoverImageUrl = computed(() => {
       imageUrl: colour.imageUrl as string,
     }))
 
-  const getWarmColourPriority = (colour: (typeof colourImages)[number]) => {
-    const label = colour.name.toLowerCase()
-    const value = colour.value.toLowerCase()
-
-    if (label.includes('red') || label.includes('burgundy') || value.startsWith('#9') || value.startsWith('#a')) {
-      return 1
-    }
-
-    if (label.includes('pink') || label.includes('clay') || value.startsWith('#c6') || value.startsWith('#d8')) {
-      return 2
-    }
-
-    if (label.includes('brown') || value.startsWith('#6f')) {
-      return 3
-    }
-
-    return 0
-  }
-  const preferredColour = [...colourImages]
-    .filter((colour) => getWarmColourPriority(colour) > 0)
-    .sort((colourA, colourB) => getWarmColourPriority(colourA) - getWarmColourPriority(colourB))[0]
+  const brownColour = colourImages.find((colour) => colour.name.toLowerCase().includes('brown'))
   const fallbackColour = colourImages.find((colour) => colour.imageUrl !== selectedImageUrl.value)
   const galleryFallback = props.product.galleryImages?.find((imageUrl) => imageUrl !== selectedImageUrl.value)
 
-  return preferredColour?.imageUrl ?? fallbackColour?.imageUrl ?? galleryFallback
+  return brownColour?.imageUrl ?? fallbackColour?.imageUrl ?? galleryFallback
 })
 const quickAddLabel = computed(() => (hasJustAdded.value ? 'Added' : 'Quick add'))
 
@@ -128,6 +118,8 @@ const selectColour = (colour: ProductColour) => {
 }
 
 const handleQuickAdd = () => {
+  const { addToCart } = useCart()
+
   addToCart(props.product)
   hasJustAdded.value = true
 
@@ -141,10 +133,20 @@ const handleQuickAdd = () => {
   }, 1600)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const isMobile = window.matchMedia('(max-width: 680px)').matches
+
+  if (prefersReducedMotion || isMobile) {
+    isPhotoPending.value = false
+    return
+  }
+
+  const { gsap } = await import('gsap')
+
   gsap.set(photoElement.value, {
     opacity: 0,
-    x: -72,
+    x: -36,
   })
 
   isPhotoPending.value = false
@@ -152,8 +154,8 @@ onMounted(() => {
   imageAnimation = gsap.to(photoElement.value, {
     opacity: 1,
     x: 0,
-    duration: 0.95,
-    delay: gsap.utils.random(0, 0.28, 0.01),
+    duration: 0.52,
+    delay: gsap.utils.random(0, 0.12, 0.01),
     ease: 'power3.out',
     clearProps: 'opacity,transform',
   })
@@ -175,7 +177,7 @@ onBeforeUnmount(() => {
 .product-card__image {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
 }
 

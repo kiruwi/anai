@@ -2,7 +2,10 @@
   <header
     ref="headerElement"
     class="site-header"
-    :class="{ 'site-header--pending': isIntroPending }"
+    :class="{
+      'site-header--pending': isIntroPending,
+      'site-header--over-hero': props.overHero,
+    }"
   >
     <nav class="site-header__inner container" aria-label="Main navigation">
       <NuxtLink
@@ -30,19 +33,27 @@
 </template>
 
 <script setup lang="ts">
-import { gsap } from 'gsap'
-
+const props = withDefaults(defineProps<{
+  overHero?: boolean
+}>(), {
+  overHero: false,
+})
 const hasPlayedIntro = useState('site-header-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const { itemCount } = useCart()
 const isIntroPending = ref(!hasPlayedIntro.value)
 const headerElement = ref<HTMLElement | null>(null)
-let introAnimation: gsap.core.Tween | undefined
+let introAnimation: { kill: () => void } | undefined
 
-onMounted(() => {
-  if (hasPlayedIntro.value) {
+onMounted(async () => {
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (hasPlayedIntro.value || prefersReducedMotion) {
+    isIntroPending.value = false
     return
   }
+
+  const { gsap } = await import('gsap')
 
   gsap.set(headerElement.value, {
     opacity: 0,
@@ -54,7 +65,7 @@ onMounted(() => {
   introAnimation = gsap.to(headerElement.value, {
     opacity: 1,
     y: 0,
-    duration: 0.8,
+    duration: 0.5,
     ease: 'power3.out',
     clearProps: 'opacity,transform',
     onComplete: () => {
@@ -75,6 +86,12 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 10;
   mix-blend-mode: difference;
+}
+
+.site-header--over-hero {
+  position: fixed;
+  right: 0;
+  left: 0;
 }
 
 .site-header--pending {

@@ -20,7 +20,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "@nuxtjs/supabase": "^2.0.8",
+    "@nuxt/image": "^2.0.0",
     "@paystack/inline-js": "^2.22.8",
     "@sentry/nuxt": "^10.53.1",
     "@supabase/supabase-js": "^2.105.4",

@@ -6,6 +6,20 @@
       'home-hero--docked': isLogoDocked,
     }"
   >
+    <video
+      v-if="shouldLoadVideo"
+      class="home-hero__video"
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="none"
+      poster="/images/hero/run-poster.webp"
+      aria-hidden="true"
+    >
+      This decorative video shows ANAI movement styling on a running track.
+      <source src="/images/hero/run.mp4" type="video/mp4">
+    </video>
     <h1>
       <span
         v-if="!hasPlayedIntro"
@@ -54,19 +68,21 @@
 </template>
 
 <script setup lang="ts">
-import { gsap } from 'gsap'
 import type { ComponentPublicInstance } from 'vue'
 
 const hasPlayedIntro = useState('anai-logo-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const isRisePending = ref(!hasPlayedIntro.value)
 const isColourIntroAnimating = ref(false)
+const shouldLoadVideo = ref(false)
 const letterElements = ref<SVGPathElement[]>([])
 const underlineElement = ref<HTMLSpanElement | null>(null)
 const browElement = ref<SVGPathElement | null>(null)
 const columnsElement = ref<HTMLDivElement | null>(null)
-let introAnimation: gsap.core.Tween | gsap.core.Timeline | undefined
+let introAnimation: { kill: () => void } | undefined
 let rafId = 0
+let idleId: number | ReturnType<typeof globalThis.setTimeout> = 0
+let isVideoQueued = false
 
 const updateDockedLogo = () => {
   cancelAnimationFrame(rafId)
@@ -75,11 +91,19 @@ const updateDockedLogo = () => {
   })
 }
 
-watch(isLogoDocked, (docked) => {
-  gsap.to(underlineElement.value, {
+watch(isLogoDocked, async (docked) => {
+  const underline = underlineElement.value
+
+  if (!underline) {
+    return
+  }
+
+  const { gsap } = await import('gsap')
+
+  gsap.to(underline, {
     scaleX: docked ? 0 : 1,
     transformOrigin: 'left center',
-    duration: 0.58,
+    duration: 0.42,
     ease: 'power2.out',
     overwrite: true,
   })
@@ -94,14 +118,43 @@ const setLetterRef = (
   }
 }
 
-onMounted(() => {
-  isLogoDocked.value = window.scrollY > 32
-  window.addEventListener('scroll', updateDockedLogo, { passive: true })
+const loadHeroVideo = () => {
+  shouldLoadVideo.value = true
+  window.removeEventListener('pointerdown', loadHeroVideo)
+  window.removeEventListener('keydown', loadHeroVideo)
+}
 
-  if (hasPlayedIntro.value) {
+const queueHeroVideo = () => {
+  if (isVideoQueued) {
     return
   }
 
+  isVideoQueued = true
+  window.addEventListener('pointerdown', loadHeroVideo, { once: true, passive: true })
+  window.addEventListener('keydown', loadHeroVideo, { once: true })
+
+  if ('requestIdleCallback' in window) {
+    idleId = window.requestIdleCallback(loadHeroVideo, { timeout: 5000 })
+    return
+  }
+
+  idleId = globalThis.setTimeout(loadHeroVideo, 5000)
+}
+
+onMounted(async () => {
+  isLogoDocked.value = window.scrollY > 32
+  window.addEventListener('scroll', updateDockedLogo, { passive: true })
+  queueHeroVideo()
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const isMobile = window.matchMedia('(max-width: 760px)').matches
+
+  if (hasPlayedIntro.value || prefersReducedMotion || isMobile) {
+    isRisePending.value = false
+    return
+  }
+
+  const { gsap } = await import('gsap')
   const letters = letterElements.value.filter(Boolean)
   const randomLetters = gsap.utils.shuffle([...letters])
   const columnItems = columnsElement.value
@@ -137,7 +190,7 @@ onMounted(() => {
 
   timeline.to(underlineElement.value, {
     scaleX: 1,
-    duration: 1.15,
+    duration: 0.86,
     ease: 'power2.out',
   }, 0)
 
@@ -145,7 +198,7 @@ onMounted(() => {
     opacity: 1,
     y: 0,
     clearProps: 'opacity,transform',
-    duration: 0.8,
+    duration: 0.56,
     ease: 'power3.out',
     stagger: 0.1,
   }, 0)
@@ -154,7 +207,7 @@ onMounted(() => {
     opacity: 1,
     y: 0,
     clearProps: 'opacity,transform',
-    duration: 0.74,
+    duration: 0.52,
     ease: 'power3.out',
     stagger: 0.14,
   }, 0.56)
@@ -162,7 +215,7 @@ onMounted(() => {
   timeline.to(browElement.value, {
     opacity: 1,
     clearProps: 'opacity',
-    duration: 0.45,
+    duration: 0.32,
     ease: 'power2.out',
   }, 1.15)
 
@@ -175,6 +228,13 @@ onBeforeUnmount(() => {
   }
 
   cancelAnimationFrame(rafId)
+  if ('cancelIdleCallback' in window) {
+    window.cancelIdleCallback(Number(idleId))
+  } else {
+    globalThis.clearTimeout(idleId)
+  }
+  window.removeEventListener('pointerdown', loadHeroVideo)
+  window.removeEventListener('keydown', loadHeroVideo)
   window.removeEventListener('scroll', updateDockedLogo)
   isLogoDocked.value = false
   isRisePending.value = false
@@ -184,8 +244,43 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .home-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   width: 100%;
-  padding: 0 var(--page-gutter) var(--space-md);
+  min-height: 100vh;
+  padding: calc(7.2rem + var(--space-md)) var(--page-gutter) var(--space-md);
+  color: var(--colour-white);
+  background:
+    image-set(
+      url("/images/hero/run-poster.webp") type("image/webp") 1x
+    );
+  background-position: center;
+  background-size: cover;
+}
+
+.home-hero::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.46));
+  pointer-events: none;
+}
+
+.home-hero__video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-hero h1,
+.home-hero__columns {
+  position: relative;
+  z-index: 2;
 }
 
 h1 {
@@ -196,7 +291,7 @@ h1 {
   display: block;
   height: clamp(0.125rem, 0.375vw, 0.5rem);
   margin-top: calc(var(--space-sm) * 2);
-  background: var(--colour-black);
+  background: currentColor;
   transform-origin: left center;
   transition: transform 640ms ease;
 }
@@ -207,7 +302,7 @@ h1 {
 
 .home-hero__logo {
   display: block;
-  color: var(--colour-black);
+  color: currentColor;
   transform-origin: left top;
   transition:
     opacity 420ms ease,
@@ -221,7 +316,7 @@ h1 {
 }
 
 .home-hero__letter {
-  fill: var(--colour-black);
+  fill: currentColor;
   transform-box: fill-box;
   transition: fill 320ms ease;
 }
@@ -328,6 +423,20 @@ h1 {
 }
 
 @media (max-width: 760px) {
+  .home-hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100svh;
+    padding-top: calc(6.4rem + var(--space-md));
+    padding-bottom: clamp(var(--space-xl), 10vh, var(--space-2xl));
+    background-image: url("/images/hero/run-poster-mobile.webp");
+  }
+
+  .home-hero h1 {
+    width: 100%;
+  }
+
   .home-hero__underline {
     height: clamp(0.25rem, 0.75vw, 1rem);
   }

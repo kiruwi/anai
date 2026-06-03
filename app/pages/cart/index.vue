@@ -9,7 +9,14 @@
       <div class="cart-page__items">
         <article v-for="line in lines" :key="line.slug" class="cart-line">
           <NuxtLink class="cart-line__image" :to="`/product/${line.product.slug}`">
-            <img :src="line.product.imageUrl" :alt="line.product.name" />
+            <img
+              :src="line.product.imageUrl"
+              :alt="line.product.name"
+              width="120"
+              height="150"
+              loading="lazy"
+              decoding="async"
+            />
           </NuxtLink>
 
           <div class="cart-line__details">
@@ -17,6 +24,24 @@
               <h2>{{ line.product.name }}</h2>
             </NuxtLink>
             <p>{{ line.product.category }}</p>
+            <div v-if="line.product.sizeOptions?.length" class="cart-line__sizes">
+              <p>Size</p>
+              <div>
+                <button
+                  v-for="sizeOption in line.product.sizeOptions"
+                  :key="sizeOption.label"
+                  class="cart-line__size"
+                  :class="{ 'cart-line__size--selected': line.size === sizeOption.label }"
+                  type="button"
+                  :aria-label="`Choose ${sizeOption.label} for ${line.product.name}`"
+                  :aria-pressed="line.size === sizeOption.label"
+                  :title="getSizeTitle(sizeOption)"
+                  @click="updateSize(line.slug, sizeOption.label)"
+                >
+                  {{ sizeOption.label }}
+                </button>
+              </div>
+            </div>
             <strong>KES {{ line.product.priceKes.toLocaleString() }}</strong>
           </div>
 
@@ -59,7 +84,12 @@
             <dd>Calculated at checkout</dd>
           </div>
         </dl>
-        <NuxtLink class="cart-summary__checkout" to="/checkout">Checkout</NuxtLink>
+        <NuxtLink v-if="canCheckout" class="cart-summary__checkout" to="/checkout">
+          Checkout
+        </NuxtLink>
+        <button v-else class="cart-summary__checkout" type="button" disabled>
+          Select sizes
+        </button>
       </aside>
     </div>
 
@@ -71,7 +101,27 @@
 </template>
 
 <script setup lang="ts">
-const { lines, subtotalKes, updateQuantity, removeFromCart } = useCart()
+import type { ProductSizeOption } from '../../data/homeContent'
+
+const { lines, subtotalKes, updateQuantity, updateSize, removeFromCart } = useCart()
+
+const canCheckout = computed(() =>
+  lines.value.every((line) => !line.product.sizeOptions?.length || Boolean(line.size)),
+)
+
+const getSizeTitle = (sizeOption: ProductSizeOption) => {
+  const measurements = [
+    sizeOption.coatLengthCm ? `coat ${sizeOption.coatLengthCm}cm` : undefined,
+    sizeOption.shoulderCm ? `shoulder ${sizeOption.shoulderCm}cm` : undefined,
+    sizeOption.sleeveLengthCm ? `sleeve ${sizeOption.sleeveLengthCm}cm` : undefined,
+    sizeOption.bustCm ? `bust ${sizeOption.bustCm}cm` : undefined,
+    sizeOption.bottomCm ? `bottom ${sizeOption.bottomCm}cm` : undefined,
+  ].filter(Boolean)
+
+  return measurements.length
+    ? `${sizeOption.label}: ${measurements.join(', ')}`
+    : sizeOption.label
+}
 </script>
 
 <style scoped>
@@ -147,6 +197,39 @@ h1 {
   color: var(--colour-muted);
   font-size: 1.2rem;
   text-transform: uppercase;
+}
+
+.cart-line__sizes {
+  display: grid;
+  gap: var(--space-xs);
+  margin: var(--space-sm) 0;
+}
+
+.cart-line__sizes p {
+  margin: 0;
+}
+
+.cart-line__sizes > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.cart-line__size {
+  min-width: 4.8rem;
+  border: 1px solid var(--colour-border);
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--colour-black);
+  background: var(--colour-surface);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.cart-line__size--selected {
+  border-color: var(--colour-black);
+  color: var(--colour-white);
+  background: var(--colour-black);
 }
 
 .cart-line__details strong,
@@ -234,6 +317,11 @@ h1 {
 .cart-summary__checkout {
   color: var(--colour-white);
   background: var(--colour-black);
+}
+
+.cart-summary__checkout:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .cart-page__empty {

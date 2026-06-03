@@ -47,10 +47,18 @@
         <h2>Order summary</h2>
         <div class="checkout-summary__items">
           <article v-for="line in lines" :key="line.slug" class="checkout-summary__item">
-            <img :src="line.product.imageUrl" :alt="line.product.name" />
+            <img
+              :src="line.product.imageUrl"
+              :alt="line.product.name"
+              width="72"
+              height="90"
+              loading="lazy"
+              decoding="async"
+            />
             <div>
               <h3>{{ line.product.name }}</h3>
               <p>Qty {{ line.quantity }}</p>
+              <p v-if="line.size">Size {{ line.size }}</p>
             </div>
             <strong>KES {{ line.lineTotalKes.toLocaleString() }}</strong>
           </article>
@@ -83,7 +91,6 @@
 const config = useRuntimeConfig()
 const { lines, subtotalKes, clearCart } = useCart()
 const router = useRouter()
-const { $createPaystackTransaction } = useNuxtApp()
 
 const customer = reactive({
   email: '',
@@ -102,6 +109,21 @@ type PaystackInline = {
   id?: number
   message?: string
   reference: string
+}
+
+type PaystackTransactionOptions = {
+  key: string
+  email: string
+  amount: number
+  currency: string
+  firstName?: string
+  lastName?: string
+  phone?: string
+  reference: string
+  metadata?: Record<string, unknown>
+  onSuccess?: (transaction: PaystackInline) => void | Promise<void>
+  onCancel?: () => void
+  onError?: (error: unknown) => void
 }
 
 type CreatePaymentResponse = {
@@ -126,10 +148,19 @@ type FetchErrorLike = {
   message?: string
 }
 
-const isPaymentButtonDisabled = computed(() => isPaymentLoading.value || !isPaymentConfigured.value)
+const hasMissingSizes = computed(() =>
+  lines.value.some((line) => line.product.sizeOptions?.length && !line.size),
+)
+const isPaymentButtonDisabled = computed(() =>
+  isPaymentLoading.value || !isPaymentConfigured.value || hasMissingSizes.value,
+)
 const paymentButtonLabel = computed(() => {
   if (!isPaymentConfigured.value) {
     return 'Paystack key missing'
+  }
+
+  if (hasMissingSizes.value) {
+    return 'Select sizes in bag'
   }
 
   return isPaymentLoading.value ? 'Loading Paystack...' : 'Pay with Paystack'
@@ -157,6 +188,13 @@ const getCheckoutErrorMessage = (error: unknown) => {
     : 'Checkout could not start. Please refresh and try again.'
 }
 
+const createPaystackTransaction = async (options: PaystackTransactionOptions) => {
+  const { default: PaystackPop } = await import('@paystack/inline-js')
+  const paystack = new PaystackPop()
+
+  return paystack.newTransaction(options)
+}
+
 const startPayment = async () => {
   paymentError.value = ''
   paymentMessage.value = ''
@@ -168,6 +206,11 @@ const startPayment = async () => {
 
   if (!lines.value.length) {
     paymentError.value = 'Your bag is empty.'
+    return
+  }
+
+  if (hasMissingSizes.value) {
+    paymentError.value = 'Choose a size for every item in your bag before checkout.'
     return
   }
 
@@ -183,6 +226,7 @@ const startPayment = async () => {
         items: lines.value.map((line) => ({
           slug: line.slug,
           quantity: line.quantity,
+          size: line.size,
         })),
       },
     })
@@ -190,7 +234,7 @@ const startPayment = async () => {
     paymentMessage.value = 'Opening Paystack checkout.'
     let hasPaymentCallback = false
 
-    await $createPaystackTransaction({
+    await createPaystackTransaction({
       key: paystackPublicKey.value,
       email: customer.email,
       amount: payment.amountKes * 100,
@@ -206,6 +250,7 @@ const startPayment = async () => {
           slug: line.slug,
           name: line.product.name,
           quantity: line.quantity,
+          size: line.size,
           unitPriceKes: line.product.priceKes,
         })),
         custom_fields: [
@@ -261,11 +306,13 @@ const startPayment = async () => {
         isPaymentLoading.value = false
         paymentMessage.value = 'Payment cancelled. You can try again when ready.'
       },
-      onError: (error: { message?: string }) => {
+      onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : ''
+
         isPaymentLoading.value = false
         paymentMessage.value = ''
-        paymentError.value = error.message
-          ? `Paystack could not open: ${error.message}`
+        paymentError.value = message
+          ? `Paystack could not open: ${message}`
           : 'Paystack could not open. Please refresh and try again.'
       },
     })

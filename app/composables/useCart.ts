@@ -3,6 +3,7 @@ import { products, type HomepageProduct } from '../data/homeContent'
 export type CartItem = {
   slug: string
   quantity: number
+  size?: string
 }
 
 export type CartLine = CartItem & {
@@ -13,6 +14,20 @@ export type CartLine = CartItem & {
 const CART_STORAGE_KEY = 'anai-cart'
 
 const clampQuantity = (quantity: number) => Math.min(Math.max(Math.floor(quantity), 1), 99)
+
+const getProductSizeLabels = (product: HomepageProduct) =>
+  product.sizeOptions?.map((option) => option.label) ?? []
+
+const normalizeSize = (product: HomepageProduct, size: unknown) => {
+  if (typeof size !== 'string') {
+    return undefined
+  }
+
+  const trimmedSize = size.trim()
+  const sizeLabels = getProductSizeLabels(product)
+
+  return sizeLabels.includes(trimmedSize) ? trimmedSize : undefined
+}
 
 const getStoredCart = () => {
   if (!import.meta.client) {
@@ -48,6 +63,7 @@ const getStoredCart = () => {
         return {
           slug: product.slug,
           quantity: clampQuantity(quantity),
+          size: normalizeSize(product, item.size),
         }
       })
       .filter((item): item is CartItem => Boolean(item))
@@ -90,6 +106,7 @@ export const useCart = () => {
         {
           slug: product.slug,
           quantity: clampQuantity(quantity),
+          size: normalizeSize(product, undefined),
         },
       ]
     }
@@ -112,6 +129,25 @@ export const useCart = () => {
           : item,
       )
     }
+
+    persistCart()
+  }
+
+  const updateSize = (slug: string, size: string) => {
+    hydrateCart()
+
+    items.value = items.value.map((item) => {
+      if (item.slug !== slug) {
+        return item
+      }
+
+      const product = products.find((productItem) => productItem.slug === item.slug)
+
+      return {
+        ...item,
+        size: product ? normalizeSize(product, size) : undefined,
+      }
+    })
 
     persistCart()
   }
@@ -164,6 +200,7 @@ export const useCart = () => {
     subtotalKes,
     addToCart,
     updateQuantity,
+    updateSize,
     removeFromCart,
     clearCart,
     hydrateCart,
