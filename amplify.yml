@@ -6,11 +6,7 @@ frontend:
         - npm ci
     build:
       commands:
-        - NITRO_PRESET=static npm run generate
-        - rm -rf .amplify-hosting
-        - mkdir -p .amplify-hosting/static
-        - cp -R .output/public/. .amplify-hosting/static/
-        - 'printf ''{"version":1,"routes":[{"path":"/*","target":{"kind":"Static"}}],"framework":{"name":"nuxt","version":"4.4.5"}}'' > .amplify-hosting/deploy-manifest.json'
+        - NITRO_PRESET=aws_amplify npm run build
   artifacts:
     baseDirectory: .amplify-hosting
     files:
