@@ -21,7 +21,9 @@
       </NuxtLink>
       <div class="site-header__links">
         <NuxtLink to="/">Shop</NuxtLink>
-        <NuxtLink to="/cart" aria-label="Bag with 0 items">Bag(<span>0</span>)</NuxtLink>
+        <NuxtLink to="/cart" :aria-label="`Bag with ${itemCount} items`">
+          Bag(<span>{{ itemCount }}</span>)
+        </NuxtLink>
       </div>
     </nav>
   </header>
@@ -32,6 +34,7 @@ import { gsap } from 'gsap'
 
 const hasPlayedIntro = useState('site-header-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
+const { itemCount } = useCart()
 const isIntroPending = ref(!hasPlayedIntro.value)
 const headerElement = ref<HTMLElement | null>(null)
 let introAnimation: gsap.core.Tween | undefined

@@ -2,9 +2,19 @@ const supabaseUrl = process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const supabaseKey =
   process.env.NUXT_PUBLIC_SUPABASE_KEY ||
   process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_KEY ||
   process.env.SUPABASE_PUBLISHABLE_KEY ||
   process.env.SUPABASE_ANON_KEY
 const hasSupabaseConfig = Boolean(supabaseUrl && supabaseKey)
+const paystackPublicKey =
+  process.env.NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
+  process.env.NUXT_PAYSTACK_PUBLIC_KEY ||
+  process.env.PAYSTACK_PUBLIC_KEY
+const paystackSecretKey = process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
+const paystackWebhookSecret =
+  process.env.NUXT_PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_WEBHOOK_SECRET
+const supabaseServiceRoleKey =
+  process.env.NUXT_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-05-14',
@@ -39,16 +49,16 @@ export default defineNuxtConfig({
     typeCheck: true,
   },
   runtimeConfig: {
-    supabaseServiceRoleKey: '',
-    paystackSecretKey: '',
-    paystackWebhookSecret: '',
+    supabaseServiceRoleKey,
+    paystackSecretKey,
+    paystackWebhookSecret,
     emailApiKey: '',
     adminOrderEmail: '',
     public: {
       siteUrl: '',
-      supabaseUrl: '',
-      supabaseAnonKey: '',
-      paystackPublicKey: '',
+      supabaseUrl,
+      supabaseAnonKey: supabaseKey,
+      paystackPublicKey,
       sentryDsn: '',
     },
   },

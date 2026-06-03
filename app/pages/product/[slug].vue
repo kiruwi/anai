@@ -21,8 +21,8 @@
       <h1>{{ product.name }}</h1>
       <p class="product-page__price">KES {{ product.priceKes.toLocaleString() }}</p>
       <p class="product-page__copy">{{ productCopy }}</p>
-      <button class="product-page__add" type="button">
-        Add to Bag
+      <button class="product-page__add" type="button" @click="handleAddToCart">
+        {{ addButtonLabel }}
         <span aria-hidden="true">↗</span>
       </button>
     </div>
@@ -35,6 +35,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { products } from '../../data/homeContent'
 
 const route = useRoute()
+const { addToCart } = useCart()
 const product = products.find((item) => item.slug === route.params.slug)
 
 if (!product) {
@@ -57,9 +58,13 @@ const galleryImages = [...new Set(product.galleryImages ?? [product.imageUrl, ..
 const productPageElement = ref<HTMLElement | null>(null)
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = ref<HTMLDivElement[]>([])
+const hasJustAdded = ref(false)
 let galleryAnimation: gsap.core.Tween | undefined
 let galleryWheelLock: number | undefined
+let addedTimer: number | undefined
 let galleryIndex = 0
+
+const addButtonLabel = computed(() => (hasJustAdded.value ? 'Added to Bag' : 'Add to Bag'))
 
 const isDesktopGallery = () => window.matchMedia('(min-width: 981px)').matches
 
@@ -130,6 +135,20 @@ const setSlideRef = (
   }
 }
 
+const handleAddToCart = () => {
+  addToCart(product)
+  hasJustAdded.value = true
+
+  if (addedTimer) {
+    window.clearTimeout(addedTimer)
+  }
+
+  addedTimer = window.setTimeout(() => {
+    hasJustAdded.value = false
+    addedTimer = undefined
+  }, 1600)
+}
+
 onMounted(() => {
   window.addEventListener('wheel', handleProductWheel, { capture: true, passive: false })
 
@@ -155,6 +174,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('wheel', handleProductWheel, { capture: true })
   if (galleryWheelLock) {
     window.clearTimeout(galleryWheelLock)
+  }
+  if (addedTimer) {
+    window.clearTimeout(addedTimer)
   }
   galleryAnimation?.kill()
 })

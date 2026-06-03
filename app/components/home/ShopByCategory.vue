@@ -26,14 +26,8 @@ defineProps<{
 
 .shop-by-category__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--page-gutter);
-}
-
-@media (max-width: 860px) {
-  .shop-by-category__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 560px) {

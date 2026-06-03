@@ -12,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const tileStyle = computed(() => ({
-  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.42)), url("${props.tile.imageUrl}"), ${props.tile.imageTone}`,
+  backgroundImage: `url("${props.tile.imageUrl}"), ${props.tile.imageTone}`,
 }))
 </script>
 

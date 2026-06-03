@@ -38,7 +38,9 @@
           @click="selectColour(colour)"
         />
       </div>
-      <button class="product-card__quick-add" type="button">Quick add</button>
+      <button class="product-card__quick-add" type="button" @click="handleQuickAdd">
+        {{ quickAddLabel }}
+      </button>
     </div>
   </article>
 </template>
@@ -55,7 +57,10 @@ const props = defineProps<{
 const selectedImageUrl = ref(props.product.imageUrl)
 const isPhotoPending = ref(true)
 const photoElement = ref<HTMLImageElement | null>(null)
+const hasJustAdded = ref(false)
+const { addToCart } = useCart()
 let imageAnimation: gsap.core.Tween | undefined
+let addedTimer: number | undefined
 
 const hoverImageUrl = computed(() => {
   const colourImages = props.product.colours
@@ -93,6 +98,7 @@ const hoverImageUrl = computed(() => {
 
   return preferredColour?.imageUrl ?? fallbackColour?.imageUrl ?? galleryFallback
 })
+const quickAddLabel = computed(() => (hasJustAdded.value ? 'Added' : 'Quick add'))
 
 watch(
   () => props.product.imageUrl,
@@ -121,6 +127,20 @@ const selectColour = (colour: ProductColour) => {
   }
 }
 
+const handleQuickAdd = () => {
+  addToCart(props.product)
+  hasJustAdded.value = true
+
+  if (addedTimer) {
+    window.clearTimeout(addedTimer)
+  }
+
+  addedTimer = window.setTimeout(() => {
+    hasJustAdded.value = false
+    addedTimer = undefined
+  }, 1600)
+}
+
 onMounted(() => {
   gsap.set(photoElement.value, {
     opacity: 0,
@@ -140,6 +160,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (addedTimer) {
+    window.clearTimeout(addedTimer)
+  }
   imageAnimation?.kill()
 })
 </script>
