@@ -99,6 +99,8 @@ const paystackPublicKey = computed(() => config.public.paystackPublicKey)
 const isPaymentConfigured = computed(() => Boolean(paystackPublicKey.value))
 
 type PaystackInline = {
+  id?: number
+  message?: string
   reference: string
 }
 
@@ -113,6 +115,15 @@ type VerifyPaymentResponse = {
   paid: boolean
   status: string
   reference: string
+}
+
+type FetchErrorLike = {
+  data?: {
+    statusMessage?: string
+    message?: string
+  }
+  statusMessage?: string
+  message?: string
 }
 
 const isPaymentButtonDisabled = computed(() => isPaymentLoading.value || !isPaymentConfigured.value)
@@ -131,6 +142,19 @@ const getCustomerNames = () => {
     firstName,
     lastName: lastNameParts.join(' '),
   }
+}
+
+const getCheckoutErrorMessage = (error: unknown) => {
+  const fetchError = error as FetchErrorLike
+  const message =
+    fetchError.data?.statusMessage ||
+    fetchError.data?.message ||
+    fetchError.statusMessage ||
+    fetchError.message
+
+  return message
+    ? `Checkout could not start: ${message}`
+    : 'Checkout could not start. Please refresh and try again.'
 }
 
 const startPayment = async () => {
@@ -171,10 +195,9 @@ const startPayment = async () => {
       email: customer.email,
       amount: payment.amountKes * 100,
       currency: payment.currency,
-      firstname: firstName,
-      lastname: lastName,
+      firstName,
+      lastName,
       phone: customer.phone,
-      ref: payment.reference,
       reference: payment.reference,
       metadata: {
         orderId: payment.orderId,
@@ -198,7 +221,7 @@ const startPayment = async () => {
           },
         ],
       },
-      callback: async (transaction: PaystackInline) => {
+      onSuccess: async (transaction: PaystackInline) => {
         hasPaymentCallback = true
         const reference = transaction.reference || payment.reference
         paymentMessage.value = 'Confirming payment.'
@@ -230,7 +253,7 @@ const startPayment = async () => {
           paymentMessage.value = ''
         }
       },
-      onClose: () => {
+      onCancel: () => {
         if (hasPaymentCallback) {
           return
         }
@@ -238,9 +261,17 @@ const startPayment = async () => {
         isPaymentLoading.value = false
         paymentMessage.value = 'Payment cancelled. You can try again when ready.'
       },
+      onError: (error: { message?: string }) => {
+        isPaymentLoading.value = false
+        paymentMessage.value = ''
+        paymentError.value = error.message
+          ? `Paystack could not open: ${error.message}`
+          : 'Paystack could not open. Please refresh and try again.'
+      },
     })
-  } catch {
-    paymentError.value = 'Checkout could not start. Please refresh and try again.'
+  } catch (error) {
+    paymentMessage.value = ''
+    paymentError.value = getCheckoutErrorMessage(error)
   } finally {
     if (paymentError.value) {
       isPaymentLoading.value = false

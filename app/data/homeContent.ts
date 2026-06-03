@@ -30,7 +30,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Jackets',
     slug: 'jackets',
-    priceKes: 7800,
+    priceKes: 3780,
     category: 'Outerwear',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Jackets/b-2.jpg' },
@@ -57,7 +57,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Long Sleeve, Round Neck',
     slug: 'long-sleeve-round-neck',
-    priceKes: 8200,
+    priceKes: 2680,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Long sleeve, round neck/b-t.jpg' },
@@ -85,29 +85,20 @@ export const products: HomepageProduct[] = [
   {
     name: 'Long Sleeve, Swirl Neck',
     slug: 'long-sleeve-swirl-neck',
-    priceKes: 7600,
+    priceKes: 2980,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Long sleeve, swirl neck/bb-sw.jpg' },
-      { name: 'Blue', value: '#253b54', imageUrl: '/images/products/Long sleeve, swirl neck/bl-sw.jpg' },
       { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Long sleeve, swirl neck/br-sw.jpg' },
-      { name: 'Green', value: '#586447', imageUrl: '/images/products/Long sleeve, swirl neck/gr-sw.jpg' },
       { name: 'Off white', value: '#efe7dc', imageUrl: '/images/products/Long sleeve, swirl neck/ow-sw.jpg' },
-      { name: 'Pink', value: '#d8a0a7', imageUrl: '/images/products/Long sleeve, swirl neck/pi-sw.jpg' },
-      { name: 'Red', value: '#9f2526', imageUrl: '/images/products/Long sleeve, swirl neck/rd-sw.jpg' },
     ],
     isNew: true,
-    imageUrl: '/images/products/Long sleeve, swirl neck/bb-sw.jpg',
+    imageUrl: '/images/products/Long sleeve, swirl neck/bl-sw.jpg',
     imageTone: 'linear-gradient(135deg, #000000, #4a481d)',
     galleryImages: [
-      '/images/products/Long sleeve, swirl neck/bb-sw.jpg',
       '/images/products/Long sleeve, swirl neck/bl-sw.jpg',
       '/images/products/Long sleeve, swirl neck/br-sw.jpg',
-      '/images/products/Long sleeve, swirl neck/gr-sw.jpg',
-      '/images/products/Long sleeve, swirl neck/gu-sw.jpg',
       '/images/products/Long sleeve, swirl neck/ow-sw.jpg',
-      '/images/products/Long sleeve, swirl neck/pi-sw.jpg',
-      '/images/products/Long sleeve, swirl neck/rd-sw.jpg',
       '/images/products/Long sleeve, swirl neck/details.png',
     ],
     sizeGuideText:
@@ -116,33 +107,31 @@ export const products: HomepageProduct[] = [
   {
     name: 'Minit T-Shirt',
     slug: 'minit-t-shirt',
-    priceKes: 2800,
+    priceKes: 2980,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Mini T-Shirt/mini black tshirt.jpg' },
-      { name: 'Blue', value: '#253b54', imageUrl: '/images/products/Mini T-Shirt/mini black tshirt BLUE.jpg' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Mini T-Shirt/mini black tshirt BROWN.jpg' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Mini T-Shirt/creme.jpg' },
+      { name: 'Blue', value: '#253b54', imageUrl: '/images/products/Mini T-Shirt/black.jpg' },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Mini T-Shirt/brown.jpg' },
       {
         name: 'Red Stripe',
         value: 'repeating-linear-gradient(90deg, #111111 0 8px, #9f2526 8px 14px)',
-        imageUrl: '/images/products/Mini T-Shirt/mini black tshirt RED STRIPE.jpg',
+        imageUrl: '/images/products/Mini T-Shirt/brown.jpg',
       },
     ],
     isNew: true,
-    imageUrl: '/images/products/Mini T-Shirt/mini black tshirt.jpg',
+    imageUrl: '/images/products/Mini T-Shirt/black.jpg',
     imageTone: 'linear-gradient(135deg, #111111, #253b54)',
     galleryImages: [
-      '/images/products/Mini T-Shirt/mini black tshirt.jpg',
-      '/images/products/Mini T-Shirt/mini black tshirt BLUE.jpg',
-      '/images/products/Mini T-Shirt/mini black tshirt BLUE BACK.jpg',
-      '/images/products/Mini T-Shirt/mini black tshirt BROWN.jpg',
-      '/images/products/Mini T-Shirt/mini black tshirt RED STRIPE.jpg',
+      '/images/products/Mini T-Shirt/black.jpg',
+      '/images/products/Mini T-Shirt/brown.jpg',
+      '/images/products/Mini T-Shirt/creme.jpg',
     ],
   },
   {
     name: 'Sahara Corsage Set',
     slug: 'sahara-corsage-set',
-    priceKes: 6200,
+    priceKes: 5060,
     category: 'Sets',
     colours: [
       { name: 'Beige', value: '#d7d4c9', imageUrl: '/images/products/Sahara/beige.jpg' },
@@ -161,7 +150,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Strappy Bra',
     slug: 'strappy-bra',
-    priceKes: 2800,
+    priceKes: 2680,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Bra/black.jpg' },
@@ -180,7 +169,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Cropped Training Tee',
     slug: 'cropped-training-tee',
-    priceKes: 2800,
+    priceKes: 2980,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Tops/black.jpg' },
@@ -199,23 +188,19 @@ export const products: HomepageProduct[] = [
   {
     name: 'Nuru Short Set',
     slug: 'nuru-short-set',
-    priceKes: 6200,
+    priceKes: 4920,
     category: 'Sets',
     colours: [
-      { name: 'Birch', value: '#c9cbc6', imageUrl: '/images/products/Nuru, Short Set/bi-ss.jpg' },
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Nuru, Short Set/bl-ss.jpg' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Nuru, Short Set/br-ss.jpg' },
-      { name: 'Lilac', value: '#b9a9c8', imageUrl: '/images/products/Nuru, Short Set/ll-ss.jpg' },
-      { name: 'Pink', value: '#d8a0a7', imageUrl: '/images/products/Nuru, Short Set/pk-ss.jpg' },
+      { name: 'Beige', value: '#c9cbc6', imageUrl: '/images/products/Nuru, Short Set/beige.jpg' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Nuru, Short Set/black.jpg' },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Nuru, Short Set/brown.jpg' },
     ],
-    imageUrl: '/images/products/Nuru, Short Set/bi-ss.jpg',
+    imageUrl: '/images/products/Nuru, Short Set/beige.jpg',
     imageTone: 'linear-gradient(135deg, #d7c1a9, #4a481d)',
     galleryImages: [
-      '/images/products/Nuru, Short Set/bi-ss.jpg',
-      '/images/products/Nuru, Short Set/bl-ss.jpg',
-      '/images/products/Nuru, Short Set/br-ss.jpg',
-      '/images/products/Nuru, Short Set/ll-ss.jpg',
-      '/images/products/Nuru, Short Set/pk-ss.jpg',
+      '/images/products/Nuru, Short Set/beige.jpg',
+      '/images/products/Nuru, Short Set/black.jpg',
+      '/images/products/Nuru, Short Set/brown.jpg',
     ],
   },
   {

@@ -24,20 +24,26 @@ const terminalFailureStatuses = new Set(['abandoned', 'failed'])
 
 export const getPaystackSecretKey = () => {
   const config = useRuntimeConfig()
+  const paystackSecretKey =
+    typeof config.paystackSecretKey === 'string' ? config.paystackSecretKey : ''
 
-  if (!config.paystackSecretKey) {
+  if (!paystackSecretKey) {
     throw createError({
       statusCode: 500,
       statusMessage: 'Paystack secret key is not configured.',
     })
   }
 
-  return config.paystackSecretKey
+  return paystackSecretKey
 }
 
 export const getPaystackWebhookSecret = () => {
   const config = useRuntimeConfig()
-  const webhookSecret = config.paystackWebhookSecret || config.paystackSecretKey
+  const paystackSecretKey =
+    typeof config.paystackSecretKey === 'string' ? config.paystackSecretKey : ''
+  const paystackWebhookSecret =
+    typeof config.paystackWebhookSecret === 'string' ? config.paystackWebhookSecret : ''
+  const webhookSecret = paystackWebhookSecret || paystackSecretKey
 
   if (!webhookSecret) {
     throw createError({

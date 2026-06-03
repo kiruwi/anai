@@ -140,7 +140,7 @@ values
     (select id from public.categories where slug = 'sets'),
     (select id from public.collections where slug = 'short-sets'),
     'Training / Lounge',
-    '/images/products/Nuru, Short Set/bi-ss.jpg',
+    '/images/products/Nuru, Short Set/beige.jpg',
     'linear-gradient(135deg, #d7c1a9, #4a481d)',
     null,
     false,
@@ -228,11 +228,9 @@ with seed_variants (
   ('cropped-training-tee', 'ANAI-CTT-BLACK-OS', 'Black', '#111111', 2800, 20),
   ('cropped-training-tee', 'ANAI-CTT-BURGUNDY-OS', 'Burgundy', '#4a2428', 2800, 20),
   ('cropped-training-tee', 'ANAI-CTT-GREEN-OS', 'Green', '#4a5134', 2800, 20),
-  ('nuru-short-set', 'ANAI-NURU-BIRCH-OS', 'Birch', '#c9cbc6', 6200, 10),
+  ('nuru-short-set', 'ANAI-NURU-BEIGE-OS', 'Beige', '#c9cbc6', 6200, 10),
   ('nuru-short-set', 'ANAI-NURU-BLACK-OS', 'Black', '#111111', 6200, 10),
   ('nuru-short-set', 'ANAI-NURU-BROWN-OS', 'Brown', '#6f4631', 6200, 10),
-  ('nuru-short-set', 'ANAI-NURU-LILAC-OS', 'Lilac', '#b9a9c8', 6200, 10),
-  ('nuru-short-set', 'ANAI-NURU-PINK-OS', 'Pink', '#d8a0a7', 6200, 10),
   ('mia-cropped-tee', 'ANAI-MIA-BLACK-OS', 'Black', '#111111', 2800, 20),
   ('mia-cropped-tee', 'ANAI-MIA-BROWN-OS', 'Brown', '#6f4631', 2800, 20),
   ('mia-cropped-tee', 'ANAI-MIA-CREAM-OS', 'Cream', '#e8ddcd', 2800, 20),
@@ -268,6 +266,14 @@ set color = excluded.color,
     price_kes = excluded.price_kes,
     stock_quantity = excluded.stock_quantity,
     is_active = excluded.is_active;
+
+update public.product_variants
+set is_active = false
+where sku in (
+  'ANAI-NURU-BIRCH-OS',
+  'ANAI-NURU-LILAC-OS',
+  'ANAI-NURU-PINK-OS'
+);
 
 with seed_images (
   product_slug,
@@ -312,11 +318,9 @@ with seed_images (
   ('cropped-training-tee', '/images/products/Tops/black.jpg', 0),
   ('cropped-training-tee', '/images/products/Tops/burgandy.jpg', 1),
   ('cropped-training-tee', '/images/products/Tops/green.jpg', 2),
-  ('nuru-short-set', '/images/products/Nuru, Short Set/bi-ss.jpg', 0),
-  ('nuru-short-set', '/images/products/Nuru, Short Set/bl-ss.jpg', 1),
-  ('nuru-short-set', '/images/products/Nuru, Short Set/br-ss.jpg', 2),
-  ('nuru-short-set', '/images/products/Nuru, Short Set/ll-ss.jpg', 3),
-  ('nuru-short-set', '/images/products/Nuru, Short Set/pk-ss.jpg', 4),
+  ('nuru-short-set', '/images/products/Nuru, Short Set/beige.jpg', 0),
+  ('nuru-short-set', '/images/products/Nuru, Short Set/black.jpg', 1),
+  ('nuru-short-set', '/images/products/Nuru, Short Set/brown.jpg', 2),
   ('mia-cropped-tee', '/images/products/Mia Cropped Tee''s/black.jpg', 0),
   ('mia-cropped-tee', '/images/products/Mia Cropped Tee''s/brown.jpg', 1),
   ('mia-cropped-tee', '/images/products/Mia Cropped Tee''s/cream.jpg', 2),
@@ -334,3 +338,11 @@ join public.products on products.slug = seed_images.product_slug
 on conflict (product_id, image_url) do update
 set alt_text = excluded.alt_text,
     sort_order = excluded.sort_order;
+
+delete from public.product_images
+where product_id = (select id from public.products where slug = 'nuru-short-set')
+  and image_url not in (
+    '/images/products/Nuru, Short Set/beige.jpg',
+    '/images/products/Nuru, Short Set/black.jpg',
+    '/images/products/Nuru, Short Set/brown.jpg'
+  );
