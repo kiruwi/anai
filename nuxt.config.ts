@@ -1,11 +1,12 @@
 const supabaseUrl = process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseKey =
+const supabasePublishableKey =
+  process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.SUPABASE_PUBLISHABLE_KEY ||
   process.env.NUXT_PUBLIC_SUPABASE_KEY ||
   process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.SUPABASE_KEY ||
-  process.env.SUPABASE_PUBLISHABLE_KEY ||
   process.env.SUPABASE_ANON_KEY
-const hasSupabaseConfig = Boolean(supabaseUrl && supabaseKey)
+const hasSupabaseConfig = Boolean(supabaseUrl && supabasePublishableKey)
 const paystackPublicKey =
   process.env.NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
   process.env.NUXT_PAYSTACK_PUBLIC_KEY ||
@@ -13,8 +14,11 @@ const paystackPublicKey =
 const paystackSecretKey = process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
 const paystackWebhookSecret =
   process.env.NUXT_PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_WEBHOOK_SECRET
-const supabaseServiceRoleKey =
-  process.env.NUXT_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseSecretKey =
+  process.env.NUXT_SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.NUXT_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-05-14',
@@ -39,7 +43,8 @@ export default defineNuxtConfig({
             redirect: false,
             types: '~~/types/database.types.ts',
             url: supabaseUrl,
-            key: supabaseKey,
+            key: supabasePublishableKey,
+            secretKey: supabaseSecretKey,
           },
         ],
       ]
@@ -49,7 +54,7 @@ export default defineNuxtConfig({
     typeCheck: true,
   },
   runtimeConfig: {
-    supabaseServiceRoleKey,
+    supabaseSecretKey,
     paystackSecretKey,
     paystackWebhookSecret,
     emailApiKey: '',
@@ -57,7 +62,8 @@ export default defineNuxtConfig({
     public: {
       siteUrl: '',
       supabaseUrl,
-      supabaseAnonKey: supabaseKey,
+      supabasePublishableKey,
+      supabaseAnonKey: supabasePublishableKey,
       paystackPublicKey,
       sentryDsn: '',
     },
