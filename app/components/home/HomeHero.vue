@@ -107,12 +107,39 @@ let rafId = 0
 let idleId: number | ReturnType<typeof globalThis.setTimeout> = 0
 let preloaderRafId = 0
 let isVideoQueued = false
+let originalHtmlOverflow = ''
+let originalBodyOverflow = ''
+let isScrollLocked = false
 
 const updateDockedLogo = () => {
   cancelAnimationFrame(rafId)
   rafId = requestAnimationFrame(() => {
     isLogoDocked.value = window.scrollY > 32
   })
+}
+
+const lockPageScroll = () => {
+  if (isScrollLocked) {
+    return
+  }
+
+  originalHtmlOverflow = document.documentElement.style.overflow
+  originalBodyOverflow = document.body.style.overflow
+  document.documentElement.style.overflow = 'hidden'
+  document.body.style.overflow = 'hidden'
+  document.documentElement.classList.add('lenis-stopped')
+  isScrollLocked = true
+}
+
+const unlockPageScroll = () => {
+  if (!isScrollLocked) {
+    return
+  }
+
+  document.documentElement.style.overflow = originalHtmlOverflow
+  document.body.style.overflow = originalBodyOverflow
+  document.documentElement.classList.remove('lenis-stopped')
+  isScrollLocked = false
 }
 
 watch(isLogoDocked, async (docked) => {
@@ -180,7 +207,7 @@ const runIntroCounter = () => new Promise<void>((resolve) => {
   introProgress.value = 0
   setIntroPlayerSpeed(0.35)
 
-  const duration = 1500
+  const duration = 938
   const startedAt = performance.now()
 
   const updateProgress = (now: number) => {
@@ -209,32 +236,19 @@ onMounted(async () => {
   queueHeroVideo()
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const isMobile = window.matchMedia('(max-width: 760px)').matches
+
+  if (!hasPlayedIntro.value && !prefersReducedMotion) {
+    lockPageScroll()
+  }
 
   if (hasPlayedIntro.value || prefersReducedMotion) {
     isRisePending.value = false
     showIntroLottie.value = false
+    unlockPageScroll()
     return
   }
 
   const { gsap } = await import('gsap')
-
-  if (isMobile) {
-    await runIntroCounter()
-
-    introAnimation = gsap.to(introOverlayElement.value, {
-      opacity: 0,
-      duration: 0.42,
-      ease: 'power2.out',
-      onComplete: () => {
-        isRisePending.value = false
-        showIntroLottie.value = false
-        hasPlayedIntro.value = true
-      },
-    })
-    return
-  }
-
   const letters = letterElements.value.filter(Boolean)
   const randomLetters = gsap.utils.shuffle([...letters])
   const columnItems = columnsElement.value
@@ -266,6 +280,7 @@ onMounted(async () => {
     onComplete: () => {
       showIntroLottie.value = false
       hasPlayedIntro.value = true
+      unlockPageScroll()
     },
   })
 
@@ -330,6 +345,7 @@ onBeforeUnmount(() => {
   isLogoDocked.value = false
   isRisePending.value = false
   showIntroLottie.value = false
+  unlockPageScroll()
 })
 </script>
 
@@ -379,7 +395,8 @@ onBeforeUnmount(() => {
   align-content: center;
   background: var(--colour-black);
   color: var(--colour-white);
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 .home-hero__preloader-animation {
