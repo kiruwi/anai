@@ -24,17 +24,38 @@
       v-if="showIntroLottie"
       ref="introOverlayElement"
       class="home-hero__preloader"
+      :class="{ 'home-hero__preloader--running': isIntroPreloaderRunning }"
       aria-hidden="true"
     >
-      <component
-        ref="introPlayerElement"
-        :is="'lottie-player'"
+      <svg
         class="home-hero__preloader-animation"
-        src="/animations/check.json"
-        background="#000000"
-        speed="0.35"
-        autoplay
-      />
+        viewBox="0 0 120 120"
+        role="img"
+        aria-label="Loading"
+      >
+        <path
+          class="home-hero__preloader-circle"
+          d="M60 34.25 A25.75 25.75 0 1 0 60 85.75 A25.75 25.75 0 1 0 60 34.25"
+          pathLength="100"
+        />
+        <path
+          class="home-hero__preloader-check"
+          d="M44 60.25 L54.25 70.062 L75.25 50.312"
+          pathLength="100"
+        />
+        <g class="home-hero__preloader-sparks" transform="translate(60 60)">
+          <line
+            v-for="sparkIndex in 8"
+            :key="sparkIndex"
+            class="home-hero__preloader-spark"
+            x1="0"
+            y1="-33"
+            x2="0"
+            y2="-43"
+            :transform="`rotate(${(sparkIndex - 1) * 45} 0 0)`"
+          />
+        </g>
+      </svg>
       <p class="home-hero__preloader-count">{{ introProgress }}%</p>
     </div>
     <h1>
@@ -86,22 +107,18 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 
-type LottiePlayerElement = HTMLElement & {
-  setSpeed?: (speed: number) => void
-}
-
 const hasPlayedIntro = useState('anai-logo-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const isRisePending = ref(!hasPlayedIntro.value)
 const showIntroLottie = ref(!hasPlayedIntro.value)
 const introProgress = ref(0)
+const isIntroPreloaderRunning = ref(false)
 const shouldLoadVideo = ref(false)
 const letterElements = ref<SVGPathElement[]>([])
 const underlineElement = ref<HTMLSpanElement | null>(null)
 const browElement = ref<SVGPathElement | null>(null)
 const columnsElement = ref<HTMLDivElement | null>(null)
 const introOverlayElement = ref<HTMLDivElement | null>(null)
-const introPlayerElement = ref<LottiePlayerElement | null>(null)
 let introAnimation: { kill: () => void } | undefined
 let rafId = 0
 let idleId: number | ReturnType<typeof globalThis.setTimeout> = 0
@@ -110,6 +127,7 @@ let isVideoQueued = false
 let originalHtmlOverflow = ''
 let originalBodyOverflow = ''
 let isScrollLocked = false
+const preloaderDurationMs = 938
 
 const updateDockedLogo = () => {
   cancelAnimationFrame(rafId)
@@ -192,30 +210,17 @@ const queueHeroVideo = () => {
   idleId = globalThis.setTimeout(loadHeroVideo, 5000)
 }
 
-const setIntroPlayerSpeed = (speed: number) => {
-  const player = introPlayerElement.value
-
-  if (!player) {
-    return
-  }
-
-  player.setAttribute('speed', speed.toFixed(2))
-  player.setSpeed?.(speed)
-}
-
 const runIntroCounter = () => new Promise<void>((resolve) => {
   introProgress.value = 0
-  setIntroPlayerSpeed(0.35)
+  isIntroPreloaderRunning.value = false
 
-  const duration = 938
-  const startedAt = performance.now()
+  let startedAt = 0
 
   const updateProgress = (now: number) => {
-    const elapsed = Math.min((now - startedAt) / duration, 1)
+    const elapsed = Math.min((now - startedAt) / preloaderDurationMs, 1)
     const easedProgress = elapsed * elapsed * elapsed
 
     introProgress.value = Math.min(Math.round(easedProgress * 100), 100)
-    setIntroPlayerSpeed(0.35 + easedProgress * 2.4)
 
     if (elapsed < 1) {
       preloaderRafId = requestAnimationFrame(updateProgress)
@@ -227,7 +232,11 @@ const runIntroCounter = () => new Promise<void>((resolve) => {
     globalThis.setTimeout(resolve, 160)
   }
 
-  preloaderRafId = requestAnimationFrame(updateProgress)
+  preloaderRafId = requestAnimationFrame(() => {
+    startedAt = performance.now()
+    isIntroPreloaderRunning.value = true
+    preloaderRafId = requestAnimationFrame(updateProgress)
+  })
 })
 
 onMounted(async () => {
@@ -237,11 +246,11 @@ onMounted(async () => {
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  if (!hasPlayedIntro.value && !prefersReducedMotion) {
+  if (!hasPlayedIntro.value) {
     lockPageScroll()
   }
 
-  if (hasPlayedIntro.value || prefersReducedMotion) {
+  if (hasPlayedIntro.value) {
     isRisePending.value = false
     showIntroLottie.value = false
     unlockPageScroll()
@@ -249,6 +258,24 @@ onMounted(async () => {
   }
 
   const { gsap } = await import('gsap')
+
+  if (prefersReducedMotion) {
+    await runIntroCounter()
+    isRisePending.value = false
+
+    introAnimation = gsap.to(introOverlayElement.value, {
+      opacity: 0,
+      duration: 0.32,
+      ease: 'power2.out',
+      onComplete: () => {
+        showIntroLottie.value = false
+        hasPlayedIntro.value = true
+        unlockPageScroll()
+      },
+    })
+    return
+  }
+
   const letters = letterElements.value.filter(Boolean)
   const randomLetters = gsap.utils.shuffle([...letters])
   const columnItems = columnsElement.value
@@ -344,6 +371,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateDockedLogo)
   isLogoDocked.value = false
   isRisePending.value = false
+  isIntroPreloaderRunning.value = false
   showIntroLottie.value = false
   unlockPageScroll()
 })
@@ -402,6 +430,54 @@ onBeforeUnmount(() => {
 .home-hero__preloader-animation {
   width: clamp(8rem, 12vw, 14rem);
   height: clamp(8rem, 12vw, 14rem);
+  overflow: visible;
+}
+
+.home-hero__preloader-circle,
+.home-hero__preloader-check,
+.home-hero__preloader-spark {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-hero__preloader-circle,
+.home-hero__preloader-check {
+  stroke-width: 4;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation-fill-mode: forwards;
+  animation-play-state: paused;
+}
+
+.home-hero__preloader-circle {
+  animation-name: anai-preloader-draw;
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.72, 0, 1, 1);
+}
+
+.home-hero__preloader-check {
+  animation-name: anai-preloader-draw;
+  animation-delay: 560ms;
+  animation-duration: 278ms;
+  animation-timing-function: cubic-bezier(0.42, 0, 0.2, 1);
+}
+
+.home-hero__preloader-sparks {
+  opacity: 0;
+  animation: anai-preloader-sparks 100ms ease-out 838ms forwards;
+  animation-play-state: paused;
+}
+
+.home-hero__preloader-spark {
+  stroke-width: 2;
+}
+
+.home-hero__preloader--running .home-hero__preloader-circle,
+.home-hero__preloader--running .home-hero__preloader-check,
+.home-hero__preloader--running .home-hero__preloader-sparks {
+  animation-play-state: running;
 }
 
 .home-hero__preloader-count {
@@ -411,6 +487,26 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.12em;
   line-height: 1;
+}
+
+@keyframes anai-preloader-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes anai-preloader-sparks {
+  0% {
+    opacity: 0;
+  }
+
+  45% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 .home-hero h1,
