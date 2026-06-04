@@ -101,6 +101,10 @@ export default defineNuxtConfig({
           src: 'https://www.googletagmanager.com/gtag/js?id=G-WW5TYKEGPK',
         },
         {
+          defer: true,
+          src: 'https://unpkg.com/@lottiefiles/lottie-player@1/dist/lottie-player.js',
+        },
+        {
           innerHTML: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

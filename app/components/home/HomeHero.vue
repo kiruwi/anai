@@ -20,6 +20,23 @@
       This decorative video shows ANAI movement styling on a running track.
       <source src="/images/hero/run.mp4" type="video/mp4">
     </video>
+    <div
+      v-if="showIntroLottie"
+      ref="introOverlayElement"
+      class="home-hero__preloader"
+      aria-hidden="true"
+    >
+      <component
+        ref="introPlayerElement"
+        :is="'lottie-player'"
+        class="home-hero__preloader-animation"
+        src="/animations/check.json"
+        background="#000000"
+        speed="0.35"
+        autoplay
+      />
+      <p class="home-hero__preloader-count">{{ introProgress }}%</p>
+    </div>
     <h1>
       <span
         v-if="!hasPlayedIntro"
@@ -30,7 +47,6 @@
         class="home-hero__logo"
         :class="{
           'home-hero__logo--pending': isRisePending,
-          'home-hero__logo--intro': isColourIntroAnimating,
         }"
         to="/"
         aria-label="ANAI home"
@@ -70,18 +86,26 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 
+type LottiePlayerElement = HTMLElement & {
+  setSpeed?: (speed: number) => void
+}
+
 const hasPlayedIntro = useState('anai-logo-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const isRisePending = ref(!hasPlayedIntro.value)
-const isColourIntroAnimating = ref(false)
+const showIntroLottie = ref(!hasPlayedIntro.value)
+const introProgress = ref(0)
 const shouldLoadVideo = ref(false)
 const letterElements = ref<SVGPathElement[]>([])
 const underlineElement = ref<HTMLSpanElement | null>(null)
 const browElement = ref<SVGPathElement | null>(null)
 const columnsElement = ref<HTMLDivElement | null>(null)
+const introOverlayElement = ref<HTMLDivElement | null>(null)
+const introPlayerElement = ref<LottiePlayerElement | null>(null)
 let introAnimation: { kill: () => void } | undefined
 let rafId = 0
 let idleId: number | ReturnType<typeof globalThis.setTimeout> = 0
+let preloaderRafId = 0
 let isVideoQueued = false
 
 const updateDockedLogo = () => {
@@ -141,6 +165,44 @@ const queueHeroVideo = () => {
   idleId = globalThis.setTimeout(loadHeroVideo, 5000)
 }
 
+const setIntroPlayerSpeed = (speed: number) => {
+  const player = introPlayerElement.value
+
+  if (!player) {
+    return
+  }
+
+  player.setAttribute('speed', speed.toFixed(2))
+  player.setSpeed?.(speed)
+}
+
+const runIntroCounter = () => new Promise<void>((resolve) => {
+  introProgress.value = 0
+  setIntroPlayerSpeed(0.35)
+
+  const duration = 1500
+  const startedAt = performance.now()
+
+  const updateProgress = (now: number) => {
+    const elapsed = Math.min((now - startedAt) / duration, 1)
+    const easedProgress = elapsed * elapsed * elapsed
+
+    introProgress.value = Math.min(Math.round(easedProgress * 100), 100)
+    setIntroPlayerSpeed(0.35 + easedProgress * 2.4)
+
+    if (elapsed < 1) {
+      preloaderRafId = requestAnimationFrame(updateProgress)
+      return
+    }
+
+    introProgress.value = 100
+    preloaderRafId = 0
+    globalThis.setTimeout(resolve, 160)
+  }
+
+  preloaderRafId = requestAnimationFrame(updateProgress)
+})
+
 onMounted(async () => {
   isLogoDocked.value = window.scrollY > 32
   window.addEventListener('scroll', updateDockedLogo, { passive: true })
@@ -149,12 +211,30 @@ onMounted(async () => {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const isMobile = window.matchMedia('(max-width: 760px)').matches
 
-  if (hasPlayedIntro.value || prefersReducedMotion || isMobile) {
+  if (hasPlayedIntro.value || prefersReducedMotion) {
     isRisePending.value = false
+    showIntroLottie.value = false
     return
   }
 
   const { gsap } = await import('gsap')
+
+  if (isMobile) {
+    await runIntroCounter()
+
+    introAnimation = gsap.to(introOverlayElement.value, {
+      opacity: 0,
+      duration: 0.42,
+      ease: 'power2.out',
+      onComplete: () => {
+        isRisePending.value = false
+        showIntroLottie.value = false
+        hasPlayedIntro.value = true
+      },
+    })
+    return
+  }
+
   const letters = letterElements.value.filter(Boolean)
   const randomLetters = gsap.utils.shuffle([...letters])
   const columnItems = columnsElement.value
@@ -178,21 +258,28 @@ onMounted(async () => {
     y: 28,
   })
 
+  await runIntroCounter()
+
   isRisePending.value = false
-  isColourIntroAnimating.value = true
 
   const timeline = gsap.timeline({
     onComplete: () => {
-      isColourIntroAnimating.value = false
+      showIntroLottie.value = false
       hasPlayedIntro.value = true
     },
   })
+
+  timeline.to(introOverlayElement.value, {
+    opacity: 0,
+    duration: 0.52,
+    ease: 'power2.out',
+  }, 0)
 
   timeline.to(underlineElement.value, {
     scaleX: 1,
     duration: 0.86,
     ease: 'power2.out',
-  }, 0)
+  }, 0.08)
 
   timeline.to(randomLetters, {
     opacity: 1,
@@ -201,7 +288,7 @@ onMounted(async () => {
     duration: 0.56,
     ease: 'power3.out',
     stagger: 0.1,
-  }, 0)
+  }, 0.08)
 
   timeline.to([...columnItems].reverse(), {
     opacity: 1,
@@ -210,14 +297,14 @@ onMounted(async () => {
     duration: 0.52,
     ease: 'power3.out',
     stagger: 0.14,
-  }, 0.56)
+  }, 0.64)
 
   timeline.to(browElement.value, {
     opacity: 1,
     clearProps: 'opacity',
     duration: 0.32,
     ease: 'power2.out',
-  }, 1.15)
+  }, 1.23)
 
   introAnimation = timeline
 })
@@ -225,6 +312,10 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (introAnimation) {
     introAnimation.kill()
+  }
+
+  if (preloaderRafId) {
+    cancelAnimationFrame(preloaderRafId)
   }
 
   cancelAnimationFrame(rafId)
@@ -238,7 +329,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateDockedLogo)
   isLogoDocked.value = false
   isRisePending.value = false
-  isColourIntroAnimating.value = false
+  showIntroLottie.value = false
 })
 </script>
 
@@ -277,6 +368,34 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
+.home-hero__preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: var(--space-md);
+  place-items: center;
+  align-content: center;
+  background: var(--colour-black);
+  color: var(--colour-white);
+  pointer-events: none;
+}
+
+.home-hero__preloader-animation {
+  width: clamp(8rem, 12vw, 14rem);
+  height: clamp(8rem, 12vw, 14rem);
+}
+
+.home-hero__preloader-count {
+  margin: 0;
+  font-size: clamp(1.4rem, 1.6vw, 2rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
 .home-hero h1,
 .home-hero__columns {
   position: relative;
@@ -302,7 +421,8 @@ h1 {
 
 .home-hero__logo {
   display: block;
-  color: currentColor;
+  color: var(--colour-white);
+  mix-blend-mode: difference;
   transform-origin: left top;
   transition:
     opacity 420ms ease,
@@ -313,12 +433,12 @@ h1 {
   display: block;
   width: 100%;
   height: auto;
+  mix-blend-mode: difference;
 }
 
 .home-hero__letter {
   fill: currentColor;
   transform-box: fill-box;
-  transition: fill 320ms ease;
 }
 
 .home-hero__logo--pending .home-hero__letter {
@@ -333,33 +453,6 @@ h1 {
 
 .home-hero__logo--pending .home-hero__brow {
   opacity: 0;
-}
-
-.home-hero__letter:hover {
-  animation: anai-letter-colour 3.2s ease-in-out infinite;
-}
-
-.home-hero__logo--intro .home-hero__letter {
-  animation: anai-letter-colour 1.15s ease-in-out 1;
-}
-
-@keyframes anai-letter-colour {
-  0%,
-  100% {
-    fill: #461828;
-  }
-
-  25% {
-    fill: #c66747;
-  }
-
-  50% {
-    fill: #d7c1a9;
-  }
-
-  75% {
-    fill: #4a481d;
-  }
 }
 
 .home-hero__columns {
