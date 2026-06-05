@@ -8,14 +8,17 @@
   >
     <video
       v-if="shouldLoadVideo"
+      ref="heroVideoElement"
       class="home-hero__video"
       autoplay
       loop
       muted
       playsinline
-      preload="none"
+      preload="auto"
       poster="/images/hero/run-poster.webp"
       aria-hidden="true"
+      @playing="markHeroVideoReady"
+      @error="markHeroVideoReady"
     >
       This decorative video shows ANAI movement styling on a running track.
       <source src="/images/hero/run.mp4" type="video/mp4">
@@ -114,6 +117,8 @@ const showIntroLottie = ref(!hasPlayedIntro.value)
 const introProgress = ref(0)
 const isIntroPreloaderRunning = ref(false)
 const shouldLoadVideo = ref(false)
+const isHeroVideoReady = ref(false)
+const heroVideoElement = ref<HTMLVideoElement | null>(null)
 const letterElements = ref<SVGPathElement[]>([])
 const underlineElement = ref<HTMLSpanElement | null>(null)
 const browElement = ref<SVGPathElement | null>(null)
@@ -124,6 +129,7 @@ let rafId = 0
 let idleId: number | ReturnType<typeof globalThis.setTimeout> = 0
 let preloaderRafId = 0
 let isVideoQueued = false
+let heroVideoReadyCleanup: (() => void) | undefined
 let originalHtmlOverflow = ''
 let originalBodyOverflow = ''
 let isScrollLocked = false
@@ -187,10 +193,75 @@ const setLetterRef = (
   }
 }
 
-const loadHeroVideo = () => {
+const markHeroVideoReady = () => {
+  isHeroVideoReady.value = true
+}
+
+const playHeroVideo = async () => {
   shouldLoadVideo.value = true
+  await nextTick()
+
+  const video = heroVideoElement.value
+
+  if (!video) {
+    return
+  }
+
+  video.load()
+  video.play().catch(() => {
+    markHeroVideoReady()
+  })
+}
+
+const loadHeroVideo = () => {
+  void playHeroVideo()
   window.removeEventListener('pointerdown', loadHeroVideo)
   window.removeEventListener('keydown', loadHeroVideo)
+}
+
+const waitForHeroVideoPlayback = async () => {
+  if (isHeroVideoReady.value) {
+    return
+  }
+
+  shouldLoadVideo.value = true
+  await nextTick()
+
+  const video = heroVideoElement.value
+
+  if (!video || !video.paused) {
+    markHeroVideoReady()
+    return
+  }
+
+  await new Promise<void>((resolve) => {
+    let hasFinished = false
+
+    const finish = () => {
+      if (hasFinished) {
+        return
+      }
+
+      hasFinished = true
+      heroVideoReadyCleanup?.()
+      heroVideoReadyCleanup = undefined
+      markHeroVideoReady()
+      resolve()
+    }
+
+    const timeoutId = globalThis.setTimeout(finish, 7000)
+
+    heroVideoReadyCleanup = () => {
+      globalThis.clearTimeout(timeoutId)
+      video.removeEventListener('playing', finish)
+      video.removeEventListener('error', finish)
+    }
+
+    video.addEventListener('playing', finish, { once: true })
+    video.addEventListener('error', finish, { once: true })
+    video.load()
+    video.play().catch(finish)
+  })
 }
 
 const queueHeroVideo = () => {
@@ -242,7 +313,15 @@ const runIntroCounter = () => new Promise<void>((resolve) => {
 onMounted(async () => {
   isLogoDocked.value = window.scrollY > 32
   window.addEventListener('scroll', updateDockedLogo, { passive: true })
-  queueHeroVideo()
+
+  const shouldPrimeHeroVideo = window.matchMedia('(max-width: 760px)').matches
+  const heroVideoReadyPromise = shouldPrimeHeroVideo
+    ? waitForHeroVideoPlayback()
+    : Promise.resolve()
+
+  if (!shouldPrimeHeroVideo) {
+    queueHeroVideo()
+  }
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -260,7 +339,10 @@ onMounted(async () => {
   const { gsap } = await import('gsap')
 
   if (prefersReducedMotion) {
-    await runIntroCounter()
+    await Promise.all([
+      runIntroCounter(),
+      heroVideoReadyPromise,
+    ])
     isRisePending.value = false
 
     introAnimation = gsap.to(introOverlayElement.value, {
@@ -299,7 +381,10 @@ onMounted(async () => {
     y: 28,
   })
 
-  await runIntroCounter()
+  await Promise.all([
+    runIntroCounter(),
+    heroVideoReadyPromise,
+  ])
 
   isRisePending.value = false
 
@@ -359,6 +444,9 @@ onBeforeUnmount(() => {
   if (preloaderRafId) {
     cancelAnimationFrame(preloaderRafId)
   }
+
+  heroVideoReadyCleanup?.()
+  heroVideoReadyCleanup = undefined
 
   cancelAnimationFrame(rafId)
   if ('cancelIdleCallback' in window) {

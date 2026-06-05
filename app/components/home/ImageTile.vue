@@ -8,6 +8,7 @@
       loading="lazy"
       decoding="async"
     />
+    <span v-if="tile.comingSoon" class="image-tile__status">Coming soon</span>
     <span>{{ tile.title }}</span>
   </NuxtLink>
 </template>
@@ -37,6 +38,7 @@ defineProps<{
 .image-tile::after {
   position: absolute;
   inset: 0;
+  z-index: 1;
   content: "";
   background: linear-gradient(rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.34));
   pointer-events: none;
@@ -56,11 +58,24 @@ img {
 
 span {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   font-size: 2.4rem;
   font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.image-tile__status {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.48);
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: center;
 }
 
 </style>

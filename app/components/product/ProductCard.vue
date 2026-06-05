@@ -26,6 +26,7 @@
         decoding="async"
         aria-hidden="true"
       />
+      <span class="product-card__status">Coming soon</span>
       <span class="product-card__arrow" aria-hidden="true" />
     </NuxtLink>
     <div class="product-card__body">
@@ -184,6 +185,7 @@ onBeforeUnmount(() => {
 .product-card__image::after {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: linear-gradient(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.16));
   content: '';
   pointer-events: none;
@@ -207,6 +209,24 @@ onBeforeUnmount(() => {
 .product-card:hover .product-card__photo--hover,
 .product-card:focus-within .product-card__photo--hover {
   transform: translateX(0);
+}
+
+.product-card__status {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  color: var(--colour-white);
+  background: rgba(0, 0, 0, 0.48);
+  font-size: clamp(1.6rem, 2.2vw, 2.8rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .product-card--pending .product-card__photo {

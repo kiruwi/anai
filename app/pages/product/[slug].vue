@@ -17,6 +17,7 @@
             :fetchpriority="index === 0 ? 'high' : 'auto'"
             decoding="async"
           />
+          <span class="product-page__status">Coming soon</span>
         </div>
       </div>
     </div>
@@ -234,6 +235,7 @@ onBeforeUnmount(() => {
 }
 
 .product-page__slide {
+  position: relative;
   flex: 0 0 auto;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -250,6 +252,24 @@ onBeforeUnmount(() => {
   object-position: center top;
   transform: scale(1.12);
   transform-origin: center top;
+}
+
+.product-page__status {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  color: var(--colour-white);
+  background: rgba(0, 0, 0, 0.48);
+  font-size: clamp(2rem, 3.8vw, 4.8rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .product-page__details {

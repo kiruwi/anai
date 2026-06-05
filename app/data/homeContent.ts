@@ -35,6 +35,7 @@ export type ImageTile = {
   href: string
   imageUrl: string
   imageTone: string
+  comingSoon?: boolean
 }
 
 export const commonSizeOptions: ProductSizeOption[] = [
@@ -257,6 +258,7 @@ export const categoryTiles: ImageTile[] = [
     href: '/shop?gender=men',
     imageUrl: '/images/categories/men.webp',
     imageTone: 'linear-gradient(135deg, #000000, #4a481d)',
+    comingSoon: true,
   },
   {
     title: 'Women',
