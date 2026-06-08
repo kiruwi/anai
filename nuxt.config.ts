@@ -30,6 +30,58 @@ const hasNuxtImage = (() => {
   }
 })()
 
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self' https://checkout.paystack.com https://paystack.com",
+  "img-src 'self' data: blob: https://images.unsplash.com https://www.google-analytics.com",
+  "font-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'",
+  [
+    "script-src",
+    "'self'",
+    "'unsafe-inline'",
+    'https://www.googletagmanager.com',
+    'https://www.google-analytics.com',
+    'https://js.paystack.co',
+    'https://checkout.paystack.com',
+    'https://applepay.cdn-apple.com',
+  ].join(' '),
+  [
+    "connect-src",
+    "'self'",
+    'https://api.paystack.co',
+    'https://checkout.paystack.com',
+    'https://standard.paystack.co',
+    'https://legacy-staging.paystack.co',
+    'https://www.google-analytics.com',
+    'https://analytics.google.com',
+    'https://*.supabase.co',
+    'wss://*.supabase.co',
+    'https://*.sentry.io',
+  ].join(' '),
+  [
+    "frame-src",
+    "'self'",
+    'https://checkout.paystack.com',
+    'https://standard.paystack.co',
+    'https://legacy-staging.paystack.co',
+    'https://paystack.com',
+  ].join(' '),
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "upgrade-insecure-requests",
+].join('; ')
+
+const securityHeaders = {
+  'content-security-policy': contentSecurityPolicy,
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+}
+
 const modules: any[] = [
   ...(hasNuxtImage
     ? [
@@ -120,18 +172,24 @@ export default defineNuxtConfig({
   nitro: {
     compressPublicAssets: true,
     routeRules: {
+      '/**': {
+        headers: securityHeaders,
+      },
       '/_nuxt/**': {
         headers: {
+          ...securityHeaders,
           'cache-control': 'public, max-age=31536000, immutable',
         },
       },
       '/images/**': {
         headers: {
+          ...securityHeaders,
           'cache-control': 'public, max-age=31536000, immutable',
         },
       },
       '/Anai-Font/**': {
         headers: {
+          ...securityHeaders,
           'cache-control': 'public, max-age=31536000, immutable',
         },
       },
