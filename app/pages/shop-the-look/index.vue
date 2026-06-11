@@ -1,6 +1,5 @@
 <template>
   <section class="placeholder-page container">
-    <p>Shop the Look</p>
     <h1>Outfit bundles</h1>
   </section>
 </template>
@@ -8,12 +7,6 @@
 <style scoped>
 .placeholder-page {
   padding: var(--space-2xl) 0;
-}
-
-p {
-  margin: 0 0 var(--space-sm);
-  color: var(--colour-muted);
-  text-transform: uppercase;
 }
 
 h1 {

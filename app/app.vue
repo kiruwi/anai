@@ -1,12 +1,12 @@
 <template>
   <div>
-    <SiteHeader :over-hero="isHomeRoute" />
+    <SiteHeader v-if="!isComingSoonRoute" :over-hero="isHomeRoute" />
     <main>
       <NuxtPage />
     </main>
-    <SiteFooter />
+    <SiteFooter v-if="!isComingSoonRoute" />
     <ClientOnly>
-      <component :is="MouseCursorComponent" v-if="MouseCursorComponent" />
+      <component :is="MouseCursorComponent" v-if="MouseCursorComponent && !isComingSoonRoute" />
     </ClientOnly>
   </div>
 </template>
@@ -17,6 +17,7 @@ import SiteHeader from './components/layout/SiteHeader.vue'
 
 const route = useRoute()
 const isHomeRoute = computed(() => route.path === '/')
+const isComingSoonRoute = computed(() => route.path === '/')
 const MouseCursorComponent = shallowRef()
 
 onMounted(async () => {

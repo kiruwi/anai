@@ -1,7 +1,6 @@
 <template>
   <section class="checkout-page container">
     <div class="checkout-page__header">
-      <p>Checkout</p>
       <h1>Complete order</h1>
     </div>
 
@@ -102,7 +101,9 @@ const isPaymentLoading = ref(false)
 const paymentError = ref('')
 const paymentMessage = ref('')
 
-const paystackPublicKey = computed(() => config.public.paystackPublicKey)
+const paystackPublicKey = computed(() =>
+  typeof config.public.paystackPublicKey === 'string' ? config.public.paystackPublicKey : '',
+)
 const isPaymentConfigured = computed(() => Boolean(paystackPublicKey.value))
 
 type PaystackInline = {
@@ -338,7 +339,6 @@ const startPayment = async () => {
   margin-bottom: var(--space-xl);
 }
 
-.checkout-page__header p,
 .checkout-page__empty p {
   margin: 0;
   color: var(--colour-muted);

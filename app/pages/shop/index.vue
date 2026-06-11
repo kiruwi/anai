@@ -2,7 +2,6 @@
   <section class="shop-page">
     <div class="container">
       <header class="shop-page__header">
-        <p>Shop</p>
         <h1>{{ pageTitle }}</h1>
       </header>
 
@@ -58,14 +57,6 @@ const visibleProducts = computed(() =>
 
 .shop-page__header {
   margin-bottom: var(--space-xl);
-}
-
-.shop-page__header p {
-  margin: 0 0 var(--space-sm);
-  color: var(--colour-muted);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 h1 {
