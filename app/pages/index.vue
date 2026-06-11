@@ -15,8 +15,8 @@
       <p class="coming-soon__copy">
         Activewear and athleisure pieces are being finished for the first drop.
       </p>
-      <a href="https://www.instagram.com/anaibymurda/" target="_blank" rel="noreferrer">
-        @anaibymurda
+      <a href="https://www.instagram.com/anai.nairobi_/" target="_blank" rel="noreferrer">
+        @anai.nairobi_
       </a>
     </div>
   </section>
