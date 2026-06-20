@@ -1,118 +1,168 @@
 <template>
   <section class="shop-the-look">
     <div class="shop-the-look__inner container">
-      <div class="shop-the-look__image">
+      <div class="shop-the-look__header">
+        <h2>
+          <span>Looks that</span>
+          <span>move with you</span>
+        </h2>
+        <p>Curated sets for every kind of day.</p>
+        <NuxtLink class="shop-the-look__button" to="/shop-the-look">Explore looks</NuxtLink>
+      </div>
+
+      <NuxtLink
+        v-for="look in looks"
+        :key="look.title"
+        class="shop-the-look__card"
+        :to="look.href"
+        :aria-label="`Shop ${look.title}`"
+      >
         <img
-          src="/images/products/Nuru, Short Set/brown.webp"
-          alt="Nuru Short Set styling"
-          width="720"
-          height="720"
+          :src="look.imageUrl"
+          :alt="look.imageAlt"
+          width="480"
+          height="620"
           loading="lazy"
           decoding="async"
         />
-      </div>
-      <div class="shop-the-look__content">
-        <SectionHeader title="Shop the look" />
-        <div class="shop-the-look__list">
-          <article v-for="look in looks" :key="look.title">
-            <h3>{{ look.title }}</h3>
-            <p>{{ look.products.join(' + ') }}</p>
-          </article>
-        </div>
-        <NuxtLink to="/shop-the-look">Add full look</NuxtLink>
-      </div>
+        <span class="shop-the-look__overlay">
+          <span class="shop-the-look__copy">
+            <span class="shop-the-look__title">{{ look.title }}</span>
+            <span class="shop-the-look__description">{{ look.products.join(' + ') }}</span>
+          </span>
+        </span>
+      </NuxtLink>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import SectionHeader from '../shared/SectionHeader.vue'
+import type { ShopLook } from '../../data/homeContent'
 
 defineProps<{
-  looks: Array<{
-    title: string
-    products: string[]
-  }>
+  looks: ShopLook[]
 }>()
 </script>
 
 <style scoped>
 .shop-the-look {
-  padding: var(--space-2xl) 0;
+  padding: 1.2rem 0;
   background: var(--colour-black);
-}
-
-.shop-the-look__inner {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(32rem, 0.9fr);
-  gap: var(--page-gutter);
   color: var(--colour-white);
 }
 
-.shop-the-look__image {
-  position: relative;
-  min-height: 62rem;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--colour-plum), var(--colour-clay));
-}
+.shop-the-look__inner {
+  --look-row-height: clamp(30rem, 24vw, 44rem);
 
-.shop-the-look__image::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: linear-gradient(rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.32));
-  pointer-events: none;
-}
-
-.shop-the-look__image img {
-  width: 100%;
-  height: 100%;
-  min-height: inherit;
-  object-fit: cover;
-}
-
-.shop-the-look__content {
-  align-self: center;
-}
-
-.shop-the-look__content :deep(p) {
-  color: rgba(255, 255, 255, 0.68);
-}
-
-.shop-the-look__list {
   display: grid;
-  gap: var(--space-sm);
+  grid-template-columns: minmax(38rem, 0.95fr) repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+  align-items: stretch;
 }
 
-article {
-  border-top: 1px solid rgba(255, 255, 255, 0.24);
-  padding: var(--space-md) 0;
+.shop-the-look__header {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  min-width: 0;
+  min-height: 0;
+  height: var(--look-row-height);
+  overflow: hidden;
+  padding: clamp(2.4rem, 3vw, 4.8rem);
+  background: var(--colour-black);
+  text-align: left;
 }
 
-h3,
+h2,
 p {
   margin: 0;
 }
 
-h3 {
-  font-size: 2rem;
+h2 {
+  max-width: none;
+  font-family: var(--font-brand-display);
+  font-size: clamp(2.4rem, 2.35vw, 4rem);
+  font-weight: 400;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+h2 span {
+  display: block;
+  white-space: nowrap;
+}
+
+p {
+  margin-top: var(--space-md);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: var(--copy-font-size);
+  white-space: nowrap;
+}
+
+.shop-the-look__button {
+  display: inline-flex;
+  margin-top: var(--space-lg);
+  padding: 1.2rem 1.8rem;
+  color: var(--colour-black);
+  background: var(--colour-surface);
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+}
+
+.shop-the-look__card {
+  position: relative;
+  display: block;
+  min-width: 0;
+  height: var(--look-row-height);
+  overflow: hidden;
+  color: var(--colour-white);
+  background: #222;
+}
+
+.shop-the-look__card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shop-the-look__card:hover img,
+.shop-the-look__card:focus-visible img {
+  transform: scale(1.04);
+}
+
+.shop-the-look__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(1.6rem, 2vw, 2.4rem);
+  background: linear-gradient(rgba(0, 0, 0, 0.02) 40%, rgba(0, 0, 0, 0.68));
+}
+
+.shop-the-look__copy {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.shop-the-look__title,
+.shop-the-look__description {
+  display: block;
+}
+
+.shop-the-look__title {
+  font-size: clamp(1.7rem, 1.6vw, 2.4rem);
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-p {
-  margin-top: var(--space-xs);
-  color: rgba(255, 255, 255, 0.72);
-}
-
-a {
-  display: inline-flex;
-  margin-top: var(--space-md);
-  padding: 1.2rem 1.8rem;
-  border-radius: var(--radius-sm);
-  color: var(--colour-black);
-  background: var(--colour-surface);
-  text-transform: uppercase;
+.shop-the-look__description {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: var(--copy-font-size);
 }
 
 @media (max-width: 860px) {
@@ -120,8 +170,11 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .shop-the-look__image {
-    min-height: 42rem;
+  .shop-the-look__header,
+  .shop-the-look__card {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 }
 </style>

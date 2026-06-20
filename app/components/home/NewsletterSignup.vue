@@ -35,7 +35,7 @@ h2 {
 }
 
 p {
-  font-size: 1.3rem;
+  font-size: var(--copy-font-size);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

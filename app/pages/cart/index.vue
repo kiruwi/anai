@@ -1,7 +1,6 @@
 <template>
   <section class="cart-page container">
     <div class="cart-page__header">
-      <p>Cart</p>
       <h1>Your bag</h1>
     </div>
 
@@ -10,6 +9,7 @@
         <article v-for="line in lines" :key="line.slug" class="cart-line">
           <NuxtLink class="cart-line__image" :to="`/product/${line.product.slug}`">
             <img
+              v-if="line.product.imageUrl"
               :src="line.product.imageUrl"
               :alt="line.product.name"
               width="120"
@@ -17,6 +17,7 @@
               loading="lazy"
               decoding="async"
             />
+            <span v-else>Coming soon</span>
           </NuxtLink>
 
           <div class="cart-line__details">
@@ -135,7 +136,6 @@ const getSizeTitle = (sizeOption: ProductSizeOption) => {
   margin-bottom: var(--space-xl);
 }
 
-.cart-page__header p,
 .cart-page__empty p {
   margin: 0;
   color: var(--colour-muted);
@@ -176,10 +176,26 @@ h1 {
   overflow: hidden;
 }
 
-.cart-line__image img {
+.cart-line__image img,
+.cart-line__image span {
+  display: block;
   width: 100%;
   height: 100%;
+}
+
+.cart-line__image img {
   object-fit: cover;
+}
+
+.cart-line__image span {
+  display: grid;
+  place-items: center;
+  background: var(--colour-border);
+  color: var(--colour-muted);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .cart-line__details {
@@ -195,7 +211,7 @@ h1 {
 .cart-line__details p {
   margin: var(--space-xs) 0;
   color: var(--colour-muted);
-  font-size: 1.2rem;
+  font-size: var(--copy-font-size);
   text-transform: uppercase;
 }
 

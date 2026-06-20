@@ -10,7 +10,7 @@
     <nav class="site-header__inner container" aria-label="Main navigation">
       <NuxtLink
         class="site-header__logo"
-        :class="{ 'site-header__logo--visible': isLogoDocked }"
+        :class="{ 'site-header__logo--visible': isLogoVisible }"
         to="/"
         aria-label="ANAI home"
       >
@@ -24,6 +24,9 @@
       </NuxtLink>
       <div class="site-header__links">
         <NuxtLink to="/">Shop</NuxtLink>
+        <NuxtLink to="/wishlist" :aria-label="`Wishlist with ${wishlistCount} items`">
+          Wishlist(<span>{{ wishlistCount }}</span>)
+        </NuxtLink>
         <NuxtLink to="/cart" :aria-label="`Bag with ${itemCount} items`">
           Bag(<span>{{ itemCount }}</span>)
         </NuxtLink>
@@ -41,6 +44,8 @@ const props = withDefaults(defineProps<{
 const hasPlayedIntro = useState('site-header-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const { itemCount } = useCart()
+const { itemCount: wishlistCount } = useWishlist()
+const isLogoVisible = computed(() => !props.overHero || isLogoDocked.value)
 const isIntroPending = ref(!hasPlayedIntro.value)
 const headerElement = ref<HTMLElement | null>(null)
 let introAnimation: { kill: () => void } | undefined
@@ -103,7 +108,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--space-md) * 2);
+  gap: var(--space-md);
   min-height: 7.2rem;
 }
 
@@ -111,15 +116,16 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: calc(var(--space-md) * 2);
+  gap: clamp(0.8rem, 2vw, calc(var(--space-md) * 2));
 }
 
 .site-header__inner a {
   color: var(--colour-white);
-  font-size: clamp(1.4rem, 2vw, 2.8rem);
+  font-size: clamp(1.2rem, 2vw, 2.8rem);
   letter-spacing: 0.04em;
   line-height: 1;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .site-header__logo {

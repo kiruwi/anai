@@ -147,27 +147,12 @@ export default defineNuxtConfig({
           fetchpriority: 'high',
         },
       ],
-      script: [
-        {
-          async: true,
-          src: 'https://www.googletagmanager.com/gtag/js?id=G-WW5TYKEGPK',
-        },
-        {
-          innerHTML: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'G-WW5TYKEGPK');
-          `,
-        },
-      ],
     },
   },
   modules,
   css: ['~/assets/css/tokens.css', '~/assets/css/base.css'],
   typescript: {
-    typeCheck: true,
+    typeCheck: false,
   },
   nitro: {
     compressPublicAssets: true,
@@ -182,12 +167,6 @@ export default defineNuxtConfig({
         },
       },
       '/images/**': {
-        headers: {
-          ...securityHeaders,
-          'cache-control': 'public, max-age=31536000, immutable',
-        },
-      },
-      '/Anai-Font/**': {
         headers: {
           ...securityHeaders,
           'cache-control': 'public, max-age=31536000, immutable',

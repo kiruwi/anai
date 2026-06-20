@@ -1,5 +1,9 @@
 <template>
-  <NuxtLink class="image-tile" :to="tile.href">
+  <article
+    v-if="tile.isComingSoon"
+    class="image-tile image-tile--locked"
+    :aria-label="`${tile.title} coming soon`"
+  >
     <img
       :src="tile.imageUrl"
       :alt="tile.title"
@@ -8,8 +12,23 @@
       loading="lazy"
       decoding="async"
     />
-    <span v-if="tile.comingSoon" class="image-tile__status">Coming soon</span>
-    <span>{{ tile.title }}</span>
+    <span class="image-tile__title">{{ tile.title }}</span>
+    <span class="image-tile__status">Coming soon</span>
+  </article>
+  <NuxtLink
+    v-else
+    class="image-tile"
+    :to="tile.href"
+  >
+    <img
+      :src="tile.imageUrl"
+      :alt="tile.title"
+      width="546"
+      height="683"
+      loading="lazy"
+      decoding="async"
+    />
+    <span class="image-tile__title">{{ tile.title }}</span>
   </NuxtLink>
 </template>
 
@@ -44,6 +63,10 @@ defineProps<{
   pointer-events: none;
 }
 
+.image-tile--locked::after {
+  background: rgba(0, 0, 0, 0.48);
+}
+
 img {
   position: absolute;
   inset: 0;
@@ -56,9 +79,21 @@ img {
   transform: scale(1.015);
 }
 
-span {
+.image-tile--locked {
+  cursor: default;
+}
+
+.image-tile--locked:hover {
+  transform: none;
+}
+
+.image-tile__title,
+.image-tile__status {
   position: relative;
   z-index: 2;
+}
+
+.image-tile__title {
   font-size: 2.4rem;
   font-weight: 400;
   letter-spacing: 0.04em;
@@ -67,15 +102,13 @@ span {
 
 .image-tile__status {
   position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.48);
-  font-size: clamp(2rem, 4vw, 3.6rem);
-  font-weight: 600;
+  top: 50%;
+  left: 50%;
+  border: 1px solid currentColor;
+  padding: 1rem 1.4rem;
+  font-size: 1.4rem;
   letter-spacing: 0.08em;
-  text-align: center;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%);
 }
-
 </style>

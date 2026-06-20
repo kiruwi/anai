@@ -1,38 +1,62 @@
 <template>
   <article class="product-card" :class="{ 'product-card--pending': isPhotoPending }">
-    <NuxtLink
-      class="product-card__image"
-      :to="`/product/${product.slug}`"
-      :aria-label="`View ${product.name}`"
-    >
-      <img
-        ref="photoElement"
-        class="product-card__photo"
-        :src="selectedImageUrl"
-        :alt="product.name"
-        width="341"
-        height="341"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        v-if="hoverImageUrl"
-        class="product-card__photo product-card__photo--hover"
-        :src="hoverImageUrl"
-        :alt="`${product.name} alternate colour`"
-        width="341"
-        height="341"
-        loading="lazy"
-        decoding="async"
-        aria-hidden="true"
-      />
-      <span class="product-card__status">Coming soon</span>
-      <span class="product-card__arrow" aria-hidden="true" />
-    </NuxtLink>
+    <div class="product-card__media">
+      <NuxtLink
+        class="product-card__image"
+        :to="`/product/${product.slug}`"
+        :aria-label="`View ${product.name}`"
+      >
+        <img
+          v-if="selectedImageUrl"
+          ref="photoElement"
+          class="product-card__photo"
+          :src="selectedImageUrl"
+          :alt="product.name"
+          width="341"
+          height="341"
+          loading="lazy"
+          decoding="async"
+        />
+        <span v-else class="product-card__photo-placeholder">
+          <span>Coming soon</span>
+        </span>
+        <img
+          v-if="hoverImageUrl"
+          class="product-card__photo product-card__photo--hover"
+          :src="hoverImageUrl"
+          :alt="`${product.name} alternate colour`"
+          width="341"
+          height="341"
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+        />
+        <span class="product-card__arrow" aria-hidden="true" />
+      </NuxtLink>
+      <span class="product-card__badge">New</span>
+      <button
+        class="product-card__wishlist"
+        type="button"
+        :aria-pressed="isWishlistSaved"
+        :aria-label="wishlistLabel"
+        @click="handleWishlistToggle"
+      >
+        <svg
+          class="product-card__wishlist-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M12 21s-7.2-4.5-9.4-9.1C.9 8.2 2.9 4 6.8 4c2 0 3.7 1.1 4.7 2.7C12.5 5.1 14.2 4 16.2 4c3.9 0 5.9 4.2 4.2 7.9C19.2 16.5 12 21 12 21Z"
+          />
+        </svg>
+      </button>
+    </div>
     <div class="product-card__body">
+      <p class="product-card__category">{{ product.category }}</p>
       <h3>{{ product.name }}</h3>
       <strong>KES {{ product.priceKes.toLocaleString() }}</strong>
-      <p class="product-card__category">{{ product.category }}</p>
     </div>
     <div v-if="!hideActions" class="product-card__footer">
       <div class="product-card__swatches" aria-label="Available colours">
@@ -62,13 +86,21 @@ const props = defineProps<{
   hideActions?: boolean
 }>()
 
-const selectedImageUrl = ref(props.product.imageUrl)
+const selectedImageUrl = ref(props.product.imageUrl ?? '')
 const isPhotoPending = ref(true)
 const photoElement = ref<HTMLImageElement | null>(null)
 const hasJustAdded = ref(false)
+const { toggleWishlist, isInWishlist } = useWishlist()
 let imageAnimation: { kill: () => void } | undefined
 let addedTimer: number | undefined
+const imageAnimationSetupTimeoutMs = 3000
 
+const isWishlistSaved = computed(() => isInWishlist(props.product.slug))
+const wishlistLabel = computed(() =>
+  isWishlistSaved.value
+    ? `Remove ${props.product.name} from wishlist`
+    : `Add ${props.product.name} to wishlist`,
+)
 const hoverImageUrl = computed(() => {
   if (props.product.hoverImageUrl && props.product.hoverImageUrl !== selectedImageUrl.value) {
     return props.product.hoverImageUrl
@@ -94,7 +126,7 @@ const quickAddLabel = computed(() => (hasJustAdded.value ? 'Added' : 'Quick add'
 watch(
   () => props.product.imageUrl,
   (imageUrl) => {
-    selectedImageUrl.value = imageUrl
+    selectedImageUrl.value = imageUrl ?? ''
   },
 )
 
@@ -134,7 +166,35 @@ const handleQuickAdd = () => {
   }, 1600)
 }
 
+const handleWishlistToggle = () => {
+  toggleWishlist(props.product)
+}
+
+const loadAnimationModule = async () => {
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      import('gsap'),
+      new Promise<never>((_, reject) => {
+        timeoutId = globalThis.setTimeout(() => {
+          reject(new Error('Timed out loading product image animation module.'))
+        }, imageAnimationSetupTimeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeoutId) {
+      globalThis.clearTimeout(timeoutId)
+    }
+  }
+}
+
 onMounted(async () => {
+  if (!selectedImageUrl.value) {
+    isPhotoPending.value = false
+    return
+  }
+
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const isMobile = window.matchMedia('(max-width: 680px)').matches
 
@@ -143,23 +203,28 @@ onMounted(async () => {
     return
   }
 
-  const { gsap } = await import('gsap')
+  try {
+    const { gsap } = await loadAnimationModule()
 
-  gsap.set(photoElement.value, {
-    opacity: 0,
-    x: -36,
-  })
+    gsap.set(photoElement.value, {
+      opacity: 0,
+      x: -36,
+    })
 
-  isPhotoPending.value = false
+    isPhotoPending.value = false
 
-  imageAnimation = gsap.to(photoElement.value, {
-    opacity: 1,
-    x: 0,
-    duration: 0.52,
-    delay: gsap.utils.random(0, 0.12, 0.01),
-    ease: 'power3.out',
-    clearProps: 'opacity,transform',
-  })
+    imageAnimation = gsap.to(photoElement.value, {
+      opacity: 1,
+      x: 0,
+      duration: 0.52,
+      delay: gsap.utils.random(0, 0.12, 0.01),
+      ease: 'power3.out',
+      clearProps: 'opacity,transform',
+    })
+  } catch (error) {
+    console.warn('[ANAI] Product image animation skipped:', error)
+    isPhotoPending.value = false
+  }
 })
 
 onBeforeUnmount(() => {
@@ -175,11 +240,82 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
+.product-card__media {
+  position: relative;
+}
+
 .product-card__image {
   position: relative;
   display: block;
   aspect-ratio: 1 / 1;
   overflow: hidden;
+}
+
+.product-card__badge,
+.product-card__wishlist {
+  position: absolute;
+  z-index: 4;
+  top: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  border: 0;
+  padding: 0.7rem 1rem;
+  color: var(--colour-black);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.product-card__badge {
+  right: var(--space-sm);
+  background: #8ee66f;
+}
+
+.product-card__wishlist {
+  top: auto;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  width: 4.4rem;
+  min-height: 4.4rem;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--colour-white);
+  cursor: pointer;
+}
+
+.product-card__wishlist[aria-pressed='true'] {
+  color: var(--colour-white);
+  background: var(--colour-black);
+}
+
+.product-card__wishlist-icon {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition:
+    fill 160ms ease,
+    transform 180ms ease;
+}
+
+.product-card__wishlist:hover .product-card__wishlist-icon,
+.product-card__wishlist:focus-visible .product-card__wishlist-icon {
+  transform: scale(0.86);
+}
+
+.product-card__wishlist:active .product-card__wishlist-icon {
+  transform: scale(0.74);
+}
+
+.product-card__wishlist[aria-pressed='true'] .product-card__wishlist-icon {
+  fill: currentColor;
 }
 
 .product-card__image::after {
@@ -197,6 +333,27 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
+.product-card__photo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-md);
+  color: var(--colour-white);
+  text-align: center;
+  text-transform: uppercase;
+  background: var(--colour-black);
+}
+
+.product-card__photo-placeholder span {
+  position: relative;
+  z-index: 3;
+  border: 1px solid currentColor;
+  padding: 0.8rem 1rem;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+}
+
 .product-card__photo--hover {
   position: absolute;
   inset: 0;
@@ -209,24 +366,6 @@ onBeforeUnmount(() => {
 .product-card:hover .product-card__photo--hover,
 .product-card:focus-within .product-card__photo--hover {
   transform: translateX(0);
-}
-
-.product-card__status {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  padding: var(--space-md);
-  color: var(--colour-white);
-  background: rgba(0, 0, 0, 0.48);
-  font-size: clamp(1.6rem, 2.2vw, 2.8rem);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  line-height: 1.1;
-  text-align: center;
-  text-transform: uppercase;
-  pointer-events: none;
 }
 
 .product-card--pending .product-card__photo {
@@ -272,12 +411,13 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
-  gap: var(--space-md);
+  column-gap: var(--space-md);
+  row-gap: 0.4rem;
   margin-top: var(--space-sm);
 }
 
 .product-card__category {
-  grid-column: 1;
+  grid-column: 1 / -1;
 }
 
 p,
@@ -290,7 +430,7 @@ h3 {
   align-items: center;
   gap: 0.6rem;
   color: var(--colour-muted);
-  font-size: 1.2rem;
+  font-size: var(--copy-font-size);
   text-transform: uppercase;
 }
 
@@ -308,13 +448,13 @@ strong {
 }
 
 h3 {
+  grid-column: 1;
   font-weight: 400;
   letter-spacing: 0.04em;
 }
 
 strong {
   grid-column: 2;
-  grid-row: 1;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -358,13 +498,7 @@ strong {
 
 @media (max-width: 680px) {
   .product-card__body {
-    grid-template-columns: 1fr;
     gap: var(--space-xs);
-  }
-
-  strong {
-    grid-column: 1;
-    grid-row: auto;
   }
 }
 </style>

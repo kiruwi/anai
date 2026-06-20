@@ -37,6 +37,18 @@
           {{ paymentError }}
         </p>
 
+        <div class="checkout-form__payment-note">
+          <p>
+            Payments on Anai are processed securely through Paystack. Anai does not store your
+            full card details. After payment, you will receive an order confirmation with your
+            payment reference.
+          </p>
+          <p>
+            If your payment fails but your account is debited, contact us with your Paystack
+            transaction reference so we can trace the payment.
+          </p>
+        </div>
+
         <button class="checkout-form__submit" type="submit" :disabled="isPaymentButtonDisabled">
           {{ paymentButtonLabel }}
         </button>
@@ -47,6 +59,7 @@
         <div class="checkout-summary__items">
           <article v-for="line in lines" :key="line.slug" class="checkout-summary__item">
             <img
+              v-if="line.product.imageUrl"
               :src="line.product.imageUrl"
               :alt="line.product.name"
               width="72"
@@ -54,6 +67,7 @@
               loading="lazy"
               decoding="async"
             />
+            <span v-else>Coming soon</span>
             <div>
               <h3>{{ line.product.name }}</h3>
               <p>Qty {{ line.quantity }}</p>
@@ -426,6 +440,19 @@ h1 {
   margin: 0;
 }
 
+.checkout-form__payment-note {
+  display: grid;
+  gap: var(--space-xs);
+  border: 1px solid var(--colour-border);
+  padding: var(--space-md);
+  color: var(--colour-muted);
+  font-size: var(--copy-font-size);
+}
+
+.checkout-form__payment-note p {
+  margin: 0;
+}
+
 .checkout-form__error {
   color: var(--colour-plum);
 }
@@ -456,10 +483,25 @@ h1 {
   align-items: center;
 }
 
-.checkout-summary__item img {
+.checkout-summary__item img,
+.checkout-summary__item span {
   width: 7.2rem;
   aspect-ratio: 4 / 5;
+}
+
+.checkout-summary__item img {
   object-fit: cover;
+}
+
+.checkout-summary__item span {
+  display: grid;
+  place-items: center;
+  background: var(--colour-border);
+  color: var(--colour-muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .checkout-summary__item h3 {
@@ -468,7 +510,7 @@ h1 {
 
 .checkout-summary__item p {
   color: var(--colour-muted);
-  font-size: 1.2rem;
+  font-size: var(--copy-font-size);
   text-transform: uppercase;
 }
 

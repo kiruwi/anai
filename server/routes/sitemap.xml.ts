@@ -1,5 +1,6 @@
 import { getRequestURL, setHeader } from 'h3'
 import { products } from '../../app/data/homeContent'
+import { legalPaths } from '../../app/data/legalContent'
 
 const staticPaths = [
   '/',
@@ -15,6 +16,8 @@ const staticPaths = [
   '/delivery-returns',
   '/size-guide',
   '/contact',
+  '/legal',
+  ...legalPaths,
 ]
 
 const lastmod = '2026-06-10'

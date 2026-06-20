@@ -24,7 +24,7 @@
       <source src="/images/hero/run.mp4" type="video/mp4">
     </video>
     <div
-      v-if="showIntroLottie"
+      v-if="!isIntroDisabled && showIntroLottie"
       ref="introOverlayElement"
       class="home-hero__preloader"
       :class="{ 'home-hero__preloader--running': isIntroPreloaderRunning }"
@@ -63,7 +63,7 @@
     </div>
     <h1>
       <span
-        v-if="!hasPlayedIntro"
+        v-if="!isIntroDisabled && !hasPlayedIntro"
         class="home-hero__preload-guard"
         aria-hidden="true"
       />
@@ -112,8 +112,14 @@ import type { ComponentPublicInstance } from 'vue'
 
 const hasPlayedIntro = useState('anai-logo-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
-const isRisePending = ref(!hasPlayedIntro.value)
-const showIntroLottie = ref(!hasPlayedIntro.value)
+const isIntroDisabled = false
+
+if (isIntroDisabled) {
+  hasPlayedIntro.value = true
+}
+
+const isRisePending = ref(!hasPlayedIntro.value && !isIntroDisabled)
+const showIntroLottie = ref(!hasPlayedIntro.value && !isIntroDisabled)
 const introProgress = ref(0)
 const isIntroPreloaderRunning = ref(false)
 const shouldLoadVideo = ref(false)
@@ -134,6 +140,7 @@ let originalHtmlOverflow = ''
 let originalBodyOverflow = ''
 let isScrollLocked = false
 const preloaderDurationMs = 938
+const introSetupTimeoutMs = 3000
 
 const updateDockedLogo = () => {
   cancelAnimationFrame(rafId)
@@ -195,6 +202,62 @@ const setLetterRef = (
 
 const markHeroVideoReady = () => {
   isHeroVideoReady.value = true
+}
+
+const loadAnimationModule = async () => {
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      import('gsap'),
+      new Promise<never>((_, reject) => {
+        timeoutId = globalThis.setTimeout(() => {
+          reject(new Error('Timed out loading intro animation module.'))
+        }, introSetupTimeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeoutId) {
+      globalThis.clearTimeout(timeoutId)
+    }
+  }
+}
+
+const clearIntroStyles = () => {
+  for (const letter of letterElements.value) {
+    letter.style.opacity = ''
+    letter.style.transform = ''
+  }
+
+  if (underlineElement.value) {
+    underlineElement.value.style.transform = ''
+  }
+
+  if (browElement.value) {
+    browElement.value.style.opacity = ''
+  }
+
+  if (columnsElement.value) {
+    for (const item of columnsElement.value.children) {
+      if (item instanceof HTMLElement) {
+        item.style.opacity = ''
+        item.style.transform = ''
+      }
+    }
+  }
+
+  if (introOverlayElement.value) {
+    introOverlayElement.value.style.opacity = ''
+  }
+}
+
+const finishIntroWithoutAnimation = () => {
+  clearIntroStyles()
+  isRisePending.value = false
+  isIntroPreloaderRunning.value = false
+  showIntroLottie.value = false
+  hasPlayedIntro.value = true
+  unlockPageScroll()
 }
 
 const playHeroVideo = async () => {
@@ -314,13 +377,18 @@ onMounted(async () => {
   isLogoDocked.value = window.scrollY > 32
   window.addEventListener('scroll', updateDockedLogo, { passive: true })
 
-  const shouldPrimeHeroVideo = window.matchMedia('(max-width: 760px)').matches
+  const shouldPrimeHeroVideo = false
   const heroVideoReadyPromise = shouldPrimeHeroVideo
     ? waitForHeroVideoPlayback()
     : Promise.resolve()
 
   if (!shouldPrimeHeroVideo) {
     queueHeroVideo()
+  }
+
+  if (isIntroDisabled) {
+    finishIntroWithoutAnimation()
+    return
   }
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -336,11 +404,25 @@ onMounted(async () => {
     return
   }
 
-  const { gsap } = await import('gsap')
+  const counterPromise = runIntroCounter()
+
+  let gsap: typeof import('gsap').gsap
+
+  try {
+    ;({ gsap } = await loadAnimationModule())
+  } catch (error) {
+    console.warn('[ANAI] Intro animation skipped:', error)
+    await Promise.allSettled([
+      counterPromise,
+      heroVideoReadyPromise,
+    ])
+    finishIntroWithoutAnimation()
+    return
+  }
 
   if (prefersReducedMotion) {
     await Promise.all([
-      runIntroCounter(),
+      counterPromise,
       heroVideoReadyPromise,
     ])
     isRisePending.value = false
@@ -382,7 +464,7 @@ onMounted(async () => {
   })
 
   await Promise.all([
-    runIntroCounter(),
+    counterPromise,
     heroVideoReadyPromise,
   ])
 
@@ -661,9 +743,9 @@ h1 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-lg);
   margin-top: var(--space-lg);
-  font-size: 1.56rem;
+  font-size: var(--copy-font-size);
   font-weight: 400;
-  line-height: 1.35;
+  line-height: var(--copy-line-height);
   transition:
     opacity 420ms ease,
     transform 520ms ease;

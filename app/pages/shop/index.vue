@@ -15,7 +15,7 @@
       </div>
 
       <div v-else class="shop-page__empty">
-        <p>Coming soon</p>
+        <p>No products available</p>
       </div>
     </div>
   </section>
@@ -33,7 +33,29 @@ const selectedGender = computed(() => {
   return typeof gender === 'string' ? gender.toLowerCase() : ''
 })
 
+const selectedCategory = computed(() => {
+  const category = route.query.category
+
+  return typeof category === 'string' ? category.toLowerCase() : ''
+})
+
+const isNewInSelected = computed(() => route.query.new === 'true')
+
+const categoryLabel = computed(() => {
+  const product = products.find((item) => item.category.toLowerCase() === selectedCategory.value)
+
+  return product?.category || ''
+})
+
 const pageTitle = computed(() => {
+  if (isNewInSelected.value) {
+    return 'New in'
+  }
+
+  if (categoryLabel.value) {
+    return categoryLabel.value
+  }
+
   if (selectedGender.value === 'women') {
     return 'Women'
   }
@@ -45,9 +67,21 @@ const pageTitle = computed(() => {
   return 'All products'
 })
 
-const visibleProducts = computed(() =>
-  selectedGender.value === 'men' ? [] : products,
-)
+const visibleProducts = computed(() => {
+  if (selectedGender.value === 'men') {
+    return []
+  }
+
+  if (isNewInSelected.value) {
+    return products.filter((product) => product.isNew)
+  }
+
+  if (selectedCategory.value) {
+    return products.filter((product) => product.category.toLowerCase() === selectedCategory.value)
+  }
+
+  return products
+})
 </script>
 
 <style scoped>
@@ -85,7 +119,7 @@ h1 {
 
 .shop-page__empty p {
   margin: 0;
-  font-size: clamp(2.4rem, 5vw, 5.2rem);
+  font-size: var(--copy-font-size);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-align: center;

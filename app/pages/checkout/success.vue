@@ -1,9 +1,12 @@
 <template>
   <section class="checkout-result container">
-    <p>Payment received</p>
     <h1>Thank you</h1>
     <p v-if="reference" class="checkout-result__reference">
       Reference: {{ reference }}
+    </p>
+    <p class="checkout-result__support">
+      Keep this page as proof of purchase. For support, refunds, returns, or payment disputes,
+      quote your order number and Paystack transaction reference.
     </p>
     <NuxtLink to="/">Continue shopping</NuxtLink>
   </section>
@@ -39,6 +42,11 @@ h1 {
 
 .checkout-result__reference {
   color: var(--colour-black);
+  text-transform: none;
+}
+
+.checkout-result__support {
+  max-width: 58rem;
   text-transform: none;
 }
 

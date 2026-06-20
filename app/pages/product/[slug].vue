@@ -1,7 +1,12 @@
 <template>
   <section ref="productPageElement" class="product-page">
     <div class="product-page__media">
-      <div ref="carouselElement" class="product-page__carousel" aria-label="Product photos">
+      <div
+        v-if="galleryImages.length"
+        ref="carouselElement"
+        class="product-page__carousel"
+        aria-label="Product photos"
+      >
         <div
           v-for="(imageUrl, index) in galleryImages"
           :key="imageUrl"
@@ -17,9 +22,12 @@
             :fetchpriority="index === 0 ? 'high' : 'auto'"
             decoding="async"
           />
-          <span class="product-page__status">Coming soon</span>
         </div>
       </div>
+      <div v-else class="product-page__media-placeholder">
+        <span>Coming soon</span>
+      </div>
+      <span class="product-page__badge">New</span>
     </div>
     <div class="product-page__details">
       <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
@@ -30,10 +38,20 @@
       <h1>{{ product.name }}</h1>
       <p class="product-page__price">KES {{ product.priceKes.toLocaleString() }}</p>
       <p class="product-page__copy">{{ productCopy }}</p>
-      <button class="product-page__add" type="button" @click="handleAddToCart">
-        {{ addButtonLabel }}
-        <span aria-hidden="true">↗</span>
-      </button>
+      <div class="product-page__actions">
+        <button class="product-page__add" type="button" @click="handleAddToCart">
+          {{ addButtonLabel }}
+          <span aria-hidden="true">↗</span>
+        </button>
+        <button
+          class="product-page__wishlist"
+          type="button"
+          :aria-pressed="isWishlistSaved"
+          @click="handleWishlistToggle"
+        >
+          {{ isWishlistSaved ? 'Saved' : 'Add to Wishlist' }}
+        </button>
+      </div>
     </div>
   </section>
 </template>
@@ -44,6 +62,7 @@ import { products } from '../../data/homeContent'
 
 const route = useRoute()
 const { addToCart } = useCart()
+const { toggleWishlist, isInWishlist } = useWishlist()
 const product = products.find((item) => item.slug === route.params.slug)
 
 if (!product) {
@@ -53,10 +72,16 @@ if (!product) {
   })
 }
 
-const productCopy =
-  product.category === 'Outerwear'
-    ? 'A soft layer for movement, warmth, and everyday ease.'
-    : 'A soft essential made for movement, rhythm, and everyday ease.'
+const fallbackProductCopyByCategory: Record<string, string> = {
+  Outerwear: 'A soft layer for movement, warmth, and everyday ease.',
+  Tops: 'A movement-ready top made for training, layering, and everyday wear.',
+  Bottoms: 'A movement-ready bottom made for training, court days, and everyday wear.',
+  Sets: 'A coordinated two-piece set made for movement and everyday wear.',
+}
+
+const productCopy = product.description
+  ?? fallbackProductCopyByCategory[product.category]
+  ?? 'A movement-ready essential for training and everyday wear.'
 
 const colourImageUrls = product.colours
   .map((colour) => (typeof colour === 'string' ? undefined : colour.imageUrl))
@@ -64,7 +89,7 @@ const colourImageUrls = product.colours
 
 const galleryImages = [
   ...new Set(product.galleryImages ?? [product.imageUrl, ...colourImageUrls]),
-]
+].filter((imageUrl): imageUrl is string => Boolean(imageUrl))
 const productPageElement = ref<HTMLElement | null>(null)
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = ref<HTMLDivElement[]>([])
@@ -75,6 +100,7 @@ let addedTimer: number | undefined
 let galleryIndex = 0
 
 const addButtonLabel = computed(() => (hasJustAdded.value ? 'Added to Bag' : 'Add to Bag'))
+const isWishlistSaved = computed(() => isInWishlist(product.slug))
 
 const isDesktopGallery = () => window.matchMedia('(min-width: 981px)').matches
 
@@ -159,6 +185,10 @@ const handleAddToCart = () => {
   }, 1600)
 }
 
+const handleWishlistToggle = () => {
+  toggleWishlist(product)
+}
+
 onMounted(async () => {
   window.addEventListener('wheel', handleProductWheel, { capture: true, passive: false })
 
@@ -171,6 +201,11 @@ onMounted(async () => {
 
   const { gsap } = await import('gsap')
   const slides = slideElements.value.filter(Boolean)
+
+  if (!slides.length) {
+    return
+  }
+
   const randomSlides = gsap.utils.shuffle([...slides])
 
   gsap.set(slides, {
@@ -217,6 +252,25 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.product-page__badge {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  color: var(--colour-black);
+  background: #8ee66f;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .product-page__carousel {
   display: flex;
   flex-direction: column;
@@ -232,6 +286,24 @@ onBeforeUnmount(() => {
 
 .product-page__carousel::-webkit-scrollbar {
   display: none;
+}
+
+.product-page__media-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  color: var(--colour-white);
+  background: var(--colour-black);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.product-page__media-placeholder span {
+  border: 1px solid currentColor;
+  padding: 0.9rem 1.2rem;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
 }
 
 .product-page__slide {
@@ -254,24 +326,6 @@ onBeforeUnmount(() => {
   transform-origin: center top;
 }
 
-.product-page__status {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  padding: var(--space-md);
-  color: var(--colour-white);
-  background: rgba(0, 0, 0, 0.48);
-  font-size: clamp(2rem, 3.8vw, 4.8rem);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  line-height: 1.1;
-  text-align: center;
-  text-transform: uppercase;
-  pointer-events: none;
-}
-
 .product-page__details {
   position: sticky;
   top: var(--space-xl);
@@ -279,7 +333,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-self: start;
   max-height: calc(100vh - 7.2rem - (var(--space-xl) * 2));
-  overflow: visible;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-sm);
 }
 
 .product-page__back {
@@ -287,7 +343,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: var(--space-md);
   width: fit-content;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
   font-size: clamp(1.8rem, 1.8vw, 2.4rem);
   line-height: 1;
 }
@@ -301,17 +357,18 @@ h1 {
   max-width: 58rem;
   margin: 0;
   font-family: var(--font-brand-display);
-  font-size: clamp(5.2rem, 6vw, 9.6rem);
+  font-size: clamp(4.8rem, 5vw, 7.6rem);
   font-weight: 400;
   letter-spacing: 0.055em;
-  line-height: 0.92;
+  line-height: 0.9;
   text-align: start;
+  text-wrap: balance;
   text-transform: uppercase;
 }
 
 .product-page__price {
-  margin: var(--space-lg) 0 0;
-  font-size: clamp(3.2rem, 3.6vw, 5.2rem);
+  margin: var(--space-md) 0 0;
+  font-size: clamp(3rem, 3.2vw, 4.8rem);
   font-weight: 600;
   line-height: 1;
 }
@@ -319,23 +376,49 @@ h1 {
 .product-page__copy {
   max-width: 52rem;
   margin: var(--space-lg) 0 0;
-  font-size: clamp(2rem, 2vw, 2.8rem);
-  line-height: 1.22;
+  font-size: var(--copy-font-size);
+  line-height: var(--copy-line-height);
+}
+
+.product-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+  margin-top: var(--space-lg);
+}
+
+.product-page__add,
+.product-page__wishlist {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  cursor: pointer;
 }
 
 .product-page__add {
-  display: inline-flex;
-  align-items: center;
   gap: var(--space-md);
-  width: fit-content;
-  margin-top: var(--space-lg);
   border: 0;
   padding: 0;
   color: #827d79;
   background: transparent;
-  cursor: pointer;
   font-size: clamp(2rem, 2vw, 2.8rem);
   line-height: 1;
+}
+
+.product-page__wishlist {
+  border: 1px solid var(--colour-black);
+  padding: 1rem 1.2rem;
+  color: var(--colour-black);
+  background: var(--colour-surface);
+  font-size: 1.2rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.product-page__wishlist[aria-pressed='true'] {
+  color: var(--colour-white);
+  background: var(--colour-black);
 }
 
 .product-page__add span {
@@ -398,11 +481,15 @@ h1 {
 
   .product-page__copy {
     margin-top: var(--space-md);
-    font-size: clamp(2rem, 6vw, 3rem);
+    font-size: var(--copy-font-size);
+    line-height: var(--copy-line-height);
+  }
+
+  .product-page__actions {
+    margin-top: var(--space-xl);
   }
 
   .product-page__add {
-    margin-top: var(--space-xl);
     font-size: clamp(2rem, 6vw, 3rem);
   }
 }

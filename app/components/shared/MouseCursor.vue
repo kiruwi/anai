@@ -7,6 +7,7 @@
 <script setup lang="ts">
 const cursorElement = ref<HTMLElement | null>(null)
 const cardSelector = '.product-card, .image-tile, .shop-the-look__list article'
+const compactSelector = '.product-card__wishlist'
 let rafId = 0
 let targetX = 0
 let targetY = 0
@@ -15,7 +16,8 @@ let currentY = 0
 
 const setCardState = (target: EventTarget | null) => {
   const element = target instanceof Element ? target : null
-  const isCard = Boolean(element?.closest(cardSelector))
+  const isCompactTarget = Boolean(element?.closest(compactSelector))
+  const isCard = Boolean(element?.closest(cardSelector)) && !isCompactTarget
 
   cursorElement.value?.classList.toggle('mouse-cursor--card', isCard)
 }

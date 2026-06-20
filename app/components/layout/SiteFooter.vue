@@ -16,12 +16,12 @@
         <section>
           <h2>Shop</h2>
           <ul>
-            <li><NuxtLink to="/">All products</NuxtLink></li>
-            <li><NuxtLink to="/new-in">New in</NuxtLink></li>
-            <li><NuxtLink to="/sets">Sets</NuxtLink></li>
-            <li><NuxtLink to="/tops">Tops</NuxtLink></li>
-            <li><NuxtLink to="/outerwear">Outerwear</NuxtLink></li>
-            <li><NuxtLink to="/accessories">Accessories</NuxtLink></li>
+            <li><NuxtLink to="/#products">All products</NuxtLink></li>
+            <li><NuxtLink to="/shop?new=true">New in</NuxtLink></li>
+            <li><NuxtLink to="/shop?category=sets">Sets</NuxtLink></li>
+            <li><NuxtLink to="/shop?category=tops">Tops</NuxtLink></li>
+            <li><NuxtLink to="/shop?category=outerwear">Outerwear</NuxtLink></li>
+            <li><NuxtLink to="/shop?category=accessories">Accessories</NuxtLink></li>
           </ul>
         </section>
         <section>
@@ -36,13 +36,14 @@
         <section>
           <h2>Support</h2>
           <ul>
-            <li><NuxtLink to="/delivery-returns">Delivery & returns</NuxtLink></li>
             <li><NuxtLink to="/size-guide">Size guide</NuxtLink></li>
             <li><NuxtLink to="/contact">Contact</NuxtLink></li>
             <li><NuxtLink to="/account">Account</NuxtLink></li>
+            <li><NuxtLink to="/legal">Policies</NuxtLink></li>
           </ul>
         </section>
       </nav>
+      <p class="site-footer__copyright">&copy; 2026 Anai. All rights reserved.</p>
     </div>
   </footer>
 </template>
@@ -77,11 +78,13 @@
   max-width: 34rem;
   margin: var(--space-sm) 0 0;
   color: var(--colour-white);
+  font-size: var(--copy-font-size);
+  line-height: var(--copy-line-height);
 }
 
 nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
   gap: var(--space-xl);
 }
 
@@ -117,9 +120,18 @@ nav a:hover {
   color: rgba(255, 255, 255, 0.68);
 }
 
+.site-footer__copyright {
+  grid-column: 1 / -1;
+  max-width: none;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: var(--copy-font-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 760px) {
-  .site-footer__inner,
-  nav {
+  .site-footer__inner {
     grid-template-columns: 1fr;
   }
 

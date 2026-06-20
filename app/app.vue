@@ -1,23 +1,26 @@
 <template>
   <div>
-    <SiteHeader v-if="!isComingSoonRoute" :over-hero="isHomeRoute" />
+    <SiteHeader :over-hero="isHomeRoute" />
     <main>
       <NuxtPage />
     </main>
-    <SiteFooter v-if="!isComingSoonRoute" />
+    <SiteFooter />
     <ClientOnly>
-      <component :is="MouseCursorComponent" v-if="MouseCursorComponent && !isComingSoonRoute" />
+      <component :is="MouseCursorComponent" v-if="MouseCursorComponent" />
+    </ClientOnly>
+    <ClientOnly>
+      <CookieBanner />
     </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
+import CookieBanner from './components/layout/CookieBanner.vue'
 import SiteFooter from './components/layout/SiteFooter.vue'
 import SiteHeader from './components/layout/SiteHeader.vue'
 
 const route = useRoute()
 const isHomeRoute = computed(() => route.path === '/')
-const isComingSoonRoute = computed(() => route.path === '/')
 const MouseCursorComponent = shallowRef()
 
 onMounted(async () => {
