@@ -146,6 +146,7 @@ p {
 .shop-the-look__copy {
   display: grid;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
 .shop-the-look__title,
@@ -158,11 +159,16 @@ p {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shop-the-look__description {
   color: rgba(255, 255, 255, 0.74);
   font-size: var(--copy-font-size);
+  line-height: 1.35;
+  min-height: 2.7em;
 }
 
 @media (max-width: 860px) {
