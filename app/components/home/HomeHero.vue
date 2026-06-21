@@ -15,7 +15,6 @@
       muted
       playsinline
       preload="auto"
-      poster="/images/hero/run-poster.webp"
       aria-hidden="true"
       @playing="markHeroVideoReady"
       @error="markHeroVideoReady"
@@ -556,12 +555,7 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   padding: calc(7.2rem + var(--space-md)) var(--page-gutter) var(--space-md);
   color: var(--colour-white);
-  background:
-    image-set(
-      url("/images/hero/run-poster.webp") type("image/webp") 1x
-    );
-  background-position: center;
-  background-size: cover;
+  background: var(--colour-black);
 }
 
 .home-hero::after {
@@ -806,7 +800,6 @@ h1 {
     min-height: 100svh;
     padding-top: calc(6.4rem + var(--space-md));
     padding-bottom: clamp(var(--space-xl), 10vh, var(--space-2xl));
-    background-image: url("/images/hero/run-poster-mobile.webp");
   }
 
   .home-hero h1 {
