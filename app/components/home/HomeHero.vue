@@ -16,6 +16,7 @@
       playsinline
       preload="auto"
       aria-hidden="true"
+      @loadeddata="markHeroVideoReady"
       @playing="markHeroVideoReady"
       @error="markHeroVideoReady"
     >
@@ -315,10 +316,12 @@ const waitForHeroVideoPlayback = async () => {
 
     heroVideoReadyCleanup = () => {
       globalThis.clearTimeout(timeoutId)
+      video.removeEventListener('loadeddata', finish)
       video.removeEventListener('playing', finish)
       video.removeEventListener('error', finish)
     }
 
+    video.addEventListener('loadeddata', finish, { once: true })
     video.addEventListener('playing', finish, { once: true })
     video.addEventListener('error', finish, { once: true })
     video.load()
@@ -376,7 +379,7 @@ onMounted(async () => {
   isLogoDocked.value = window.scrollY > 32
   window.addEventListener('scroll', updateDockedLogo, { passive: true })
 
-  const shouldPrimeHeroVideo = false
+  const shouldPrimeHeroVideo = true
   const heroVideoReadyPromise = shouldPrimeHeroVideo
     ? waitForHeroVideoPlayback()
     : Promise.resolve()
