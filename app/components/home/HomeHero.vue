@@ -94,9 +94,12 @@
       <p>ANAI</p>
       <div class="home-hero__why">
         <h2>Why</h2>
+        <p>AÑAI: From the Maa word Enai, meaning 'mine.' Designed to become yours.</p>
         <p>
-          <span>Anai / Enai is a Maa word meaning mine. My body,</span>
-          <span>my rhythm, my softness, my becoming. A quiet ownership of self. </span>
+          The name reflects our belief that the clothes you wear should become a part of your
+          life. Inspired by the versatility of the shuka, a garment worn through movement, work,
+          rest, and everyday moments, AÑAI creates pieces designed to move with you beyond the
+          workout.
         </p>
       </div>
       <p class="home-hero__meta">
@@ -786,6 +789,10 @@ h1 {
 
 .home-hero__why p {
   font-weight: 400;
+}
+
+.home-hero__why p + p {
+  margin-top: var(--space-sm);
 }
 
 .home-hero__meta {
