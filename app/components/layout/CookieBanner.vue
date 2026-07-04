@@ -28,6 +28,7 @@ const cookieConsentKey = 'anai-cookie-consent'
 const config = useRuntimeConfig()
 const analyticsId =
   typeof config.public.googleTagId === 'string' ? config.public.googleTagId.trim() : ''
+const router = useRouter()
 const isVisible = ref(false)
 
 const getAnalyticsWindow = (): InitializedAnalyticsWindow => {
@@ -57,6 +58,20 @@ const updateAnalyticsConsent = (choice: 'accepted' | 'rejected') => {
   })
 }
 
+const getPageViewPayload = () => ({
+  page_title: document.title,
+  page_location: window.location.href,
+  page_path: `${window.location.pathname}${window.location.search}`,
+})
+
+const sendPageView = () => {
+  if (!analyticsId || localStorage.getItem(cookieConsentKey) !== 'accepted') {
+    return
+  }
+
+  getAnalyticsWindow().gtag('event', 'page_view', getPageViewPayload())
+}
+
 const loadAnalytics = () => {
   if (!analyticsId) {
     return
@@ -75,7 +90,9 @@ const loadAnalytics = () => {
     analytics_storage: 'denied',
   })
   analyticsWindow.gtag('js', new Date())
-  analyticsWindow.gtag('config', analyticsId)
+  analyticsWindow.gtag('config', analyticsId, {
+    send_page_view: false,
+  })
 
   const script = document.createElement('script')
   script.async = true
@@ -87,6 +104,10 @@ const setCookieChoice = (choice: 'accepted' | 'rejected') => {
   localStorage.setItem(cookieConsentKey, choice)
   isVisible.value = false
   updateAnalyticsConsent(choice)
+
+  if (choice === 'accepted') {
+    sendPageView()
+  }
 }
 
 const acceptCookies = () => {
@@ -104,6 +125,7 @@ onMounted(() => {
 
   if (storedChoice === 'accepted') {
     updateAnalyticsConsent('accepted')
+    sendPageView()
     return
   }
 
@@ -113,6 +135,10 @@ onMounted(() => {
   }
 
   isVisible.value = storedChoice !== 'rejected'
+})
+
+router.afterEach(() => {
+  requestAnimationFrame(sendPageView)
 })
 </script>
 
