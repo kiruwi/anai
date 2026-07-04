@@ -19,21 +19,61 @@ type AnalyticsWindow = Window & {
   gtag?: (...args: unknown[]) => void
 }
 
+type InitializedAnalyticsWindow = AnalyticsWindow & {
+  dataLayer: unknown[]
+  gtag: (...args: unknown[]) => void
+}
+
 const cookieConsentKey = 'anai-cookie-consent'
-const analyticsId = 'G-WW5TYKEGPK'
+const config = useRuntimeConfig()
+const analyticsId =
+  typeof config.public.googleTagId === 'string' ? config.public.googleTagId.trim() : ''
 const isVisible = ref(false)
 
-const loadAnalytics = () => {
+const getAnalyticsWindow = (): InitializedAnalyticsWindow => {
   const analyticsWindow = window as AnalyticsWindow
+
+  analyticsWindow.dataLayer = analyticsWindow.dataLayer || []
+  analyticsWindow.gtag = analyticsWindow.gtag || ((...args: unknown[]) => {
+    analyticsWindow.dataLayer?.push(args)
+  })
+
+  return analyticsWindow as InitializedAnalyticsWindow
+}
+
+const updateAnalyticsConsent = (choice: 'accepted' | 'rejected') => {
+  if (!analyticsId) {
+    return
+  }
+
+  const analyticsWindow = getAnalyticsWindow()
+  const consentValue = choice === 'accepted' ? 'granted' : 'denied'
+
+  analyticsWindow.gtag?.('consent', 'update', {
+    ad_storage: consentValue,
+    ad_user_data: consentValue,
+    ad_personalization: consentValue,
+    analytics_storage: consentValue,
+  })
+}
+
+const loadAnalytics = () => {
+  if (!analyticsId) {
+    return
+  }
+
+  const analyticsWindow = getAnalyticsWindow()
 
   if (document.querySelector(`script[src*="${analyticsId}"]`)) {
     return
   }
 
-  analyticsWindow.dataLayer = analyticsWindow.dataLayer || []
-  analyticsWindow.gtag = (...args: unknown[]) => {
-    analyticsWindow.dataLayer?.push(args)
-  }
+  analyticsWindow.gtag?.('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+  })
   analyticsWindow.gtag('js', new Date())
   analyticsWindow.gtag('config', analyticsId)
 
@@ -46,10 +86,7 @@ const loadAnalytics = () => {
 const setCookieChoice = (choice: 'accepted' | 'rejected') => {
   localStorage.setItem(cookieConsentKey, choice)
   isVisible.value = false
-
-  if (choice === 'accepted') {
-    loadAnalytics()
-  }
+  updateAnalyticsConsent(choice)
 }
 
 const acceptCookies = () => {
@@ -61,10 +98,17 @@ const rejectCookies = () => {
 }
 
 onMounted(() => {
+  loadAnalytics()
+
   const storedChoice = localStorage.getItem(cookieConsentKey)
 
   if (storedChoice === 'accepted') {
-    loadAnalytics()
+    updateAnalyticsConsent('accepted')
+    return
+  }
+
+  if (storedChoice === 'rejected') {
+    updateAnalyticsConsent('rejected')
     return
   }
 

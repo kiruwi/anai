@@ -59,6 +59,7 @@
               <button
                 type="button"
                 :aria-label="`Increase ${line.product.name} quantity`"
+                :disabled="line.quantity >= line.product.stockQuantity"
                 @click="updateQuantity(line.slug, line.quantity + 1)"
               >
                 +
@@ -278,6 +279,11 @@ h1 {
   border: 0;
   background: transparent;
   cursor: pointer;
+}
+
+.cart-line__quantity button:disabled {
+  color: var(--colour-muted);
+  cursor: not-allowed;
 }
 
 .cart-line__remove {

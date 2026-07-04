@@ -13,7 +13,10 @@ export type CartLine = CartItem & {
 
 const CART_STORAGE_KEY = 'anai-cart'
 
-const clampQuantity = (quantity: number) => Math.min(Math.max(Math.floor(quantity), 1), 99)
+const getProductStockLimit = (product: HomepageProduct) => Math.max(Math.floor(product.stockQuantity), 0)
+
+const clampQuantity = (product: HomepageProduct, quantity: number) =>
+  Math.min(Math.max(Math.floor(quantity), 1), getProductStockLimit(product))
 
 const getProductSizeLabels = (product: HomepageProduct) =>
   product.sizeOptions?.map((option) => option.label) ?? []
@@ -56,13 +59,13 @@ const getStoredCart = () => {
         const product = products.find((productItem) => productItem.slug === item.slug)
         const quantity = Number(item.quantity)
 
-        if (!product || !Number.isFinite(quantity) || quantity < 1) {
+        if (!product || !Number.isFinite(quantity) || quantity < 1 || getProductStockLimit(product) < 1) {
           return undefined
         }
 
         return {
           slug: product.slug,
-          quantity: clampQuantity(quantity),
+          quantity: clampQuantity(product, quantity),
           size: normalizeSize(product, item.size),
         }
       })
@@ -96,16 +99,20 @@ export const useCart = () => {
   const addToCart = (product: HomepageProduct, quantity = 1) => {
     hydrateCart()
 
+    if (getProductStockLimit(product) < 1) {
+      return
+    }
+
     const existingItem = items.value.find((item) => item.slug === product.slug)
 
     if (existingItem) {
-      existingItem.quantity = clampQuantity(existingItem.quantity + quantity)
+      existingItem.quantity = clampQuantity(product, existingItem.quantity + quantity)
     } else {
       items.value = [
         ...items.value,
         {
           slug: product.slug,
-          quantity: clampQuantity(quantity),
+          quantity: clampQuantity(product, quantity),
           size: normalizeSize(product, undefined),
         },
       ]
@@ -116,15 +123,16 @@ export const useCart = () => {
 
   const updateQuantity = (slug: string, quantity: number) => {
     hydrateCart()
+    const product = products.find((productItem) => productItem.slug === slug)
 
-    if (quantity < 1) {
+    if (quantity < 1 || !product || getProductStockLimit(product) < 1) {
       items.value = items.value.filter((item) => item.slug !== slug)
     } else {
       items.value = items.value.map((item) =>
         item.slug === slug
           ? {
               ...item,
-              quantity: clampQuantity(quantity),
+              quantity: clampQuantity(product, quantity),
             }
           : item,
       )
@@ -173,10 +181,17 @@ export const useCart = () => {
           return undefined
         }
 
+        if (getProductStockLimit(product) < 1) {
+          return undefined
+        }
+
+        const quantity = clampQuantity(product, item.quantity)
+
         return {
           ...item,
+          quantity,
           product,
-          lineTotalKes: product.priceKes * item.quantity,
+          lineTotalKes: product.priceKes * quantity,
         }
       })
       .filter((line): line is CartLine => Boolean(line)),

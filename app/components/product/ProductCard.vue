@@ -33,7 +33,13 @@
         />
         <span class="product-card__arrow" aria-hidden="true" />
       </NuxtLink>
-      <span class="product-card__badge">New</span>
+      <span
+        v-if="productBadgeLabel"
+        class="product-card__badge"
+        :class="{ 'product-card__badge--sold-out': isSoldOut }"
+      >
+        {{ productBadgeLabel }}
+      </span>
       <button
         class="product-card__wishlist"
         type="button"
@@ -71,7 +77,12 @@
           @click="selectColour(colour)"
         />
       </div>
-      <button class="product-card__quick-add" type="button" @click="handleQuickAdd">
+      <button
+        class="product-card__quick-add"
+        type="button"
+        :disabled="isSoldOut"
+        @click="handleQuickAdd"
+      >
         {{ quickAddLabel }}
       </button>
     </div>
@@ -79,7 +90,12 @@
 </template>
 
 <script setup lang="ts">
-import type { HomepageProduct, ProductColour } from '../../data/homeContent'
+import {
+  getProductBadgeLabel,
+  isProductOutOfStock,
+  type HomepageProduct,
+  type ProductColour,
+} from '../../data/homeContent'
 
 const props = defineProps<{
   product: HomepageProduct
@@ -96,6 +112,8 @@ let addedTimer: number | undefined
 const imageAnimationSetupTimeoutMs = 3000
 
 const isWishlistSaved = computed(() => isInWishlist(props.product.slug))
+const isSoldOut = computed(() => isProductOutOfStock(props.product))
+const productBadgeLabel = computed(() => getProductBadgeLabel(props.product))
 const wishlistLabel = computed(() =>
   isWishlistSaved.value
     ? `Remove ${props.product.name} from wishlist`
@@ -121,7 +139,13 @@ const hoverImageUrl = computed(() => {
 
   return brownColour?.imageUrl ?? fallbackColour?.imageUrl ?? galleryFallback
 })
-const quickAddLabel = computed(() => (hasJustAdded.value ? 'Added' : 'Quick add'))
+const quickAddLabel = computed(() => {
+  if (isSoldOut.value) {
+    return 'Out of stock'
+  }
+
+  return hasJustAdded.value ? 'Added' : 'Quick add'
+})
 
 watch(
   () => props.product.imageUrl,
@@ -151,6 +175,10 @@ const selectColour = (colour: ProductColour) => {
 }
 
 const handleQuickAdd = () => {
+  if (isSoldOut.value) {
+    return
+  }
+
   const { addToCart } = useCart()
 
   addToCart(props.product)
@@ -273,6 +301,11 @@ onBeforeUnmount(() => {
 .product-card__badge {
   right: var(--space-sm);
   background: #8ee66f;
+}
+
+.product-card__badge--sold-out {
+  color: var(--colour-white);
+  background: var(--colour-black);
 }
 
 .product-card__wishlist {
@@ -494,6 +527,12 @@ strong {
   cursor: pointer;
   font-size: 1.2rem;
   text-transform: uppercase;
+}
+
+.product-card__quick-add:disabled {
+  border-color: var(--colour-border);
+  color: var(--colour-muted);
+  cursor: not-allowed;
 }
 
 @media (max-width: 680px) {

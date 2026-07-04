@@ -10,6 +10,7 @@ export type HomepageProduct = {
   name: string
   slug: string
   priceKes: number
+  stockQuantity: number
   category: string
   colours: ProductColour[]
   isNew?: boolean
@@ -55,11 +56,22 @@ export const commonSizeOptions: ProductSizeOption[] = [
   { label: 'XL/14', coatLengthCm: 47, shoulderCm: 38.6, sleeveLengthCm: 63, bustCm: 84, bottomCm: 70 },
 ]
 
+export const isProductOutOfStock = (product: HomepageProduct) => product.stockQuantity <= 0
+
+export const getProductBadgeLabel = (product: HomepageProduct) => {
+  if (isProductOutOfStock(product)) {
+    return 'Out of stock'
+  }
+
+  return product.isNew ? 'New' : ''
+}
+
 export const products: HomepageProduct[] = [
   {
     name: 'Nuru Zip-up',
     slug: 'jackets',
     priceKes: 3870,
+    stockQuantity: 3,
     category: 'Outerwear',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Nuru Zip-up/black.webp' },
@@ -84,6 +96,7 @@ export const products: HomepageProduct[] = [
     name: 'Reya Long sleeve, round neck',
     slug: 'long-sleeve-round-neck',
     priceKes: 2680,
+    stockQuantity: 4,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Reya Long sleeve, round neck/black.webp' },
@@ -108,6 +121,7 @@ export const products: HomepageProduct[] = [
     name: 'Reya Long sleeve, swirl neck',
     slug: 'long-sleeve-swirl-neck',
     priceKes: 2980,
+    stockQuantity: 4,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Reya Long sleeve, swirl neck/black.webp' },
@@ -132,6 +146,7 @@ export const products: HomepageProduct[] = [
     name: 'Aya Mini tee',
     slug: 'minit-t-shirt',
     priceKes: 2980,
+    stockQuantity: 1,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Aya Mini tee/black.webp' },
@@ -149,6 +164,7 @@ export const products: HomepageProduct[] = [
     name: 'Nia jogger set',
     slug: 'sahara-corsage-set',
     priceKes: 5510,
+    stockQuantity: 3,
     category: 'Sets',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Nia jogger set/black.webp' },
@@ -171,6 +187,7 @@ export const products: HomepageProduct[] = [
     name: 'Lela set',
     slug: 'lela-set',
     priceKes: 5060,
+    stockQuantity: 10,
     category: 'Sets',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Lela set/black.webp' },
@@ -193,6 +210,7 @@ export const products: HomepageProduct[] = [
     name: 'Mvua flannel',
     slug: 'mvua-flannel',
     priceKes: 4770,
+    stockQuantity: 3,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Mvua flannel/black.webp' },
@@ -212,6 +230,7 @@ export const products: HomepageProduct[] = [
     name: 'Zuri bra',
     slug: 'strappy-bra',
     priceKes: 2680,
+    stockQuantity: 4,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Zuri bra/black.webp' },
@@ -234,6 +253,7 @@ export const products: HomepageProduct[] = [
     name: 'Terra skirt - Padel/tennis bubble set',
     slug: 'terra-skirt',
     priceKes: 2680,
+    stockQuantity: 1,
     category: 'Bottoms',
     colours: [
       { name: 'Black', value: '#111111' },
@@ -253,6 +273,7 @@ export const products: HomepageProduct[] = [
     name: 'Jua jogger set',
     slug: 'nuru-short-set',
     priceKes: 4920,
+    stockQuantity: 3,
     category: 'Sets',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: '/images/products/Jua jogger set/black.webp' },
@@ -274,6 +295,7 @@ export const products: HomepageProduct[] = [
     name: "Mia cropped t'S",
     slug: 'mia-cropped-tee',
     priceKes: 2980,
+    stockQuantity: 6,
     category: 'Tops',
     colours: [
       { name: 'Black', value: '#111111', imageUrl: "/images/products/Mia cropped t'S/black.webp" },

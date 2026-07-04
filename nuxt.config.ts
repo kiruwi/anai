@@ -13,6 +13,11 @@ const paystackPublicKey =
   process.env.NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
   process.env.NUXT_PAYSTACK_PUBLIC_KEY ||
   process.env.PAYSTACK_PUBLIC_KEY
+const googleTagId =
+  process.env.NUXT_PUBLIC_GOOGLE_TAG_ID ||
+  process.env.NUXT_PUBLIC_GTAG_ID ||
+  process.env.GOOGLE_TAG_ID ||
+  'G-WW5TYKEGPK'
 const paystackSecretKey = process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
 const paystackWebhookSecret =
   process.env.NUXT_PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_WEBHOOK_SECRET
@@ -177,6 +182,7 @@ export default defineNuxtConfig({
       supabasePublishableKey,
       supabaseAnonKey: supabasePublishableKey,
       paystackPublicKey,
+      googleTagId,
       sentryDsn: '',
     },
   },

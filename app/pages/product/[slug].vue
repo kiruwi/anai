@@ -27,7 +27,13 @@
       <div v-else class="product-page__media-placeholder">
         <span>Coming soon</span>
       </div>
-      <span class="product-page__badge">New</span>
+      <span
+        v-if="productBadgeLabel"
+        class="product-page__badge"
+        :class="{ 'product-page__badge--sold-out': isSoldOut }"
+      >
+        {{ productBadgeLabel }}
+      </span>
     </div>
     <div class="product-page__details">
       <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
@@ -39,7 +45,12 @@
       <p class="product-page__price">KES {{ product.priceKes.toLocaleString() }}</p>
       <p class="product-page__copy">{{ productCopy }}</p>
       <div class="product-page__actions">
-        <button class="product-page__add" type="button" @click="handleAddToCart">
+        <button
+          class="product-page__add"
+          type="button"
+          :disabled="isSoldOut"
+          @click="handleAddToCart"
+        >
           {{ addButtonLabel }}
           <span aria-hidden="true">↗</span>
         </button>
@@ -58,7 +69,7 @@
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { products } from '../../data/homeContent'
+import { getProductBadgeLabel, isProductOutOfStock, products } from '../../data/homeContent'
 
 const route = useRoute()
 const { addToCart } = useCart()
@@ -99,7 +110,15 @@ let galleryWheelLock: number | undefined
 let addedTimer: number | undefined
 let galleryIndex = 0
 
-const addButtonLabel = computed(() => (hasJustAdded.value ? 'Added to Bag' : 'Add to Bag'))
+const isSoldOut = computed(() => isProductOutOfStock(product))
+const productBadgeLabel = computed(() => getProductBadgeLabel(product))
+const addButtonLabel = computed(() => {
+  if (isSoldOut.value) {
+    return 'Out of stock'
+  }
+
+  return hasJustAdded.value ? 'Added to Bag' : 'Add to Bag'
+})
 const isWishlistSaved = computed(() => isInWishlist(product.slug))
 
 const isDesktopGallery = () => window.matchMedia('(min-width: 981px)').matches
@@ -172,6 +191,10 @@ const setSlideRef = (
 }
 
 const handleAddToCart = () => {
+  if (isSoldOut.value) {
+    return
+  }
+
   addToCart(product)
   hasJustAdded.value = true
 
@@ -269,6 +292,11 @@ onBeforeUnmount(() => {
   letter-spacing: 0.06em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.product-page__badge--sold-out {
+  color: var(--colour-white);
+  background: var(--colour-black);
 }
 
 .product-page__carousel {
@@ -404,6 +432,11 @@ h1 {
   background: transparent;
   font-size: clamp(2rem, 2vw, 2.8rem);
   line-height: 1;
+}
+
+.product-page__add:disabled {
+  color: var(--colour-muted);
+  cursor: not-allowed;
 }
 
 .product-page__wishlist {
