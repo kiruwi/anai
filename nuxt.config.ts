@@ -168,6 +168,21 @@ export default defineNuxtConfig({
           content: 'Shop ANAI activewear, athleisure sets, tops, outerwear, and accessories with secure checkout in Kenya.',
         },
       ],
+      script: [
+        {
+          innerHTML: [
+            'window.dataLayer = window.dataLayer || [];',
+            'window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };',
+            "window.gtag('consent', 'default', {",
+            "  ad_storage: 'denied',",
+            "  ad_user_data: 'denied',",
+            "  ad_personalization: 'denied',",
+            "  analytics_storage: 'denied',",
+            '  wait_for_update: 500',
+            '});',
+          ].join('\n'),
+        },
+      ],
     },
   },
   modules,

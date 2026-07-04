@@ -81,12 +81,6 @@ const loadAnalytics = () => {
   const analyticsWindow = getAnalyticsWindow()
 
   if (!analyticsWindow.anaiGoogleTagConfigured) {
-    analyticsWindow.gtag('consent', 'default', {
-      ad_storage: 'denied',
-      ad_user_data: 'denied',
-      ad_personalization: 'denied',
-      analytics_storage: 'denied',
-    })
     analyticsWindow.gtag('js', new Date())
     analyticsWindow.gtag('config', analyticsId, {
       send_page_view: false,
