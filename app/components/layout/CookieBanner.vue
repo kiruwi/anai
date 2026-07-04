@@ -69,7 +69,7 @@ const sendPageView = () => {
     return
   }
 
-  getAnalyticsWindow().gtag('event', 'page_view', getPageViewPayload())
+  getAnalyticsWindow().gtag('config', analyticsId, getPageViewPayload())
 }
 
 const loadAnalytics = () => {
