@@ -57,7 +57,7 @@
       <aside class="checkout-summary" aria-label="Order summary">
         <h2>Order summary</h2>
         <div class="checkout-summary__items">
-          <article v-for="line in lines" :key="line.slug" class="checkout-summary__item">
+          <article v-for="line in lines" :key="line.key" class="checkout-summary__item">
             <img
               v-if="line.product.imageUrl"
               :src="line.product.imageUrl"
@@ -71,6 +71,14 @@
             <div>
               <h3>{{ line.product.name }}</h3>
               <p>Qty {{ line.quantity }}</p>
+              <p v-if="line.colour" class="checkout-summary__meta">
+                <span
+                  class="checkout-summary__swatch"
+                  :style="{ background: getLineColourValue(line) }"
+                  aria-hidden="true"
+                />
+                Colour {{ line.colour }}
+              </p>
               <p v-if="line.size">Size {{ line.size }}</p>
             </div>
             <strong>KES {{ line.lineTotalKes.toLocaleString() }}</strong>
@@ -101,6 +109,13 @@
 </template>
 
 <script setup lang="ts">
+import {
+  getProductColourName,
+  getProductColourValue,
+  isSizeLabelInStock,
+  type ProductColour,
+} from '../../data/homeContent'
+
 const config = useRuntimeConfig()
 const { lines, subtotalKes, clearCart } = useCart()
 const router = useRouter()
@@ -166,8 +181,14 @@ type FetchErrorLike = {
 const hasMissingSizes = computed(() =>
   lines.value.some((line) => line.product.sizeOptions?.length && !line.size),
 )
+const hasUnavailableSizes = computed(() =>
+  lines.value.some((line) => line.size && !isSizeLabelInStock(line.size)),
+)
 const isPaymentButtonDisabled = computed(() =>
-  isPaymentLoading.value || !isPaymentConfigured.value || hasMissingSizes.value,
+  isPaymentLoading.value ||
+  !isPaymentConfigured.value ||
+  hasMissingSizes.value ||
+  hasUnavailableSizes.value,
 )
 const paymentButtonLabel = computed(() => {
   if (!isPaymentConfigured.value) {
@@ -178,8 +199,20 @@ const paymentButtonLabel = computed(() => {
     return 'Select sizes in bag'
   }
 
+  if (hasUnavailableSizes.value) {
+    return 'Not in stock'
+  }
+
   return isPaymentLoading.value ? 'Loading Paystack...' : 'Pay with Paystack'
 })
+
+const getLineColourValue = (line: { product: { colours: ProductColour[] }; colour?: string }) => {
+  const matchingColour = line.product.colours.find(
+    (colour: ProductColour) => getProductColourName(colour) === line.colour,
+  )
+
+  return matchingColour ? getProductColourValue(matchingColour) : 'transparent'
+}
 
 const getCustomerNames = () => {
   const [firstName = '', ...lastNameParts] = customer.name.trim().split(/\s+/)
@@ -229,6 +262,11 @@ const startPayment = async () => {
     return
   }
 
+  if (hasUnavailableSizes.value) {
+    paymentError.value = 'That size is not in stock. More sizes will be restocked in a few months.'
+    return
+  }
+
   const { firstName, lastName } = getCustomerNames()
   isPaymentLoading.value = true
   paymentMessage.value = 'Preparing secure checkout.'
@@ -242,6 +280,7 @@ const startPayment = async () => {
           slug: line.slug,
           quantity: line.quantity,
           size: line.size,
+          color: line.colour,
         })),
       },
     })
@@ -265,6 +304,7 @@ const startPayment = async () => {
           slug: line.slug,
           name: line.product.name,
           quantity: line.quantity,
+          color: line.colour,
           size: line.size,
           unitPriceKes: line.product.priceKes,
         })),
@@ -512,6 +552,20 @@ h1 {
   color: var(--colour-muted);
   font-size: var(--copy-font-size);
   text-transform: uppercase;
+}
+
+.checkout-summary__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.checkout-summary__swatch {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid var(--colour-border);
+  border-radius: 50%;
 }
 
 .checkout-summary dl {

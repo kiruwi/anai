@@ -71,9 +71,9 @@
           :key="getColourKey(colour)"
           class="product-card__swatch"
           type="button"
-          :aria-label="`Show ${getColourName(colour)}`"
-          :aria-pressed="selectedImageUrl === getColourImageUrl(colour)"
-          :style="{ background: getColourValue(colour) }"
+          :aria-label="`Show ${getProductColourName(colour)}`"
+          :aria-pressed="selectedColourName === getProductColourName(colour)"
+          :style="{ background: getProductColourValue(colour) }"
           @click="selectColour(colour)"
         />
       </div>
@@ -91,6 +91,9 @@
 
 <script setup lang="ts">
 import {
+  getProductColourImageUrl,
+  getProductColourName,
+  getProductColourValue,
   getProductBadgeLabel,
   isProductOutOfStock,
   type HomepageProduct,
@@ -102,7 +105,14 @@ const props = defineProps<{
   hideActions?: boolean
 }>()
 
+const getDefaultSelectedColourName = () => {
+  const firstColour = props.product.colours[0]
+
+  return firstColour ? getProductColourName(firstColour) : undefined
+}
+
 const selectedImageUrl = ref(props.product.imageUrl ?? '')
+const selectedColourName = ref(getDefaultSelectedColourName())
 const isPhotoPending = ref(true)
 const photoElement = ref<HTMLImageElement | null>(null)
 const hasJustAdded = ref(false)
@@ -151,23 +161,16 @@ watch(
   () => props.product.imageUrl,
   (imageUrl) => {
     selectedImageUrl.value = imageUrl ?? ''
+    selectedColourName.value = getDefaultSelectedColourName()
   },
 )
 
-const getColourName = (colour: ProductColour) =>
-  typeof colour === 'string' ? colour : colour.name
-
-const getColourValue = (colour: ProductColour) =>
-  typeof colour === 'string' ? colour : colour.value
-
-const getColourImageUrl = (colour: ProductColour) =>
-  typeof colour === 'string' ? undefined : colour.imageUrl
-
 const getColourKey = (colour: ProductColour) =>
-  `${getColourName(colour)}-${getColourValue(colour)}`
+  `${getProductColourName(colour)}-${getProductColourValue(colour)}`
 
 const selectColour = (colour: ProductColour) => {
-  const imageUrl = getColourImageUrl(colour)
+  const imageUrl = getProductColourImageUrl(colour)
+  selectedColourName.value = getProductColourName(colour)
 
   if (imageUrl) {
     selectedImageUrl.value = imageUrl
@@ -181,7 +184,9 @@ const handleQuickAdd = () => {
 
   const { addToCart } = useCart()
 
-  addToCart(props.product)
+  addToCart(props.product, 1, {
+    colour: selectedColourName.value,
+  })
   hasJustAdded.value = true
 
   if (addedTimer) {

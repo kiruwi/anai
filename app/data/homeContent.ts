@@ -32,6 +32,8 @@ export type ProductSizeOption = {
   bottomCm?: number
 }
 
+export const inStockSizeLabel = 'M/10'
+
 export type ImageTile = {
   title: string
   href: string
@@ -57,6 +59,26 @@ export const commonSizeOptions: ProductSizeOption[] = [
 ]
 
 export const isProductOutOfStock = (product: HomepageProduct) => product.stockQuantity <= 0
+
+export const getProductColourName = (colour: ProductColour) =>
+  typeof colour === 'string' ? colour : colour.name
+
+export const getProductColourValue = (colour: ProductColour) =>
+  typeof colour === 'string' ? colour : colour.value
+
+export const getProductColourImageUrl = (colour: ProductColour) =>
+  typeof colour === 'string' ? undefined : colour.imageUrl
+
+export const getProductDefaultColourName = (product: HomepageProduct) => {
+  const firstColour = product.colours[0]
+
+  return firstColour ? getProductColourName(firstColour) : undefined
+}
+
+export const isSizeLabelInStock = (sizeLabel: string) => sizeLabel === inStockSizeLabel
+
+export const isSizeOptionInStock = (sizeOption: ProductSizeOption) =>
+  isSizeLabelInStock(sizeOption.label)
 
 export const getProductBadgeLabel = (product: HomepageProduct) => {
   if (isProductOutOfStock(product)) {

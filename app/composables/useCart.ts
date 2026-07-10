@@ -1,12 +1,19 @@
-import { products, type HomepageProduct } from '../data/homeContent'
+import {
+  getProductColourName,
+  getProductDefaultColourName,
+  products,
+  type HomepageProduct,
+} from '../data/homeContent'
 
 export type CartItem = {
   slug: string
   quantity: number
   size?: string
+  colour?: string
 }
 
 export type CartLine = CartItem & {
+  key: string
   product: HomepageProduct
   lineTotalKes: number
 }
@@ -21,6 +28,9 @@ const clampQuantity = (product: HomepageProduct, quantity: number) =>
 const getProductSizeLabels = (product: HomepageProduct) =>
   product.sizeOptions?.map((option) => option.label) ?? []
 
+const getProductColourLabels = (product: HomepageProduct) =>
+  product.colours.map((colour) => getProductColourName(colour))
+
 const normalizeSize = (product: HomepageProduct, size: unknown) => {
   if (typeof size !== 'string') {
     return undefined
@@ -31,6 +41,28 @@ const normalizeSize = (product: HomepageProduct, size: unknown) => {
 
   return sizeLabels.includes(trimmedSize) ? trimmedSize : undefined
 }
+
+const normalizeColour = (product: HomepageProduct, colour: unknown) => {
+  const colourLabels = getProductColourLabels(product)
+
+  if (!colourLabels.length) {
+    return undefined
+  }
+
+  if (typeof colour !== 'string') {
+    return getProductDefaultColourName(product)
+  }
+
+  const trimmedColour = colour.trim()
+  const matchingColour = colourLabels.find(
+    (colourLabel) => colourLabel.toLowerCase() === trimmedColour.toLowerCase(),
+  )
+
+  return matchingColour ?? getProductDefaultColourName(product)
+}
+
+const getCartItemKey = (item: Pick<CartItem, 'slug' | 'colour'>) =>
+  `${item.slug}:${item.colour ?? ''}`
 
 const getStoredCart = () => {
   if (!import.meta.client) {
@@ -67,6 +99,7 @@ const getStoredCart = () => {
           slug: product.slug,
           quantity: clampQuantity(product, quantity),
           size: normalizeSize(product, item.size),
+          colour: normalizeColour(product, item.colour ?? item.color),
         }
       })
       .filter((item): item is CartItem => Boolean(item))
@@ -96,24 +129,37 @@ export const useCart = () => {
     isLoaded.value = true
   }
 
-  const addToCart = (product: HomepageProduct, quantity = 1) => {
+  const addToCart = (
+    product: HomepageProduct,
+    quantity = 1,
+    options: {
+      size?: string
+      colour?: string
+    } = {},
+  ) => {
     hydrateCart()
 
     if (getProductStockLimit(product) < 1) {
       return
     }
 
-    const existingItem = items.value.find((item) => item.slug === product.slug)
+    const colour = normalizeColour(product, options.colour)
+    const existingItem = items.value.find(
+      (item) => item.slug === product.slug && normalizeColour(product, item.colour) === colour,
+    )
 
     if (existingItem) {
       existingItem.quantity = clampQuantity(product, existingItem.quantity + quantity)
+      existingItem.size = normalizeSize(product, options.size) ?? existingItem.size
+      existingItem.colour = colour
     } else {
       items.value = [
         ...items.value,
         {
           slug: product.slug,
           quantity: clampQuantity(product, quantity),
-          size: normalizeSize(product, undefined),
+          size: normalizeSize(product, options.size),
+          colour,
         },
       ]
     }
@@ -121,15 +167,18 @@ export const useCart = () => {
     persistCart()
   }
 
-  const updateQuantity = (slug: string, quantity: number) => {
+  const updateQuantity = (key: string, quantity: number) => {
     hydrateCart()
-    const product = products.find((productItem) => productItem.slug === slug)
+    const itemToUpdate = items.value.find((item) => getCartItemKey(item) === key)
+    const product = itemToUpdate
+      ? products.find((productItem) => productItem.slug === itemToUpdate.slug)
+      : undefined
 
     if (quantity < 1 || !product || getProductStockLimit(product) < 1) {
-      items.value = items.value.filter((item) => item.slug !== slug)
+      items.value = items.value.filter((item) => getCartItemKey(item) !== key)
     } else {
       items.value = items.value.map((item) =>
-        item.slug === slug
+        getCartItemKey(item) === key
           ? {
               ...item,
               quantity: clampQuantity(product, quantity),
@@ -141,11 +190,11 @@ export const useCart = () => {
     persistCart()
   }
 
-  const updateSize = (slug: string, size: string) => {
+  const updateSize = (key: string, size: string) => {
     hydrateCart()
 
     items.value = items.value.map((item) => {
-      if (item.slug !== slug) {
+      if (getCartItemKey(item) !== key) {
         return item
       }
 
@@ -160,9 +209,64 @@ export const useCart = () => {
     persistCart()
   }
 
-  const removeFromCart = (slug: string) => {
+  const updateColour = (key: string, colour: string) => {
     hydrateCart()
-    items.value = items.value.filter((item) => item.slug !== slug)
+
+    const nextItems = [...items.value]
+    const itemIndex = nextItems.findIndex((item) => getCartItemKey(item) === key)
+    const item = nextItems[itemIndex]
+
+    if (!item) {
+      return
+    }
+
+    const product = products.find((productItem) => productItem.slug === item.slug)
+
+    if (!product) {
+      return
+    }
+
+    const nextColour = normalizeColour(product, colour)
+
+    if (!nextColour || nextColour === item.colour) {
+      return
+    }
+
+    const existingIndex = nextItems.findIndex(
+      (nextItem, index) =>
+        index !== itemIndex &&
+        nextItem.slug === item.slug &&
+        normalizeColour(product, nextItem.colour) === nextColour,
+    )
+
+    if (existingIndex >= 0) {
+      const existingItem = nextItems[existingIndex]
+
+      if (!existingItem) {
+        return
+      }
+
+      nextItems[existingIndex] = {
+        ...existingItem,
+        quantity: clampQuantity(product, existingItem.quantity + item.quantity),
+        size: existingItem.size ?? item.size,
+        colour: nextColour,
+      }
+      nextItems.splice(itemIndex, 1)
+    } else {
+      nextItems[itemIndex] = {
+        ...item,
+        colour: nextColour,
+      }
+    }
+
+    items.value = nextItems
+    persistCart()
+  }
+
+  const removeFromCart = (key: string) => {
+    hydrateCart()
+    items.value = items.value.filter((item) => getCartItemKey(item) !== key)
     persistCart()
   }
 
@@ -174,7 +278,7 @@ export const useCart = () => {
 
   const lines = computed<CartLine[]>(() =>
     items.value
-      .map((item) => {
+      .map((item): CartLine | undefined => {
         const product = products.find((productItem) => productItem.slug === item.slug)
 
         if (!product) {
@@ -189,7 +293,9 @@ export const useCart = () => {
 
         return {
           ...item,
+          key: getCartItemKey(item),
           quantity,
+          colour: normalizeColour(product, item.colour),
           product,
           lineTotalKes: product.priceKes * quantity,
         }
@@ -216,6 +322,7 @@ export const useCart = () => {
     addToCart,
     updateQuantity,
     updateSize,
+    updateColour,
     removeFromCart,
     clearCart,
     hydrateCart,

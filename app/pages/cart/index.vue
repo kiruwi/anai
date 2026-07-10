@@ -6,7 +6,7 @@
 
     <div v-if="lines.length" class="cart-page__layout">
       <div class="cart-page__items">
-        <article v-for="line in lines" :key="line.slug" class="cart-line">
+        <article v-for="line in lines" :key="line.key" class="cart-line">
           <NuxtLink class="cart-line__image" :to="`/product/${line.product.slug}`">
             <img
               v-if="line.product.imageUrl"
@@ -25,6 +25,25 @@
               <h2>{{ line.product.name }}</h2>
             </NuxtLink>
             <p>{{ line.product.category }}</p>
+            <div v-if="line.product.colours.length" class="cart-line__colours">
+              <p>Colour</p>
+              <div>
+                <button
+                  v-for="colour in line.product.colours"
+                  :key="getProductColourName(colour)"
+                  class="cart-line__colour"
+                  :class="{
+                    'cart-line__colour--selected': line.colour === getProductColourName(colour),
+                  }"
+                  type="button"
+                  :aria-label="`Choose ${getProductColourName(colour)} for ${line.product.name}`"
+                  :aria-pressed="line.colour === getProductColourName(colour)"
+                  :title="getProductColourName(colour)"
+                  :style="{ background: getProductColourValue(colour) }"
+                  @click="updateColour(line.key, getProductColourName(colour))"
+                />
+              </div>
+            </div>
             <div v-if="line.product.sizeOptions?.length" class="cart-line__sizes">
               <p>Size</p>
               <div>
@@ -32,12 +51,16 @@
                   v-for="sizeOption in line.product.sizeOptions"
                   :key="sizeOption.label"
                   class="cart-line__size"
-                  :class="{ 'cart-line__size--selected': line.size === sizeOption.label }"
+                  :class="{
+                    'cart-line__size--selected': line.size === sizeOption.label,
+                    'cart-line__size--unavailable': !isSizeOptionInStock(sizeOption),
+                  }"
                   type="button"
                   :aria-label="`Choose ${sizeOption.label} for ${line.product.name}`"
                   :aria-pressed="line.size === sizeOption.label"
+                  :aria-disabled="!isSizeOptionInStock(sizeOption)"
                   :title="getSizeTitle(sizeOption)"
-                  @click="updateSize(line.slug, sizeOption.label)"
+                  @click="updateSize(line.key, sizeOption.label)"
                 >
                   {{ sizeOption.label }}
                 </button>
@@ -51,7 +74,7 @@
               <button
                 type="button"
                 :aria-label="`Decrease ${line.product.name} quantity`"
-                @click="updateQuantity(line.slug, line.quantity - 1)"
+                @click="updateQuantity(line.key, line.quantity - 1)"
               >
                 -
               </button>
@@ -60,12 +83,12 @@
                 type="button"
                 :aria-label="`Increase ${line.product.name} quantity`"
                 :disabled="line.quantity >= line.product.stockQuantity"
-                @click="updateQuantity(line.slug, line.quantity + 1)"
+                @click="updateQuantity(line.key, line.quantity + 1)"
               >
                 +
               </button>
             </div>
-            <button class="cart-line__remove" type="button" @click="removeFromCart(line.slug)">
+            <button class="cart-line__remove" type="button" @click="removeFromCart(line.key)">
               Remove
             </button>
           </div>
@@ -90,7 +113,7 @@
           Checkout
         </NuxtLink>
         <button v-else class="cart-summary__checkout" type="button" disabled>
-          Select sizes
+          {{ checkoutBlockedLabel }}
         </button>
       </aside>
     </div>
@@ -103,12 +126,32 @@
 </template>
 
 <script setup lang="ts">
-import type { ProductSizeOption } from '../../data/homeContent'
+import {
+  getProductColourName,
+  getProductColourValue,
+  isSizeLabelInStock,
+  isSizeOptionInStock,
+  type ProductSizeOption,
+} from '../../data/homeContent'
 
-const { lines, subtotalKes, updateQuantity, updateSize, removeFromCart } = useCart()
+const {
+  lines,
+  subtotalKes,
+  updateQuantity,
+  updateSize,
+  updateColour,
+  removeFromCart,
+} = useCart()
 
-const canCheckout = computed(() =>
-  lines.value.every((line) => !line.product.sizeOptions?.length || Boolean(line.size)),
+const hasMissingSizes = computed(() =>
+  lines.value.some((line) => line.product.sizeOptions?.length && !line.size),
+)
+const hasUnavailableSizes = computed(() =>
+  lines.value.some((line) => line.size && !isSizeLabelInStock(line.size)),
+)
+const canCheckout = computed(() => !hasMissingSizes.value && !hasUnavailableSizes.value)
+const checkoutBlockedLabel = computed(() =>
+  hasUnavailableSizes.value ? 'Not in stock' : 'Select sizes',
 )
 
 const getSizeTitle = (sizeOption: ProductSizeOption) => {
@@ -120,9 +163,13 @@ const getSizeTitle = (sizeOption: ProductSizeOption) => {
     sizeOption.bottomCm ? `bottom ${sizeOption.bottomCm}cm` : undefined,
   ].filter(Boolean)
 
-  return measurements.length
+  const sizeDetails = measurements.length
     ? `${sizeOption.label}: ${measurements.join(', ')}`
     : sizeOption.label
+
+  return isSizeOptionInStock(sizeOption)
+    ? sizeDetails
+    : `${sizeDetails} - not in stock`
 }
 </script>
 
@@ -216,20 +263,37 @@ h1 {
   text-transform: uppercase;
 }
 
+.cart-line__colours,
 .cart-line__sizes {
   display: grid;
   gap: var(--space-xs);
   margin: var(--space-sm) 0;
 }
 
+.cart-line__colours p,
 .cart-line__sizes p {
   margin: 0;
 }
 
+.cart-line__colours > div,
 .cart-line__sizes > div {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
+}
+
+.cart-line__colour {
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 1px solid var(--colour-border);
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cart-line__colour--selected {
+  outline: 1px solid var(--colour-black);
+  outline-offset: 0.2rem;
 }
 
 .cart-line__size {
@@ -247,6 +311,21 @@ h1 {
   border-color: var(--colour-black);
   color: var(--colour-white);
   background: var(--colour-black);
+}
+
+.cart-line__size--unavailable {
+  border-color: var(--colour-border);
+  color: var(--colour-muted);
+  background: #f2eeee;
+  opacity: 0.56;
+}
+
+.cart-line__size--unavailable.cart-line__size--selected {
+  border-color: var(--colour-muted);
+  color: var(--colour-muted);
+  background: #f2eeee;
+  outline: 1px solid var(--colour-muted);
+  outline-offset: 0.2rem;
 }
 
 .cart-line__details strong,

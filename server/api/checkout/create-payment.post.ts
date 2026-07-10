@@ -6,6 +6,8 @@ type CheckoutItemInput = {
   slug?: unknown
   quantity?: unknown
   size?: unknown
+  color?: unknown
+  colour?: unknown
 }
 
 type CheckoutCustomerInput = {
@@ -51,6 +53,7 @@ const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim(
 const createReference = () => `ANAI-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`
 
 const validSizeLabels = new Set(['XS/6', 'S/8', 'M/10', 'L/12', 'XL/14'])
+const inStockSizeLabels = new Set(['M/10'])
 
 const getVariantProduct = (variant: VariantRecord): ProductRecord | undefined =>
   Array.isArray(variant.products) ? variant.products[0] : variant.products
@@ -64,12 +67,14 @@ const normalizeItems = (items: CheckoutItemInput[] | undefined) => {
     slug: string
     quantity: number
     size: string
+    color: string
   }>()
 
   for (const item of items) {
     const slug = cleanString(item.slug)
     const quantity = Number(item.quantity)
     const size = cleanString(item.size)
+    const color = cleanString(item.color || item.colour)
 
     if (!slug || !Number.isFinite(quantity) || quantity < 1) {
       continue
@@ -82,12 +87,20 @@ const normalizeItems = (items: CheckoutItemInput[] | undefined) => {
       })
     }
 
-    const itemKey = `${slug}:${size}`
+    if (!inStockSizeLabels.has(size)) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: `${size} is not in stock. More sizes will be restocked in a few months.`,
+      })
+    }
+
+    const itemKey = `${slug}:${size}:${color.toLowerCase()}`
     const existingItem = itemMap.get(itemKey)
 
     itemMap.set(itemKey, {
       slug,
       size,
+      color,
       quantity: Math.min((existingItem?.quantity || 0) + Math.floor(quantity), 99),
     })
   }
@@ -136,17 +149,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const variantBySlug = new Map<string, VariantRecord>()
+  const variantsBySlug = new Map<string, VariantRecord[]>()
 
   for (const variant of (variants || []) as VariantRecord[]) {
     const product = getVariantProduct(variant)
 
-    if (product && !variantBySlug.has(product.slug)) {
-      variantBySlug.set(product.slug, variant)
+    if (product) {
+      variantsBySlug.set(product.slug, [...(variantsBySlug.get(product.slug) || []), variant])
     }
   }
 
-  const missingSlugs = slugs.filter((slug) => !variantBySlug.has(slug))
+  const missingSlugs = slugs.filter((slug) => !variantsBySlug.has(slug))
 
   if (missingSlugs.length) {
     throw createError({
@@ -156,21 +169,38 @@ export default defineEventHandler(async (event) => {
   }
 
   const orderLines = items.map((item) => {
-    const variant = variantBySlug.get(item.slug)
+    const variantsForProduct = variantsBySlug.get(item.slug)
 
-    if (!variant) {
+    if (!variantsForProduct?.length) {
       throw createError({
         statusCode: 400,
         statusMessage: `Cart item is unavailable: ${item.slug}.`,
       })
     }
 
-    const product = getVariantProduct(variant)
+    const fallbackVariant = variantsForProduct[0]
 
-    if (!product) {
+    if (!fallbackVariant) {
       throw createError({
         statusCode: 400,
         statusMessage: `Cart item is unavailable: ${item.slug}.`,
+      })
+    }
+
+    const variant = item.color
+      ? variantsForProduct.find(
+          (variantItem) =>
+            cleanString(variantItem.color).toLowerCase() === item.color.toLowerCase(),
+        )
+      : fallbackVariant
+    const product = variant ? getVariantProduct(variant) : getVariantProduct(fallbackVariant)
+
+    if (!variant || !product) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: item.color
+          ? `${product?.name || item.slug} is not available in ${item.color}.`
+          : `Cart item is unavailable: ${item.slug}.`,
       })
     }
 
@@ -186,6 +216,7 @@ export default defineEventHandler(async (event) => {
       product,
       quantity: item.quantity,
       size: item.size,
+      color: item.color || variant.color || '',
       lineTotalKes: variant.price_kes * item.quantity,
     }
   })
@@ -245,7 +276,7 @@ export default defineEventHandler(async (event) => {
       variant_id: line.variant.id,
       product_name: line.product.name,
       sku: line.variant.sku,
-      color: line.variant.color,
+      color: line.color,
       size: line.size,
       unit_price_kes: line.variant.price_kes,
       quantity: line.quantity,
