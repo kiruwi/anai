@@ -6,6 +6,7 @@ frontend:
         - npm ci
     build:
       commands:
+        - env | grep -e '^NUXT_' >> .env.production
         - NITRO_PRESET=aws_amplify npm run build
   artifacts:
     baseDirectory: .amplify-hosting
