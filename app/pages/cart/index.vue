@@ -9,8 +9,8 @@
         <article v-for="line in lines" :key="line.key" class="cart-line">
           <NuxtLink class="cart-line__image" :to="`/product/${line.product.slug}`">
             <img
-              v-if="line.product.imageUrl"
-              :src="line.product.imageUrl"
+              v-if="getProductImageUrlForColour(line.product, line.colour)"
+              :src="getProductImageUrlForColour(line.product, line.colour)"
               :alt="line.product.name"
               width="120"
               height="150"
@@ -34,11 +34,13 @@
                   class="cart-line__colour"
                   :class="{
                     'cart-line__colour--selected': line.colour === getProductColourName(colour),
+                    'cart-line__colour--unavailable': !isProductColourAvailable(colour),
                   }"
                   type="button"
-                  :aria-label="`Choose ${getProductColourName(colour)} for ${line.product.name}`"
+                  :disabled="!isProductColourAvailable(colour)"
+                  :aria-label="`Choose ${getProductColourName(colour)} for ${line.product.name}${isProductColourAvailable(colour) ? '' : ' — out of stock'}`"
                   :aria-pressed="line.colour === getProductColourName(colour)"
-                  :title="getProductColourName(colour)"
+                  :title="isProductColourAvailable(colour) ? getProductColourName(colour) : `${getProductColourName(colour)} — out of stock`"
                   :style="{ background: getProductColourValue(colour) }"
                   @click="updateColour(line.key, getProductColourName(colour))"
                 />
@@ -82,7 +84,7 @@
               <button
                 type="button"
                 :aria-label="`Increase ${line.product.name} quantity`"
-                :disabled="line.quantity >= line.product.stockQuantity"
+                :disabled="line.quantity >= getProductColourStockLimit(line.product, line.colour)"
                 @click="updateQuantity(line.key, line.quantity + 1)"
               >
                 +
@@ -127,8 +129,11 @@
 
 <script setup lang="ts">
 import {
+  getProductImageUrlForColour,
+  getProductColourStockLimit,
   getProductColourName,
   getProductColourValue,
+  isProductColourAvailable,
   isSizeLabelInStock,
   isSizeOptionInStock,
   type ProductSizeOption,
@@ -283,8 +288,11 @@ h1 {
 }
 
 .cart-line__colour {
+  flex: 0 0 2.8rem;
   width: 2.8rem;
   height: 2.8rem;
+  aspect-ratio: 1;
+  box-sizing: border-box;
   border: 1px solid var(--colour-border);
   border-radius: 50%;
   padding: 0;
@@ -294,6 +302,12 @@ h1 {
 .cart-line__colour--selected {
   outline: 1px solid var(--colour-black);
   outline-offset: 0.2rem;
+}
+
+.cart-line__colour--unavailable {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.3;
 }
 
 .cart-line__size {

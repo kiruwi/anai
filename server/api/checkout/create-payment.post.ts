@@ -307,6 +307,7 @@ export default defineEventHandler(async (event) => {
     provider_reference: reference,
     amount_kes: order.total_kes,
     status: 'pending',
+    mpesa_phone_number: phone,
     raw_payload: {
       checkout: {
         customer: {
@@ -338,6 +339,8 @@ export default defineEventHandler(async (event) => {
       .from('payments')
       .update({
         provider_reference: initiation.checkoutRequestId,
+        mpesa_checkout_request_id: initiation.checkoutRequestId,
+        mpesa_merchant_request_id: initiation.merchantRequestId,
         raw_payload: {
           checkout: {
             customer: { email, fullName, phone, address },

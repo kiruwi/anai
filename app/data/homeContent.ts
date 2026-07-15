@@ -4,6 +4,7 @@ export type ProductColour =
       name: string
       value: string
       imageUrl?: string
+      stockQuantity?: number
     }
 
 export type HomepageProduct = {
@@ -58,8 +59,6 @@ export const commonSizeOptions: ProductSizeOption[] = [
   { label: 'XL/14', coatLengthCm: 47, shoulderCm: 38.6, sleeveLengthCm: 63, bustCm: 84, bottomCm: 70 },
 ]
 
-export const isProductOutOfStock = (product: HomepageProduct) => product.stockQuantity <= 0
-
 export const getProductColourName = (colour: ProductColour) =>
   typeof colour === 'string' ? colour : colour.name
 
@@ -69,10 +68,69 @@ export const getProductColourValue = (colour: ProductColour) =>
 export const getProductColourImageUrl = (colour: ProductColour) =>
   typeof colour === 'string' ? undefined : colour.imageUrl
 
-export const getProductDefaultColourName = (product: HomepageProduct) => {
-  const firstColour = product.colours[0]
+export const getProductColourStockQuantity = (colour: ProductColour) => {
+  if (typeof colour === 'string' || typeof colour.stockQuantity !== 'number') {
+    return undefined
+  }
 
-  return firstColour ? getProductColourName(firstColour) : undefined
+  return Math.max(Math.floor(colour.stockQuantity), 0)
+}
+
+export const isProductColourAvailable = (colour: ProductColour) =>
+  getProductColourStockQuantity(colour) !== 0
+
+export const getProductStockQuantity = (product: HomepageProduct) => {
+  const colourStocks = product.colours.map(getProductColourStockQuantity)
+
+  if (colourStocks.length && colourStocks.every((stock): stock is number => stock !== undefined)) {
+    return colourStocks.reduce((total, stock) => total + stock, 0)
+  }
+
+  return Math.max(Math.floor(product.stockQuantity), 0)
+}
+
+export const getProductColourStockLimit = (product: HomepageProduct, colourName?: string) => {
+  if (!colourName) {
+    return getProductStockQuantity(product)
+  }
+
+  const matchingColour = product.colours.find(
+    (colour) => getProductColourName(colour).trim().toLowerCase() === colourName.trim().toLowerCase(),
+  )
+  const matchingColourStock = matchingColour
+    ? getProductColourStockQuantity(matchingColour)
+    : undefined
+
+  return matchingColourStock ?? getProductStockQuantity(product)
+}
+
+export const isProductOutOfStock = (product: HomepageProduct) => getProductStockQuantity(product) <= 0
+
+export const getProductImageUrlForColour = (product: HomepageProduct, colourName?: string) => {
+  const normalizedColourName = colourName?.trim().toLowerCase()
+  const matchingColour = normalizedColourName
+    ? product.colours.find(
+        (colour) => getProductColourName(colour).trim().toLowerCase() === normalizedColourName,
+      )
+    : undefined
+
+  return (matchingColour ? getProductColourImageUrl(matchingColour) : undefined) ?? product.imageUrl
+}
+
+export const getProductDefaultColourName = (product: HomepageProduct) => {
+  const colourMatchingProductImage = product.imageUrl
+    ? product.colours.find(
+        (colour) =>
+          isProductColourAvailable(colour) && getProductColourImageUrl(colour) === product.imageUrl,
+      )
+    : undefined
+  const firstAvailableColour = product.colours.find(isProductColourAvailable)
+
+  return colourMatchingProductImage
+    ? getProductColourName(colourMatchingProductImage)
+    : firstAvailableColour
+      ? getProductColourName(firstAvailableColour)
+      : undefined
 }
 
 export const isSizeLabelInStock = (sizeLabel: string) => sizeLabel === inStockSizeLabel
@@ -93,12 +151,12 @@ export const products: HomepageProduct[] = [
     name: 'Nuru Zip-up',
     slug: 'jackets',
     priceKes: 3870,
-    stockQuantity: 3,
+    stockQuantity: 7,
     category: 'Outerwear',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Nuru Zip-up/black.webp' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Nuru Zip-up/brown.webp' },
-      { name: 'Navy', value: '#253b54', imageUrl: '/images/products/Nuru Zip-up/navy.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Nuru Zip-up/black.webp', stockQuantity: 2 },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Nuru Zip-up/brown.webp', stockQuantity: 2 },
+      { name: 'Navy', value: '#253b54', imageUrl: '/images/products/Nuru Zip-up/navy.webp', stockQuantity: 3 },
     ],
     isNew: true,
     imageUrl: '/images/products/Nuru Zip-up/navy.webp',
@@ -118,12 +176,12 @@ export const products: HomepageProduct[] = [
     name: 'Reya Long sleeve, round neck',
     slug: 'long-sleeve-round-neck',
     priceKes: 2680,
-    stockQuantity: 4,
+    stockQuantity: 3,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Reya Long sleeve, round neck/black.webp' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Reya Long sleeve, round neck/brown.webp' },
-      { name: 'White', value: '#f6f1ea', imageUrl: '/images/products/Reya Long sleeve, round neck/white.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Reya Long sleeve, round neck/black.webp', stockQuantity: 1 },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Reya Long sleeve, round neck/brown.webp', stockQuantity: 1 },
+      { name: 'White', value: '#f6f1ea', imageUrl: '/images/products/Reya Long sleeve, round neck/white.webp', stockQuantity: 1 },
     ],
     isNew: true,
     imageUrl: '/images/products/Reya Long sleeve, round neck/white.webp',
@@ -143,12 +201,12 @@ export const products: HomepageProduct[] = [
     name: 'Reya Long sleeve, swirl neck',
     slug: 'long-sleeve-swirl-neck',
     priceKes: 2980,
-    stockQuantity: 4,
+    stockQuantity: 3,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Reya Long sleeve, swirl neck/black.webp' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Reya Long sleeve, swirl neck/brown.webp' },
-      { name: 'Cream', value: '#efe7dc', imageUrl: '/images/products/Reya Long sleeve, swirl neck/cream.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Reya Long sleeve, swirl neck/black.webp', stockQuantity: 2 },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Reya Long sleeve, swirl neck/brown.webp', stockQuantity: 0 },
+      { name: 'Cream', value: '#efe7dc', imageUrl: '/images/products/Reya Long sleeve, swirl neck/cream.webp', stockQuantity: 1 },
     ],
     isNew: true,
     imageUrl: '/images/products/Reya Long sleeve, swirl neck/cream.webp',
@@ -171,7 +229,7 @@ export const products: HomepageProduct[] = [
     stockQuantity: 1,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Aya Mini tee/black.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Aya Mini tee/black.webp', stockQuantity: 1 },
     ],
     isNew: true,
     imageUrl: '/images/products/Aya Mini tee/black.webp',
@@ -189,9 +247,9 @@ export const products: HomepageProduct[] = [
     stockQuantity: 3,
     category: 'Sets',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Nia jogger set/black.webp' },
-      { name: 'Grey', value: '#d7d4c9', imageUrl: '/images/products/Nia jogger set/grey.webp' },
-      { name: 'Navy blue', value: '#253b54', imageUrl: '/images/products/Nia jogger set/navy blue.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Nia jogger set/black.webp', stockQuantity: 1 },
+      { name: 'Grey', value: '#d7d4c9', imageUrl: '/images/products/Nia jogger set/grey.webp', stockQuantity: 1 },
+      { name: 'Navy blue', value: '#253b54', imageUrl: '/images/products/Nia jogger set/navy blue.webp', stockQuantity: 1 },
     ],
     isNew: true,
     imageUrl: '/images/products/Nia jogger set/navy blue.webp',
@@ -209,15 +267,15 @@ export const products: HomepageProduct[] = [
     name: 'Lela set',
     slug: 'lela-set',
     priceKes: 5060,
-    stockQuantity: 10,
+    stockQuantity: 3,
     category: 'Sets',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Lela set/black.webp' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Lela set/brown.webp' },
-      { name: 'White', value: '#f6f1ea', imageUrl: '/images/products/Lela set/white.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Lela set/black.webp', stockQuantity: 0 },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Lela set/brown.webp', stockQuantity: 3 },
+      { name: 'White', value: '#f6f1ea', imageUrl: '/images/products/Lela set/white.webp', stockQuantity: 0 },
     ],
     isNew: true,
-    imageUrl: '/images/products/Lela set/white.webp',
+    imageUrl: '/images/products/Lela set/brown.webp',
     hoverImageUrl: '/images/products/Lela set/brown.webp',
     imageTone: 'linear-gradient(135deg, #d7d4c9, #111111)',
     galleryImages: [
@@ -232,12 +290,12 @@ export const products: HomepageProduct[] = [
     name: 'Mvua flannel',
     slug: 'mvua-flannel',
     priceKes: 4770,
-    stockQuantity: 3,
+    stockQuantity: 2,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Mvua flannel/black.webp' },
-      { name: 'Brown', value: '#6f4631' },
-      { name: 'Cream', value: '#efe7dc' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Mvua flannel/black.webp', stockQuantity: 2 },
+      { name: 'Brown', value: '#6f4631', stockQuantity: 0 },
+      { name: 'Cream', value: '#efe7dc', stockQuantity: 0 },
     ],
     isNew: true,
     imageUrl: '/images/products/Mvua flannel/black.webp',
@@ -252,12 +310,12 @@ export const products: HomepageProduct[] = [
     name: 'Zuri bra',
     slug: 'strappy-bra',
     priceKes: 2680,
-    stockQuantity: 4,
+    stockQuantity: 3,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Zuri bra/black.webp' },
-      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Zuri bra/brown.webp' },
-      { name: 'White', value: '#f6f1ea', imageUrl: '/images/products/Zuri bra/white.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Zuri bra/black.webp', stockQuantity: 1 },
+      { name: 'Brown', value: '#6f4631', imageUrl: '/images/products/Zuri bra/brown.webp', stockQuantity: 1 },
+      { name: 'White', value: '#f6f1ea', imageUrl: '/images/products/Zuri bra/white.webp', stockQuantity: 1 },
     ],
     isNew: true,
     imageUrl: '/images/products/Zuri bra/white.webp',
@@ -275,12 +333,12 @@ export const products: HomepageProduct[] = [
     name: 'Terra skirt - Padel/tennis bubble set',
     slug: 'terra-skirt',
     priceKes: 2680,
-    stockQuantity: 1,
+    stockQuantity: 2,
     category: 'Bottoms',
     colours: [
-      { name: 'Black', value: '#111111' },
-      { name: 'Burgundy', value: '#4a2428' },
-      { name: 'Green', value: '#4a5134' },
+      { name: 'Black', value: '#111111', stockQuantity: 1 },
+      { name: 'Burgundy', value: '#4a2428', stockQuantity: 1 },
+      { name: 'Green', value: '#4a5134', stockQuantity: 0 },
     ],
     isNew: true,
     imageUrl: '/images/products/Terra skirt - Padel tennis bubble set/brown.webp',
@@ -298,10 +356,11 @@ export const products: HomepageProduct[] = [
     stockQuantity: 3,
     category: 'Sets',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Jua jogger set/black.webp' },
-      { name: 'Grey', value: '#c9cbc6', imageUrl: '/images/products/Jua jogger set/grey.webp' },
-      { name: 'Navy blue', value: '#253b54', imageUrl: '/images/products/Jua jogger set/navy blue.webp' },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Jua jogger set/black.webp', stockQuantity: 1 },
+      { name: 'Grey', value: '#c9cbc6', imageUrl: '/images/products/Jua jogger set/grey.webp', stockQuantity: 1 },
+      { name: 'Navy blue', value: '#253b54', imageUrl: '/images/products/Jua jogger set/navy blue.webp', stockQuantity: 1 },
     ],
+    isNew: true,
     imageUrl: '/images/products/Jua jogger set/navy blue.webp',
     hoverImageUrl: '/images/products/Jua jogger set/grey.webp',
     imageTone: 'linear-gradient(135deg, #d7c1a9, #4a481d)',
@@ -320,10 +379,11 @@ export const products: HomepageProduct[] = [
     stockQuantity: 6,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: "/images/products/Mia cropped t'S/black.webp" },
-      { name: 'Burgundy', value: '#4a2428', imageUrl: "/images/products/Mia cropped t'S/burgandy.webp" },
-      { name: 'White', value: '#f6f1ea', imageUrl: "/images/products/Mia cropped t'S/white.webp" },
+      { name: 'Black', value: '#111111', imageUrl: "/images/products/Mia cropped t'S/black.webp", stockQuantity: 2 },
+      { name: 'Burgundy', value: '#4a2428', imageUrl: "/images/products/Mia cropped t'S/burgandy.webp", stockQuantity: 2 },
+      { name: 'White', value: '#f6f1ea', imageUrl: "/images/products/Mia cropped t'S/white.webp", stockQuantity: 2 },
     ],
+    isNew: true,
     imageUrl: "/images/products/Mia cropped t'S/burgandy.webp",
     hoverImageUrl: "/images/products/Mia cropped t'S/white.webp",
     imageTone: 'linear-gradient(135deg, #111111, #e8ddcd)',

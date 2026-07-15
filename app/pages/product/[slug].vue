@@ -1,5 +1,9 @@
 <template>
-  <section ref="productPageElement" class="product-page">
+  <section
+    ref="productPageElement"
+    class="product-page"
+    :class="{ 'product-page--sold-out': isSoldOut }"
+  >
     <div class="product-page__media">
       <div
         v-if="galleryImages.length"
@@ -44,6 +48,30 @@
       <h1>{{ product.name }}</h1>
       <p class="product-page__price">KES {{ product.priceKes.toLocaleString() }}</p>
       <p class="product-page__copy">{{ productCopy }}</p>
+      <div v-if="product.colours.length" class="product-page__colours">
+        <p>
+          Colour
+          <span>{{ selectedColourName ?? 'Out of stock' }}</span>
+        </p>
+        <div>
+          <button
+            v-for="colour in product.colours"
+            :key="getProductColourName(colour)"
+            class="product-page__colour"
+            :class="{
+              'product-page__colour--selected': selectedColourName === getProductColourName(colour),
+              'product-page__colour--unavailable': !isProductColourAvailable(colour),
+            }"
+            type="button"
+            :disabled="!isProductColourAvailable(colour)"
+            :aria-label="`${getProductColourName(colour)}${isProductColourAvailable(colour) ? '' : ' — out of stock'}`"
+            :aria-pressed="selectedColourName === getProductColourName(colour)"
+            :title="isProductColourAvailable(colour) ? getProductColourName(colour) : `${getProductColourName(colour)} — out of stock`"
+            :style="{ background: getProductColourValue(colour) }"
+            @click="selectedColourName = getProductColourName(colour)"
+          />
+        </div>
+      </div>
       <div class="product-page__actions">
         <button
           class="product-page__add"
@@ -69,7 +97,15 @@
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { getProductBadgeLabel, isProductOutOfStock, products } from '../../data/homeContent'
+import {
+  getProductBadgeLabel,
+  getProductColourName,
+  getProductColourValue,
+  getProductDefaultColourName,
+  isProductColourAvailable,
+  isProductOutOfStock,
+  products,
+} from '../../data/homeContent'
 
 const route = useRoute()
 const { addToCart } = useCart()
@@ -104,6 +140,7 @@ const galleryImages = [
 const productPageElement = ref<HTMLElement | null>(null)
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = ref<HTMLDivElement[]>([])
+const selectedColourName = ref(getProductDefaultColourName(product))
 const hasJustAdded = ref(false)
 let galleryAnimation: { kill: () => void } | undefined
 let galleryWheelLock: number | undefined
@@ -195,7 +232,7 @@ const handleAddToCart = () => {
     return
   }
 
-  addToCart(product)
+  addToCart(product, 1, { colour: selectedColourName.value })
   hasJustAdded.value = true
 
   if (addedTimer) {
@@ -273,6 +310,12 @@ onBeforeUnmount(() => {
   position: relative;
   min-height: 0;
   overflow: hidden;
+}
+
+.product-page--sold-out .product-page__carousel,
+.product-page--sold-out .product-page__media-placeholder {
+  filter: grayscale(1);
+  opacity: 0.42;
 }
 
 .product-page__badge {
@@ -406,6 +449,52 @@ h1 {
   margin: var(--space-lg) 0 0;
   font-size: var(--copy-font-size);
   line-height: var(--copy-line-height);
+}
+
+.product-page__colours {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-lg);
+}
+
+.product-page__colours p {
+  margin: 0;
+  color: var(--colour-muted);
+  font-size: var(--copy-font-size);
+  text-transform: uppercase;
+}
+
+.product-page__colours p span {
+  color: var(--colour-black);
+}
+
+.product-page__colours > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.product-page__colour {
+  flex: 0 0 2.8rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 1px solid var(--colour-border);
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+}
+
+.product-page__colour--selected {
+  outline: 1px solid var(--colour-black);
+  outline-offset: 0.2rem;
+}
+
+.product-page__colour--unavailable {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.3;
 }
 
 .product-page__actions {

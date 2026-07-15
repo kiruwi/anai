@@ -1,6 +1,8 @@
 import {
   getProductColourName,
+  getProductColourStockLimit,
   getProductDefaultColourName,
+  isProductColourAvailable,
   products,
   type HomepageProduct,
 } from '../data/homeContent'
@@ -20,16 +22,19 @@ export type CartLine = CartItem & {
 
 const CART_STORAGE_KEY = 'anai-cart'
 
-const getProductStockLimit = (product: HomepageProduct) => Math.max(Math.floor(product.stockQuantity), 0)
+const getProductStockLimit = (product: HomepageProduct, colour?: string) =>
+  getProductColourStockLimit(product, colour)
 
-const clampQuantity = (product: HomepageProduct, quantity: number) =>
-  Math.min(Math.max(Math.floor(quantity), 1), getProductStockLimit(product))
+const clampQuantity = (product: HomepageProduct, quantity: number, colour?: string) =>
+  Math.min(Math.max(Math.floor(quantity), 1), getProductStockLimit(product, colour))
 
 const getProductSizeLabels = (product: HomepageProduct) =>
   product.sizeOptions?.map((option) => option.label) ?? []
 
 const getProductColourLabels = (product: HomepageProduct) =>
-  product.colours.map((colour) => getProductColourName(colour))
+  product.colours
+    .filter(isProductColourAvailable)
+    .map((colour) => getProductColourName(colour))
 
 const normalizeSize = (product: HomepageProduct, size: unknown) => {
   if (typeof size !== 'string') {
@@ -91,15 +96,23 @@ const getStoredCart = () => {
         const product = products.find((productItem) => productItem.slug === item.slug)
         const quantity = Number(item.quantity)
 
-        if (!product || !Number.isFinite(quantity) || quantity < 1 || getProductStockLimit(product) < 1) {
+        const colour = product ? normalizeColour(product, item.colour ?? item.color) : undefined
+
+        if (
+          !product ||
+          !Number.isFinite(quantity) ||
+          quantity < 1 ||
+          !colour ||
+          getProductStockLimit(product, colour) < 1
+        ) {
           return undefined
         }
 
         return {
           slug: product.slug,
-          quantity: clampQuantity(product, quantity),
+          quantity: clampQuantity(product, quantity, colour),
           size: normalizeSize(product, item.size),
-          colour: normalizeColour(product, item.colour ?? item.color),
+          colour,
         }
       })
       .filter((item): item is CartItem => Boolean(item))
@@ -139,17 +152,17 @@ export const useCart = () => {
   ) => {
     hydrateCart()
 
-    if (getProductStockLimit(product) < 1) {
+    const colour = normalizeColour(product, options.colour)
+
+    if (!colour || getProductStockLimit(product, colour) < 1) {
       return
     }
-
-    const colour = normalizeColour(product, options.colour)
     const existingItem = items.value.find(
       (item) => item.slug === product.slug && normalizeColour(product, item.colour) === colour,
     )
 
     if (existingItem) {
-      existingItem.quantity = clampQuantity(product, existingItem.quantity + quantity)
+      existingItem.quantity = clampQuantity(product, existingItem.quantity + quantity, colour)
       existingItem.size = normalizeSize(product, options.size) ?? existingItem.size
       existingItem.colour = colour
     } else {
@@ -157,7 +170,7 @@ export const useCart = () => {
         ...items.value,
         {
           slug: product.slug,
-          quantity: clampQuantity(product, quantity),
+          quantity: clampQuantity(product, quantity, colour),
           size: normalizeSize(product, options.size),
           colour,
         },
@@ -174,14 +187,16 @@ export const useCart = () => {
       ? products.find((productItem) => productItem.slug === itemToUpdate.slug)
       : undefined
 
-    if (quantity < 1 || !product || getProductStockLimit(product) < 1) {
+    const colour = product && itemToUpdate ? normalizeColour(product, itemToUpdate.colour) : undefined
+
+    if (quantity < 1 || !product || !colour || getProductStockLimit(product, colour) < 1) {
       items.value = items.value.filter((item) => getCartItemKey(item) !== key)
     } else {
       items.value = items.value.map((item) =>
         getCartItemKey(item) === key
           ? {
               ...item,
-              quantity: clampQuantity(product, quantity),
+              quantity: clampQuantity(product, quantity, colour),
             }
           : item,
       )
@@ -248,7 +263,7 @@ export const useCart = () => {
 
       nextItems[existingIndex] = {
         ...existingItem,
-        quantity: clampQuantity(product, existingItem.quantity + item.quantity),
+        quantity: clampQuantity(product, existingItem.quantity + item.quantity, nextColour),
         size: existingItem.size ?? item.size,
         colour: nextColour,
       }
@@ -257,6 +272,7 @@ export const useCart = () => {
       nextItems[itemIndex] = {
         ...item,
         colour: nextColour,
+        quantity: clampQuantity(product, item.quantity, nextColour),
       }
     }
 
@@ -285,17 +301,19 @@ export const useCart = () => {
           return undefined
         }
 
-        if (getProductStockLimit(product) < 1) {
+        const colour = normalizeColour(product, item.colour)
+
+        if (!colour || getProductStockLimit(product, colour) < 1) {
           return undefined
         }
 
-        const quantity = clampQuantity(product, item.quantity)
+        const quantity = clampQuantity(product, item.quantity, colour)
 
         return {
           ...item,
           key: getCartItemKey(item),
           quantity,
-          colour: normalizeColour(product, item.colour),
+          colour,
           product,
           lineTotalKes: product.priceKes * quantity,
         }

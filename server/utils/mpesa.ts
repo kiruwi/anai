@@ -190,6 +190,7 @@ export const initiateMpesaStkPush = async ({
 
   return {
     checkoutRequestId: payload.CheckoutRequestID,
+    merchantRequestId: payload.MerchantRequestID || null,
     customerMessage: payload.CustomerMessage || 'Check your phone and enter your M-Pesa PIN to pay.',
     raw: payload,
   }

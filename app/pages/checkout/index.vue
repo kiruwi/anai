@@ -58,8 +58,8 @@
         <div class="checkout-summary__items">
           <article v-for="line in lines" :key="line.key" class="checkout-summary__item">
             <img
-              v-if="line.product.imageUrl"
-              :src="line.product.imageUrl"
+              v-if="getProductImageUrlForColour(line.product, line.colour)"
+              :src="getProductImageUrlForColour(line.product, line.colour)"
               :alt="line.product.name"
               width="72"
               height="90"
@@ -109,6 +109,7 @@
 
 <script setup lang="ts">
 import {
+  getProductImageUrlForColour,
   getProductColourName,
   getProductColourValue,
   isSizeLabelInStock,
@@ -482,8 +483,11 @@ h1 {
 
 .checkout-summary__swatch {
   display: inline-block;
+  flex: 0 0 1.1rem;
   width: 1.1rem;
   height: 1.1rem;
+  aspect-ratio: 1;
+  box-sizing: border-box;
   border: 1px solid var(--colour-border);
   border-radius: 50%;
 }

@@ -70,8 +70,10 @@
           v-for="colour in product.colours"
           :key="getColourKey(colour)"
           class="product-card__swatch"
+          :class="{ 'product-card__swatch--unavailable': !isProductColourAvailable(colour) }"
           type="button"
-          :aria-label="`Show ${getProductColourName(colour)}`"
+          :disabled="!isProductColourAvailable(colour)"
+          :aria-label="`${getProductColourName(colour)}${isProductColourAvailable(colour) ? '' : ' — out of stock'}`"
           :aria-pressed="selectedColourName === getProductColourName(colour)"
           :style="{ background: getProductColourValue(colour) }"
           @click="selectColour(colour)"
@@ -94,7 +96,9 @@ import {
   getProductColourImageUrl,
   getProductColourName,
   getProductColourValue,
+  getProductDefaultColourName,
   getProductBadgeLabel,
+  isProductColourAvailable,
   isProductOutOfStock,
   type HomepageProduct,
   type ProductColour,
@@ -106,9 +110,7 @@ const props = defineProps<{
 }>()
 
 const getDefaultSelectedColourName = () => {
-  const firstColour = props.product.colours[0]
-
-  return firstColour ? getProductColourName(firstColour) : undefined
+  return getProductDefaultColourName(props.product)
 }
 
 const selectedImageUrl = ref(props.product.imageUrl ?? '')
@@ -169,6 +171,10 @@ const getColourKey = (colour: ProductColour) =>
   `${getProductColourName(colour)}-${getProductColourValue(colour)}`
 
 const selectColour = (colour: ProductColour) => {
+  if (!isProductColourAvailable(colour)) {
+    return
+  }
+
   const imageUrl = getProductColourImageUrl(colour)
   selectedColourName.value = getProductColourName(colour)
 
@@ -511,8 +517,11 @@ strong {
 }
 
 .product-card__swatch {
+  flex: 0 0 1.4rem;
   width: 1.4rem;
   height: 1.4rem;
+  aspect-ratio: 1;
+  box-sizing: border-box;
   border: 1px solid var(--colour-border);
   border-radius: 50%;
   padding: 0;
@@ -522,6 +531,12 @@ strong {
 .product-card__swatch[aria-pressed='true'] {
   outline: 1px solid var(--colour-black);
   outline-offset: 0.2rem;
+}
+
+.product-card__swatch--unavailable {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: 0.3;
 }
 
 .product-card__quick-add {

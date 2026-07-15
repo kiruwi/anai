@@ -15,6 +15,12 @@ export type MpesaStkCallback = {
 const getMetadataValue = (callback: MpesaStkCallback, name: string) =>
   callback.CallbackMetadata?.Item?.find((item) => item.Name === name)?.Value
 
+const getStringValue = (value: unknown) => {
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return ''
+}
+
 export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload: unknown) => {
   const checkoutRequestId = typeof callback.CheckoutRequestID === 'string' ? callback.CheckoutRequestID.trim() : ''
   if (!checkoutRequestId) {
@@ -26,7 +32,7 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
     .from('payments')
     .select('id, order_id, amount_kes, status, raw_payload')
     .eq('provider', 'mpesa')
-    .eq('provider_reference', checkoutRequestId)
+    .eq('mpesa_checkout_request_id', checkoutRequestId)
     .maybeSingle()
 
   if (paymentError) throw createError({ statusCode: 500, statusMessage: paymentError.message })
@@ -35,7 +41,11 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
 
   const resultCode = Number(callback.ResultCode)
   const amount = Number(getMetadataValue(callback, 'Amount'))
-  const receipt = getMetadataValue(callback, 'MpesaReceiptNumber')
+  const receipt = getStringValue(getMetadataValue(callback, 'MpesaReceiptNumber'))
+  const merchantRequestId = getStringValue(callback.MerchantRequestID)
+  const resultDescription = getStringValue(callback.ResultDesc)
+  const phoneNumber = getStringValue(getMetadataValue(callback, 'PhoneNumber'))
+  const transactionDate = getStringValue(getMetadataValue(callback, 'TransactionDate'))
   const paid = resultCode === 0 && Number.isFinite(amount) && amount === Number(payment.amount_kes) && Boolean(receipt)
   const failed = resultCode !== 0 || !paid
   const existingPayload =
@@ -48,6 +58,12 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
     .update({
       status: paid ? 'paid' : 'failed',
       paid_at: paid ? new Date().toISOString() : null,
+      mpesa_merchant_request_id: merchantRequestId || null,
+      mpesa_receipt_number: receipt || null,
+      mpesa_result_code: Number.isInteger(resultCode) ? resultCode : null,
+      mpesa_result_description: resultDescription || null,
+      mpesa_phone_number: phoneNumber || null,
+      mpesa_transaction_date: transactionDate || null,
       raw_payload: { ...existingPayload, callback: rawPayload },
     })
     .eq('id', payment.id)
