@@ -1,5 +1,6 @@
 import { createError, readBody } from 'h3'
 import { randomBytes } from 'node:crypto'
+import { initiateMpesaStkPush, normalizeKenyanPhone } from '../../utils/mpesa'
 import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
 
 type CheckoutItemInput = {
@@ -114,13 +115,22 @@ export default defineEventHandler(async (event) => {
   const items = normalizeItems(body.items)
   const email = cleanString(customer.email).toLowerCase()
   const fullName = cleanString(customer.name)
-  const phone = cleanString(customer.phone)
+  let phone = ''
   const address = cleanString(customer.address)
 
-  if (!email || !fullName || !phone || !address) {
+  if (!email || !fullName || !cleanString(customer.phone) || !address) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Customer contact and delivery details are required.',
+    })
+  }
+
+  try {
+    phone = normalizeKenyanPhone(cleanString(customer.phone))
+  } catch {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Enter a valid Kenyan M-Pesa phone number.',
     })
   }
 
@@ -293,7 +303,7 @@ export default defineEventHandler(async (event) => {
 
   const { error: paymentError } = await supabase.from('payments').insert({
     order_id: order.id,
-    provider: 'paystack',
+    provider: 'mpesa',
     provider_reference: reference,
     amount_kes: order.total_kes,
     status: 'pending',
@@ -317,10 +327,47 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return {
-    orderId: order.id,
-    reference: order.order_number,
-    amountKes: order.total_kes,
-    currency: 'KES',
+  try {
+    const initiation = await initiateMpesaStkPush({
+      amountKes: order.total_kes,
+      phoneNumber: phone,
+      accountReference: `ANAI${order.order_number.replace(/[^A-Za-z0-9]/g, '').slice(-8)}`,
+    })
+
+    const { error: initiationUpdateError } = await supabase
+      .from('payments')
+      .update({
+        provider_reference: initiation.checkoutRequestId,
+        raw_payload: {
+          checkout: {
+            customer: { email, fullName, phone, address },
+            items,
+          },
+          initiation: initiation.raw,
+        },
+      })
+      .eq('order_id', order.id)
+      .eq('provider', 'mpesa')
+
+    if (initiationUpdateError) {
+      throw createError({ statusCode: 500, statusMessage: initiationUpdateError.message })
+    }
+
+    return {
+      orderId: order.id,
+      reference: order.order_number,
+      amountKes: order.total_kes,
+      currency: 'KES',
+      checkoutRequestId: initiation.checkoutRequestId,
+      customerMessage: initiation.customerMessage,
+    }
+  } catch (error) {
+    await supabase
+      .from('payments')
+      .update({ status: 'failed' })
+      .eq('order_id', order.id)
+      .eq('provider', 'mpesa')
+
+    throw error
   }
 })

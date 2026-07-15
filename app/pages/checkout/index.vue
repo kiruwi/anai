@@ -39,13 +39,12 @@
 
         <div class="checkout-form__payment-note">
           <p>
-            Payments on Anai are processed securely through Paystack. Anai does not store your
-            full card details. After payment, you will receive an order confirmation with your
-            payment reference.
+            You will receive an M-Pesa prompt on the phone number above. Enter your M-Pesa PIN
+            only in the M-Pesa prompt to complete your order.
           </p>
           <p>
-            If your payment fails but your account is debited, contact us with your Paystack
-            transaction reference so we can trace the payment.
+            If you are debited but the confirmation takes longer than expected, use your order
+            number below to contact us. Do not submit a second payment request.
           </p>
         </div>
 
@@ -116,7 +115,6 @@ import {
   type ProductColour,
 } from '../../data/homeContent'
 
-const config = useRuntimeConfig()
 const { lines, subtotalKes, clearCart } = useCart()
 const router = useRouter()
 
@@ -129,41 +127,18 @@ const customer = reactive({
 const isPaymentLoading = ref(false)
 const paymentError = ref('')
 const paymentMessage = ref('')
-
-const paystackPublicKey = computed(() =>
-  typeof config.public.paystackPublicKey === 'string' ? config.public.paystackPublicKey : '',
-)
-const isPaymentConfigured = computed(() => Boolean(paystackPublicKey.value))
-
-type PaystackInline = {
-  id?: number
-  message?: string
-  reference: string
-}
-
-type PaystackTransactionOptions = {
-  key: string
-  email: string
-  amount: number
-  currency: string
-  firstName?: string
-  lastName?: string
-  phone?: string
-  reference: string
-  metadata?: Record<string, unknown>
-  onSuccess?: (transaction: PaystackInline) => void | Promise<void>
-  onCancel?: () => void
-  onError?: (error: unknown) => void
-}
+const pendingReference = ref('')
 
 type CreatePaymentResponse = {
   orderId: string
   reference: string
   amountKes: number
   currency: 'KES'
+  checkoutRequestId: string
+  customerMessage: string
 }
 
-type VerifyPaymentResponse = {
+type PaymentStatusResponse = {
   paid: boolean
   status: string
   reference: string
@@ -186,15 +161,10 @@ const hasUnavailableSizes = computed(() =>
 )
 const isPaymentButtonDisabled = computed(() =>
   isPaymentLoading.value ||
-  !isPaymentConfigured.value ||
   hasMissingSizes.value ||
   hasUnavailableSizes.value,
 )
 const paymentButtonLabel = computed(() => {
-  if (!isPaymentConfigured.value) {
-    return 'Paystack key missing'
-  }
-
   if (hasMissingSizes.value) {
     return 'Select sizes in bag'
   }
@@ -203,7 +173,11 @@ const paymentButtonLabel = computed(() => {
     return 'Not in stock'
   }
 
-  return isPaymentLoading.value ? 'Loading Paystack...' : 'Pay with Paystack'
+  if (isPaymentLoading.value) {
+    return 'Waiting for M-Pesa confirmation...'
+  }
+
+  return pendingReference.value ? 'Check payment status' : 'Pay with M-Pesa'
 })
 
 const getLineColourValue = (line: { product: { colours: ProductColour[] }; colour?: string }) => {
@@ -212,15 +186,6 @@ const getLineColourValue = (line: { product: { colours: ProductColour[] }; colou
   )
 
   return matchingColour ? getProductColourValue(matchingColour) : 'transparent'
-}
-
-const getCustomerNames = () => {
-  const [firstName = '', ...lastNameParts] = customer.name.trim().split(/\s+/)
-
-  return {
-    firstName,
-    lastName: lastNameParts.join(' '),
-  }
 }
 
 const getCheckoutErrorMessage = (error: unknown) => {
@@ -236,21 +201,43 @@ const getCheckoutErrorMessage = (error: unknown) => {
     : 'Checkout could not start. Please refresh and try again.'
 }
 
-const createPaystackTransaction = async (options: PaystackTransactionOptions) => {
-  const { default: PaystackPop } = await import('@paystack/inline-js')
-  const paystack = new PaystackPop()
+const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
-  return paystack.newTransaction(options)
+const checkPaymentStatus = (reference: string) =>
+  $fetch<PaymentStatusResponse>('/api/checkout/payment-status', {
+    method: 'POST',
+    body: { reference },
+  })
+
+const completePayment = async (reference: string) => {
+  clearCart()
+  await router.push({ path: '/checkout/success', query: { reference } })
+}
+
+const waitForPaymentConfirmation = async (reference: string) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await wait(3_000)
+    const payment = await checkPaymentStatus(reference)
+
+    if (payment.paid) {
+      await completePayment(reference)
+      return true
+    }
+
+    if (payment.status === 'failed') {
+      pendingReference.value = ''
+      paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
+      return false
+    }
+  }
+
+  paymentMessage.value = `We are still waiting for M-Pesa confirmation for order ${reference}. If you entered your PIN, do not pay again—use “Check payment status” or contact support.`
+  return false
 }
 
 const startPayment = async () => {
   paymentError.value = ''
   paymentMessage.value = ''
-
-  if (!isPaymentConfigured.value) {
-    paymentError.value = 'Paystack is not configured. Add PAYSTACK_PUBLIC_KEY to your local .env file.'
-    return
-  }
 
   if (!lines.value.length) {
     paymentError.value = 'Your bag is empty.'
@@ -267,11 +254,29 @@ const startPayment = async () => {
     return
   }
 
-  const { firstName, lastName } = getCustomerNames()
   isPaymentLoading.value = true
-  paymentMessage.value = 'Preparing secure checkout.'
 
   try {
+    if (pendingReference.value) {
+      paymentMessage.value = 'Checking M-Pesa payment status.'
+      const status = await checkPaymentStatus(pendingReference.value)
+
+      if (status.paid) {
+        await completePayment(pendingReference.value)
+        return
+      }
+
+      if (status.status === 'failed') {
+        pendingReference.value = ''
+        paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
+        return
+      }
+
+      paymentMessage.value = `M-Pesa confirmation for order ${pendingReference.value} is still pending. If you entered your PIN, do not pay again.`
+      return
+    }
+
+    paymentMessage.value = 'Sending an M-Pesa prompt to your phone.'
     const payment = await $fetch<CreatePaymentResponse>('/api/checkout/create-payment', {
       method: 'POST',
       body: {
@@ -285,99 +290,14 @@ const startPayment = async () => {
       },
     })
 
-    paymentMessage.value = 'Opening Paystack checkout.'
-    let hasPaymentCallback = false
-
-    await createPaystackTransaction({
-      key: paystackPublicKey.value,
-      email: customer.email,
-      amount: payment.amountKes * 100,
-      currency: payment.currency,
-      firstName,
-      lastName,
-      phone: customer.phone,
-      reference: payment.reference,
-      metadata: {
-        orderId: payment.orderId,
-        deliveryAddress: customer.address,
-        cartItems: lines.value.map((line) => ({
-          slug: line.slug,
-          name: line.product.name,
-          quantity: line.quantity,
-          color: line.colour,
-          size: line.size,
-          unitPriceKes: line.product.priceKes,
-        })),
-        custom_fields: [
-          {
-            display_name: 'Phone number',
-            variable_name: 'phone',
-            value: customer.phone,
-          },
-          {
-            display_name: 'Delivery address',
-            variable_name: 'delivery_address',
-            value: customer.address,
-          },
-        ],
-      },
-      onSuccess: async (transaction: PaystackInline) => {
-        hasPaymentCallback = true
-        const reference = transaction.reference || payment.reference
-        paymentMessage.value = 'Confirming payment.'
-
-        try {
-          const verification = await $fetch<VerifyPaymentResponse>('/api/checkout/verify-payment', {
-            method: 'POST',
-            body: {
-              reference,
-            },
-          })
-
-          if (!verification.paid) {
-            paymentError.value = `Payment is ${verification.status}. Please contact support with reference ${reference}.`
-            return
-          }
-
-          clearCart()
-          router.push({
-            path: '/checkout/success',
-            query: {
-              reference,
-            },
-          })
-        } catch {
-          paymentError.value = `Payment could not be confirmed yet. Please contact support with reference ${reference}.`
-        } finally {
-          isPaymentLoading.value = false
-          paymentMessage.value = ''
-        }
-      },
-      onCancel: () => {
-        if (hasPaymentCallback) {
-          return
-        }
-
-        isPaymentLoading.value = false
-        paymentMessage.value = 'Payment cancelled. You can try again when ready.'
-      },
-      onError: (error: unknown) => {
-        const message = error instanceof Error ? error.message : ''
-
-        isPaymentLoading.value = false
-        paymentMessage.value = ''
-        paymentError.value = message
-          ? `Paystack could not open: ${message}`
-          : 'Paystack could not open. Please refresh and try again.'
-      },
-    })
+    pendingReference.value = payment.reference
+    paymentMessage.value = payment.customerMessage || 'Check your phone and enter your M-Pesa PIN to pay.'
+    await waitForPaymentConfirmation(payment.reference)
   } catch (error) {
     paymentMessage.value = ''
     paymentError.value = getCheckoutErrorMessage(error)
   } finally {
-    if (paymentError.value) {
-      isPaymentLoading.value = false
-    }
+    isPaymentLoading.value = false
   }
 }
 </script>

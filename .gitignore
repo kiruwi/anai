@@ -9,5 +9,6 @@ node_modules
 .env
 .env.*
 .env.example
+!.env.example
 npm-debug.log*
 desktop.ini

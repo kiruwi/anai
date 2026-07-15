@@ -26,10 +26,10 @@ export const legalPolicies: LegalPolicy[] = [
     slug: 'refund-policy',
     title: 'Refund & Return Policy',
     subtitle:
-      'Read how Anai handles returns, exchanges, refunds, failed payments, and Paystack payment disputes.',
+      'Read how Anai handles returns, exchanges, refunds, failed M-Pesa payments, and payment disputes.',
     metaTitle: 'Refund & Return Policy | Anai',
     metaDescription:
-      'Read the Anai refund, return, exchange, failed payment, and Paystack dispute policy.',
+      'Read the Anai refund, return, exchange, failed payment, and M-Pesa dispute policy.',
     blocks: [
       {
         heading: '1. Returns',
@@ -41,7 +41,7 @@ export const legalPolicies: LegalPolicy[] = [
           'The item must be unused.',
           'The item must be in its original condition.',
           'The item must have all tags, packaging, and accessories.',
-          'You must provide proof of purchase or your Paystack payment reference.',
+          'You must provide proof of purchase or your M-Pesa payment reference.',
         ],
       },
       {
@@ -73,7 +73,7 @@ export const legalPolicies: LegalPolicy[] = [
         paragraphs: [
           'Once we receive and inspect the returned item, we will notify you about the refund decision.',
           'Approved refunds will be processed through the original payment method used at checkout.',
-          'If you paid through Paystack, the refund will be linked to your Paystack transaction reference.',
+          'If you paid through M-Pesa, the refund will be linked to your M-Pesa transaction reference.',
           'Refund processing timelines may vary depending on your bank, card provider, or mobile money provider.',
         ],
       },
@@ -100,7 +100,7 @@ export const legalPolicies: LegalPolicy[] = [
         bullets: [
           'Your name',
           'Order number',
-          'Paystack transaction reference',
+          'M-Pesa transaction reference',
           'Photos of the item',
           'Photos of the packaging',
           'A short description of the issue',
@@ -116,7 +116,7 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: '8. Failed or duplicate payments',
         paragraphs: [
-          'If your Paystack payment failed but money was deducted, contact us with your transaction reference.',
+          'If your M-Pesa payment failed but money was deducted, contact us with your transaction reference.',
           'If you made a duplicate payment, contact us as soon as possible. Once confirmed, we will process a refund for the duplicate amount.',
         ],
       },
@@ -124,7 +124,7 @@ export const legalPolicies: LegalPolicy[] = [
         heading: '9. Chargebacks and disputes',
         paragraphs: [
           'If you have a payment issue, contact Anai first so we can help resolve it.',
-          'For faster support, include your order number and Paystack transaction reference.',
+          'For faster support, include your order number and M-Pesa transaction reference.',
         ],
       },
       {
@@ -232,9 +232,9 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: '5. Payments',
         paragraphs: [
-          'Payments are processed through Paystack.',
-          'By paying through Paystack, you may also be subject to Paystack payment terms.',
-          'Anai does not store your full card details.',
+          'Payments are processed through M-Pesa.',
+          'By paying through M-Pesa, you may also be subject to Safaricom M-Pesa terms.',
+          'Anai does not receive or store your M-Pesa PIN.',
         ],
       },
       {
@@ -315,8 +315,8 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: '3. Payments',
         paragraphs: [
-          'Payments are processed through Paystack. Anai does not store your full card details.',
-          'We may receive payment status, transaction reference, amount paid, and payment confirmation details from Paystack.',
+          'Payments are processed through M-Pesa. Anai does not receive or store your M-Pesa PIN.',
+          'We may receive payment status, transaction reference, amount paid, and payment confirmation details from Safaricom M-Pesa.',
         ],
       },
       {

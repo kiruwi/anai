@@ -6,7 +6,7 @@
     </p>
     <p class="checkout-result__support">
       Keep this page as proof of purchase. For support, refunds, returns, or payment disputes,
-      quote your order number and Paystack transaction reference.
+      quote your order number and M-Pesa transaction reference.
     </p>
     <NuxtLink to="/">Continue shopping</NuxtLink>
   </section>

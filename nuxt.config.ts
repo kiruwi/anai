@@ -9,18 +9,11 @@ const supabasePublishableKey =
   process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.SUPABASE_KEY ||
   process.env.SUPABASE_ANON_KEY
-const paystackPublicKey =
-  process.env.NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
-  process.env.NUXT_PAYSTACK_PUBLIC_KEY ||
-  process.env.PAYSTACK_PUBLIC_KEY
 const googleTagId =
   process.env.NUXT_PUBLIC_GOOGLE_TAG_ID ||
   process.env.NUXT_PUBLIC_GTAG_ID ||
   process.env.GOOGLE_TAG_ID ||
   'G-WW5TYKEGPK'
-const paystackSecretKey = process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
-const paystackWebhookSecret =
-  process.env.NUXT_PAYSTACK_WEBHOOK_SECRET || process.env.PAYSTACK_WEBHOOK_SECRET
 const supabaseSecretKey =
   process.env.NUXT_SUPABASE_SECRET_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
@@ -40,7 +33,7 @@ const contentSecurityPolicy = [
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
-  "form-action 'self' https://checkout.paystack.com https://paystack.com",
+  "form-action 'self'",
   [
     "img-src",
     "'self'",
@@ -60,9 +53,6 @@ const contentSecurityPolicy = [
     "'unsafe-inline'",
     'https://*.googletagmanager.com',
     'https://*.google-analytics.com',
-    'https://js.paystack.co',
-    'https://checkout.paystack.com',
-    'https://applepay.cdn-apple.com',
   ].join(' '),
   [
     "script-src-elem",
@@ -70,17 +60,10 @@ const contentSecurityPolicy = [
     "'unsafe-inline'",
     'https://*.googletagmanager.com',
     'https://*.google-analytics.com',
-    'https://js.paystack.co',
-    'https://checkout.paystack.com',
-    'https://applepay.cdn-apple.com',
   ].join(' '),
   [
     "connect-src",
     "'self'",
-    'https://api.paystack.co',
-    'https://checkout.paystack.com',
-    'https://standard.paystack.co',
-    'https://legacy-staging.paystack.co',
     'https://*.google-analytics.com',
     'https://*.analytics.google.com',
     'https://*.googletagmanager.com',
@@ -94,10 +77,6 @@ const contentSecurityPolicy = [
   [
     "frame-src",
     "'self'",
-    'https://checkout.paystack.com',
-    'https://standard.paystack.co',
-    'https://legacy-staging.paystack.co',
-    'https://paystack.com',
     'https://www.googletagmanager.com',
   ].join(' '),
   "media-src 'self' blob:",
@@ -212,8 +191,15 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     supabaseSecretKey,
-    paystackSecretKey,
-    paystackWebhookSecret,
+    mpesaEnvironment: process.env.NUXT_MPESA_ENVIRONMENT || 'sandbox',
+    mpesaConsumerKey: process.env.NUXT_MPESA_CONSUMER_KEY || '',
+    mpesaConsumerSecret: process.env.NUXT_MPESA_CONSUMER_SECRET || '',
+    mpesaShortcode: process.env.NUXT_MPESA_SHORTCODE || '',
+    mpesaPasskey: process.env.NUXT_MPESA_PASSKEY || '',
+    mpesaCallbackUrl: process.env.NUXT_MPESA_CALLBACK_URL || '',
+    mpesaCallbackToken: process.env.NUXT_MPESA_CALLBACK_TOKEN || '',
+    mpesaTransactionType: process.env.NUXT_MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline',
+    mpesaTransactionDescription: process.env.NUXT_MPESA_TRANSACTION_DESCRIPTION || 'ANAI payment',
     emailApiKey: '',
     adminOrderEmail: '',
     public: {
@@ -221,7 +207,6 @@ export default defineNuxtConfig({
       supabaseUrl,
       supabasePublishableKey,
       supabaseAnonKey: supabasePublishableKey,
-      paystackPublicKey,
       googleTagId,
       sentryDsn: '',
     },

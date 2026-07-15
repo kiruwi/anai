@@ -17,8 +17,8 @@
       <article>
         <h2>Payment support</h2>
         <p>
-          If your Paystack payment failed, was deducted, or was duplicated, send your order
-          number and Paystack transaction reference so we can trace the payment.
+          If your M-Pesa payment failed, was deducted, or was duplicated, send your order number
+          and M-Pesa transaction reference so we can trace the payment.
         </p>
       </article>
 
