@@ -165,10 +165,14 @@ p {
 }
 
 .shop-the-look__description {
+  display: -webkit-box;
+  height: 4.05em;
+  overflow: hidden;
   color: rgba(255, 255, 255, 0.74);
   font-size: var(--copy-font-size);
   line-height: 1.35;
-  min-height: 2.7em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 @media (max-width: 860px) {

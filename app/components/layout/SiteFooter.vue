@@ -38,7 +38,7 @@
           <ul>
             <li><NuxtLink to="/size-guide">Size guide</NuxtLink></li>
             <li><NuxtLink to="/contact">Contact</NuxtLink></li>
-            <li><NuxtLink to="/account">Account</NuxtLink></li>
+            <li><button class="site-footer__cookie-settings" type="button" @click="openCookieSettings">Cookie settings</button></li>
             <li><NuxtLink to="/legal">Policies</NuxtLink></li>
           </ul>
         </section>
@@ -47,6 +47,14 @@
     </div>
   </footer>
 </template>
+
+<script setup lang="ts">
+const cookieSettingsRequested = useState('anai-cookie-settings-requested', () => false)
+
+const openCookieSettings = () => {
+  cookieSettingsRequested.value = true
+}
+</script>
 
 <style scoped>
 .site-footer {
@@ -116,7 +124,18 @@ nav a {
   color: var(--colour-white);
 }
 
-nav a:hover {
+.site-footer__cookie-settings {
+  border: 0;
+  padding: 0;
+  color: var(--colour-white);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+nav a:hover,
+.site-footer__cookie-settings:hover {
   color: rgba(255, 255, 255, 0.68);
 }
 

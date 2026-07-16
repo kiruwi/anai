@@ -16,8 +16,8 @@ export type LegalPolicy = {
 export const lastUpdated = '10 June 2026'
 
 export const supportDetails = {
-  email: 'Contact Anai Support through the contact page.',
-  phone: 'Share your phone or WhatsApp number in your support request so we can follow up.',
+  email: 'Submit a support request at /contact so it receives a traceable request number.',
+  phone: 'Include your phone or WhatsApp number in the support form if you want us to follow up there.',
   location: 'Anai operates from Nairobi, Kenya.',
 }
 
@@ -381,17 +381,16 @@ export const legalPolicies: LegalPolicy[] = [
       {
         heading: '2. Types of cookies we use',
         bullets: [
-          'Essential cookies: keep the site and checkout working.',
-          'Analytics cookies: help us understand site traffic.',
-          'Preference cookies: remember settings such as cart or display choices.',
-          'Marketing cookies: help us measure campaign performance.',
+          'Required shopping storage: remembers your bag, wishlist, checkout session, and cookie choice.',
+          'Analytics cookies: Google Analytics helps us understand site traffic only when you allow it.',
+          'Advertising cookies: Anai does not currently use advertising or cross-site marketing cookies.',
         ],
       },
       {
         heading: '3. Managing cookies',
         paragraphs: [
-          'You can manage cookies through your browser settings or the cookie banner.',
-          'If you block some cookies, parts of the website may not work correctly.',
+          'You can change analytics consent at any time using Cookie settings in the website footer.',
+          'Required shopping storage cannot be switched off in the preference panel because it supports features you request, such as the bag and checkout. You can remove it through your browser settings.',
         ],
       },
       {

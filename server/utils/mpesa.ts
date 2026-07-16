@@ -125,6 +125,7 @@ const getAccessToken = async (config: MpesaRuntimeConfig) => {
   const credentials = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString('base64')
   const response = await fetch(`${getBaseUrl(config.environment)}/oauth/v1/generate?grant_type=client_credentials`, {
     headers: { Authorization: `Basic ${credentials}` },
+    signal: AbortSignal.timeout(15_000),
   })
   const payload = (await response.json()) as { access_token?: string; expires_in?: string | number; error_description?: string }
 
@@ -178,6 +179,7 @@ export const initiateMpesaStkPush = async ({
       AccountReference: accountReference,
       TransactionDesc: config.transactionDescription.slice(0, 13),
     }),
+    signal: AbortSignal.timeout(20_000),
   })
   const payload = (await response.json()) as MpesaStkResponse
 

@@ -13,7 +13,7 @@ const googleTagId =
   process.env.NUXT_PUBLIC_GOOGLE_TAG_ID ||
   process.env.NUXT_PUBLIC_GTAG_ID ||
   process.env.GOOGLE_TAG_ID ||
-  'G-WW5TYKEGPK'
+  ''
 const supabaseSecretKey =
   process.env.NUXT_SUPABASE_SECRET_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
@@ -72,7 +72,6 @@ const contentSecurityPolicy = [
     'https://pagead2.googlesyndication.com',
     'https://*.supabase.co',
     'wss://*.supabase.co',
-    'https://*.sentry.io',
   ].join(' '),
   [
     "frame-src",
@@ -175,12 +174,6 @@ export default defineNuxtConfig({
       '/**': {
         headers: securityHeaders,
       },
-      '/_nuxt/**': {
-        headers: {
-          ...securityHeaders,
-          'cache-control': 'public, max-age=31536000, immutable',
-        },
-      },
       '/images/**': {
         headers: {
           ...securityHeaders,
@@ -208,7 +201,6 @@ export default defineNuxtConfig({
       supabasePublishableKey,
       supabaseAnonKey: supabasePublishableKey,
       googleTagId,
-      sentryDsn: '',
     },
   },
 })

@@ -119,6 +119,7 @@ const isPhotoPending = ref(true)
 const photoElement = ref<HTMLImageElement | null>(null)
 const hasJustAdded = ref(false)
 const { toggleWishlist, isInWishlist } = useWishlist()
+const { addToCart } = useCart()
 let imageAnimation: { kill: () => void } | undefined
 let addedTimer: number | undefined
 const imageAnimationSetupTimeoutMs = 3000
@@ -187,8 +188,6 @@ const handleQuickAdd = () => {
   if (isSoldOut.value) {
     return
   }
-
-  const { addToCart } = useCart()
 
   addToCart(props.product, 1, {
     colour: selectedColourName.value,

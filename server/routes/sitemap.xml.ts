@@ -5,22 +5,11 @@ import { legalPaths } from '../../app/data/legalContent'
 const staticPaths = [
   '/',
   '/shop',
-  '/new-in',
-  '/sets',
-  '/tops',
-  '/outerwear',
-  '/accessories',
-  '/lookbook',
-  '/shop-the-look',
   '/about',
-  '/delivery-returns',
   '/size-guide',
   '/contact',
-  '/legal',
   ...legalPaths,
 ]
-
-const lastmod = '2026-06-10'
 
 const escapeXml = (value: string) =>
   value
@@ -52,7 +41,6 @@ export default defineEventHandler((event) => {
       return [
         '  <url>',
         `    <loc>${escapeXml(`${siteUrl}${path}`)}</loc>`,
-        `    <lastmod>${lastmod}</lastmod>`,
         `    <priority>${priority}</priority>`,
         '  </url>',
       ].join('\n')

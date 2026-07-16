@@ -66,8 +66,8 @@ const normalizeColour = (product: HomepageProduct, colour: unknown) => {
   return matchingColour ?? getProductDefaultColourName(product)
 }
 
-const getCartItemKey = (item: Pick<CartItem, 'slug' | 'colour'>) =>
-  `${item.slug}:${item.colour ?? ''}`
+export const getCartItemKey = (item: Pick<CartItem, 'slug' | 'colour' | 'size'>) =>
+  `${item.slug}:${item.colour ?? ''}:${item.size ?? ''}`
 
 const getStoredCart = () => {
   if (!import.meta.client) {
@@ -87,7 +87,7 @@ const getStoredCart = () => {
       return []
     }
 
-    return parsedValue
+    const normalizedItems = parsedValue
       .map((item): CartItem | undefined => {
         if (!item || typeof item.slug !== 'string') {
           return undefined
@@ -116,6 +116,14 @@ const getStoredCart = () => {
         }
       })
       .filter((item): item is CartItem => Boolean(item))
+
+    return normalizedItems.reduce<CartItem[]>((mergedItems, item) => {
+      const existingItem = mergedItems.find((candidate) => getCartItemKey(candidate) === getCartItemKey(item))
+      const product = products.find((candidate) => candidate.slug === item.slug)
+      if (!existingItem || !product) return [...mergedItems, item]
+      existingItem.quantity = clampQuantity(product, existingItem.quantity + item.quantity, item.colour)
+      return mergedItems
+    }, [])
   } catch {
     return []
   }
@@ -157,13 +165,16 @@ export const useCart = () => {
     if (!colour || getProductStockLimit(product, colour) < 1) {
       return
     }
-    const existingItem = items.value.find(
-      (item) => item.slug === product.slug && normalizeColour(product, item.colour) === colour,
+    const size = normalizeSize(product, options.size)
+    const existingItem = items.value.find((item) =>
+      item.slug === product.slug &&
+      normalizeColour(product, item.colour) === colour &&
+      normalizeSize(product, item.size) === size,
     )
 
     if (existingItem) {
       existingItem.quantity = clampQuantity(product, existingItem.quantity + quantity, colour)
-      existingItem.size = normalizeSize(product, options.size) ?? existingItem.size
+      existingItem.size = size
       existingItem.colour = colour
     } else {
       items.value = [
@@ -171,7 +182,7 @@ export const useCart = () => {
         {
           slug: product.slug,
           quantity: clampQuantity(product, quantity, colour),
-          size: normalizeSize(product, options.size),
+          size,
           colour,
         },
       ]
@@ -208,18 +219,35 @@ export const useCart = () => {
   const updateSize = (key: string, size: string) => {
     hydrateCart()
 
-    items.value = items.value.map((item) => {
-      if (getCartItemKey(item) !== key) {
-        return item
-      }
+    const nextItems = [...items.value]
+    const itemIndex = nextItems.findIndex((item) => getCartItemKey(item) === key)
+    const item = nextItems[itemIndex]
+    const product = item ? products.find((candidate) => candidate.slug === item.slug) : undefined
+    if (!item || !product) return
 
-      const product = products.find((productItem) => productItem.slug === item.slug)
+    const nextSize = normalizeSize(product, size)
+    const existingIndex = nextItems.findIndex(
+      (candidate, index) =>
+        index !== itemIndex &&
+        candidate.slug === item.slug &&
+        normalizeColour(product, candidate.colour) === normalizeColour(product, item.colour) &&
+        normalizeSize(product, candidate.size) === nextSize,
+    )
 
-      return {
-        ...item,
-        size: product ? normalizeSize(product, size) : undefined,
+    if (existingIndex >= 0) {
+      const existingItem = nextItems[existingIndex]
+      if (!existingItem) return
+      nextItems[existingIndex] = {
+        ...existingItem,
+        quantity: clampQuantity(product, existingItem.quantity + item.quantity, existingItem.colour),
+        size: nextSize,
       }
-    })
+      nextItems.splice(itemIndex, 1)
+    } else {
+      nextItems[itemIndex] = { ...item, size: nextSize }
+    }
+
+    items.value = nextItems
 
     persistCart()
   }
@@ -251,7 +279,8 @@ export const useCart = () => {
       (nextItem, index) =>
         index !== itemIndex &&
         nextItem.slug === item.slug &&
-        normalizeColour(product, nextItem.colour) === nextColour,
+        normalizeColour(product, nextItem.colour) === nextColour &&
+        normalizeSize(product, nextItem.size) === normalizeSize(product, item.size),
     )
 
     if (existingIndex >= 0) {
@@ -264,7 +293,7 @@ export const useCart = () => {
       nextItems[existingIndex] = {
         ...existingItem,
         quantity: clampQuantity(product, existingItem.quantity + item.quantity, nextColour),
-        size: existingItem.size ?? item.size,
+        size: existingItem.size,
         colour: nextColour,
       }
       nextItems.splice(itemIndex, 1)

@@ -13,13 +13,13 @@ The application adds a private `token` query parameter to that URL automatically
 3. Open that app and copy its sandbox **Consumer Key** and **Consumer Secret**.
 4. In the Lipa na M-Pesa Online sandbox documentation/app details, use the sandbox shortcode and passkey provided for STK Push. Confirm the transaction type is `CustomerPayBillOnline` for a PayBill flow.
 5. Deploy a staging copy of the site to a public HTTPS URL. Safaricom cannot deliver an STK callback to `localhost`.
-6. Copy `.env.example` to your local `.env` and fill in the M-Pesa variables. Set:
+6. Add the M-Pesa variables to your local `.env`. Set:
 
    ```dotenv
    NUXT_MPESA_ENVIRONMENT=sandbox
    NUXT_MPESA_CALLBACK_URL=https://your-staging-domain.com/api/webhooks/mpesa
-NUXT_MPESA_TRANSACTION_TYPE=CustomerPayBillOnline
-NUXT_MPESA_TRANSACTION_DESCRIPTION=ANAI payment
+   NUXT_MPESA_TRANSACTION_TYPE=CustomerPayBillOnline
+   NUXT_MPESA_TRANSACTION_DESCRIPTION=ANAI payment
    ```
 
 7. Generate a callback token, for example with `openssl rand -hex 32`, and use it as `NUXT_MPESA_CALLBACK_TOKEN`.

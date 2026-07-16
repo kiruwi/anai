@@ -7,6 +7,48 @@
       </p>
     </header>
 
+    <form class="contact-page__form" @submit.prevent="submitRequest">
+      <h2>Send a support request</h2>
+      <div class="contact-page__fields">
+        <label>
+          Full name
+          <input v-model.trim="form.fullName" type="text" autocomplete="name" maxlength="120" required />
+        </label>
+        <label>
+          Email address
+          <input v-model.trim="form.email" type="email" autocomplete="email" maxlength="254" required />
+        </label>
+        <label>
+          Phone or WhatsApp number
+          <input v-model.trim="form.phone" type="tel" autocomplete="tel" maxlength="30" />
+        </label>
+        <label>
+          Help with
+          <select v-model="form.category" required>
+            <option value="order">An order</option>
+            <option value="payment">M-Pesa payment</option>
+            <option value="delivery">Delivery</option>
+            <option value="return">Return or refund</option>
+            <option value="product">A product</option>
+            <option value="general">Something else</option>
+          </select>
+        </label>
+        <label class="contact-page__field--wide">
+          Order number or M-Pesa reference, if applicable
+          <input v-model.trim="form.orderReference" type="text" maxlength="80" />
+        </label>
+        <label class="contact-page__field--wide">
+          How can we help?
+          <textarea v-model.trim="form.message" rows="6" minlength="10" maxlength="3000" required />
+        </label>
+      </div>
+      <p v-if="successMessage" class="contact-page__success" role="status">{{ successMessage }}</p>
+      <p v-if="errorMessage" class="contact-page__error" role="alert">{{ errorMessage }}</p>
+      <button type="submit" :disabled="isSubmitting">
+        {{ isSubmitting ? 'Sending…' : 'Send request' }}
+      </button>
+    </form>
+
     <div class="contact-page__grid">
       <article>
         <h2>Customer support</h2>
@@ -39,6 +81,39 @@
 </template>
 
 <script setup lang="ts">
+const form = reactive({
+  fullName: '',
+  email: '',
+  phone: '',
+  category: 'order',
+  orderReference: '',
+  message: '',
+})
+const isSubmitting = ref(false)
+const successMessage = ref('')
+const errorMessage = ref('')
+
+const submitRequest = async () => {
+  isSubmitting.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
+
+  try {
+    const response = await $fetch<{ requestNumber: string }>('/api/support/request', {
+      method: 'POST',
+      body: form,
+    })
+    successMessage.value = `Your request ${response.requestNumber} was received. Keep this number for follow-up.`
+    form.orderReference = ''
+    form.message = ''
+  } catch (error) {
+    const fetchError = error as { data?: { statusMessage?: string }; statusMessage?: string }
+    errorMessage.value = fetchError.data?.statusMessage || fetchError.statusMessage || 'Your request could not be sent. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
 useSeoMeta({
   title: 'Contact | Anai',
   description: 'Contact Anai for orders, payments, delivery, refunds, returns, and general support.',
@@ -75,6 +150,71 @@ h1 {
   gap: var(--space-lg);
 }
 
+.contact-page__form {
+  display: grid;
+  gap: var(--space-md);
+  max-width: 90rem;
+  margin-bottom: var(--space-2xl);
+  border: 1px solid var(--colour-border);
+  padding: var(--space-lg);
+}
+
+.contact-page__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.contact-page__form label {
+  display: grid;
+  gap: var(--space-xs);
+  color: var(--colour-muted);
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+
+.contact-page__field--wide {
+  grid-column: 1 / -1;
+}
+
+.contact-page__form input,
+.contact-page__form select,
+.contact-page__form textarea {
+  width: 100%;
+  border: 1px solid var(--colour-border);
+  border-radius: 0;
+  padding: 1.2rem;
+  color: var(--colour-black);
+  background: var(--colour-surface);
+  font: inherit;
+  font-size: 1.6rem;
+  text-transform: none;
+}
+
+.contact-page__form button {
+  justify-self: start;
+  border: 1px solid var(--colour-black);
+  padding: 1.2rem 1.6rem;
+  color: var(--colour-white);
+  background: var(--colour-black);
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.contact-page__form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.contact-page__success,
+.contact-page__error {
+  margin: 0;
+}
+
+.contact-page__error {
+  color: var(--colour-plum);
+}
+
 article {
   display: grid;
   gap: var(--space-sm);
@@ -99,8 +239,13 @@ article p {
 }
 
 @media (max-width: 760px) {
+  .contact-page__fields,
   .contact-page__grid {
     grid-template-columns: 1fr;
+  }
+
+  .contact-page__field--wide {
+    grid-column: auto;
   }
 }
 </style>

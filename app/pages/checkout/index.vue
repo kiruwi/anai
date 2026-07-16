@@ -22,13 +22,34 @@
           </label>
         </fieldset>
 
-        <fieldset>
+        <fieldset class="checkout-form__delivery-methods">
           <legend>Delivery</legend>
+          <label class="checkout-form__delivery-option">
+            <input v-model="deliveryMethod" type="radio" value="nairobi-delivery" />
+            <span>
+              Nairobi delivery
+              <small>KES 300</small>
+            </span>
+          </label>
+          <label class="checkout-form__delivery-option">
+            <input v-model="deliveryMethod" type="radio" value="town-pickup" />
+            <span>
+              Pick up in town
+              <small>Free</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset v-if="deliveryMethod === 'nairobi-delivery'">
+          <legend>Nairobi address</legend>
           <label>
             Delivery address
             <textarea v-model.trim="customer.address" rows="4" autocomplete="street-address" required />
           </label>
         </fieldset>
+        <p v-else class="checkout-form__pickup-note">
+          Select town pickup and we will contact you with collection details after payment.
+        </p>
 
         <p v-if="paymentMessage" class="checkout-form__message" role="status">
           {{ paymentMessage }}
@@ -48,8 +69,20 @@
           </p>
         </div>
 
-        <button class="checkout-form__submit" type="submit" :disabled="isPaymentButtonDisabled">
-          {{ paymentButtonLabel }}
+        <button
+          class="checkout-form__submit"
+          type="submit"
+          :disabled="isPaymentButtonDisabled"
+          :aria-label="paymentButtonLabel"
+        >
+          <img
+            v-if="showMpesaLogo"
+            class="checkout-form__mpesa-logo"
+            :src="'/images/mpesa%20logo/mpesa%20logo.svg'"
+            alt=""
+            aria-hidden="true"
+          />
+          <span v-else>{{ paymentButtonLabel }}</span>
         </button>
       </form>
 
@@ -90,11 +123,11 @@
           </div>
           <div>
             <dt>Delivery</dt>
-            <dd>Calculated after confirmation</dd>
+            <dd>{{ deliverySummary }}</dd>
           </div>
           <div class="checkout-summary__total">
             <dt>Total due now</dt>
-            <dd>KES {{ subtotalKes.toLocaleString() }}</dd>
+            <dd>KES {{ orderTotalKes.toLocaleString() }}</dd>
           </div>
         </dl>
       </aside>
@@ -125,10 +158,13 @@ const customer = reactive({
   phone: '',
   address: '',
 })
+const deliveryMethod = ref<'nairobi-delivery' | 'town-pickup'>('nairobi-delivery')
 const isPaymentLoading = ref(false)
 const paymentError = ref('')
 const paymentMessage = ref('')
 const pendingReference = ref('')
+const idempotencyKey = ref('')
+const checkoutSessionStorageKey = 'anai-checkout-session'
 
 type CreatePaymentResponse = {
   orderId: string
@@ -152,6 +188,8 @@ type FetchErrorLike = {
   }
   statusMessage?: string
   message?: string
+  statusCode?: number
+  status?: number
 }
 
 const hasMissingSizes = computed(() =>
@@ -160,10 +198,22 @@ const hasMissingSizes = computed(() =>
 const hasUnavailableSizes = computed(() =>
   lines.value.some((line) => line.size && !isSizeLabelInStock(line.size)),
 )
+const deliveryFeeKes = computed(() => (deliveryMethod.value === 'nairobi-delivery' ? 300 : 0))
+const orderTotalKes = computed(() => subtotalKes.value + deliveryFeeKes.value)
+const deliverySummary = computed(() =>
+  deliveryMethod.value === 'nairobi-delivery' ? 'Nairobi — KES 300' : 'Town pickup — Free',
+)
 const isPaymentButtonDisabled = computed(() =>
   isPaymentLoading.value ||
   hasMissingSizes.value ||
   hasUnavailableSizes.value,
+)
+const showMpesaLogo = computed(
+  () =>
+    !isPaymentLoading.value &&
+    !hasMissingSizes.value &&
+    !hasUnavailableSizes.value &&
+    !pendingReference.value,
 )
 const paymentButtonLabel = computed(() => {
   if (hasMissingSizes.value) {
@@ -204,6 +254,28 @@ const getCheckoutErrorMessage = (error: unknown) => {
 
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
+const persistCheckoutSession = () => {
+  if (!import.meta.client) return
+  window.localStorage.setItem(
+    checkoutSessionStorageKey,
+    JSON.stringify({ idempotencyKey: idempotencyKey.value, reference: pendingReference.value }),
+  )
+}
+
+const clearCheckoutSession = () => {
+  pendingReference.value = ''
+  idempotencyKey.value = ''
+  if (import.meta.client) window.localStorage.removeItem(checkoutSessionStorageKey)
+}
+
+const getIdempotencyKey = () => {
+  if (!idempotencyKey.value) {
+    idempotencyKey.value = globalThis.crypto.randomUUID()
+    persistCheckoutSession()
+  }
+  return idempotencyKey.value
+}
+
 const checkPaymentStatus = (reference: string) =>
   $fetch<PaymentStatusResponse>('/api/checkout/payment-status', {
     method: 'POST',
@@ -212,6 +284,7 @@ const checkPaymentStatus = (reference: string) =>
 
 const completePayment = async (reference: string) => {
   clearCart()
+  clearCheckoutSession()
   await router.push({ path: '/checkout/success', query: { reference } })
 }
 
@@ -226,7 +299,7 @@ const waitForPaymentConfirmation = async (reference: string) => {
     }
 
     if (payment.status === 'failed') {
-      pendingReference.value = ''
+      clearCheckoutSession()
       paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
       return false
     }
@@ -268,7 +341,7 @@ const startPayment = async () => {
       }
 
       if (status.status === 'failed') {
-        pendingReference.value = ''
+        clearCheckoutSession()
         paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
         return
       }
@@ -282,6 +355,8 @@ const startPayment = async () => {
       method: 'POST',
       body: {
         customer,
+        deliveryMethod: deliveryMethod.value,
+        idempotencyKey: getIdempotencyKey(),
         items: lines.value.map((line) => ({
           slug: line.slug,
           quantity: line.quantity,
@@ -292,15 +367,31 @@ const startPayment = async () => {
     })
 
     pendingReference.value = payment.reference
+    persistCheckoutSession()
     paymentMessage.value = payment.customerMessage || 'Check your phone and enter your M-Pesa PIN to pay.'
     await waitForPaymentConfirmation(payment.reference)
   } catch (error) {
     paymentMessage.value = ''
     paymentError.value = getCheckoutErrorMessage(error)
+    const fetchError = error as FetchErrorLike
+    if (fetchError.statusCode === 502 || fetchError.status === 502) clearCheckoutSession()
   } finally {
     isPaymentLoading.value = false
   }
 }
+
+onMounted(() => {
+  try {
+    const storedSession = JSON.parse(window.localStorage.getItem(checkoutSessionStorageKey) || '{}') as {
+      idempotencyKey?: unknown
+      reference?: unknown
+    }
+    if (typeof storedSession.idempotencyKey === 'string') idempotencyKey.value = storedSession.idempotencyKey
+    if (typeof storedSession.reference === 'string') pendingReference.value = storedSession.reference
+  } catch {
+    window.localStorage.removeItem(checkoutSessionStorageKey)
+  }
+})
 </script>
 
 <style scoped>
@@ -364,7 +455,7 @@ h1 {
   text-transform: uppercase;
 }
 
-.checkout-form input,
+.checkout-form input:not([type='radio']),
 .checkout-form textarea {
   width: 100%;
   border: 1px solid var(--colour-border);
@@ -374,6 +465,46 @@ h1 {
   background: var(--colour-surface);
   font-size: 1.6rem;
   text-transform: none;
+}
+
+.checkout-form__delivery-methods {
+  gap: var(--space-sm);
+}
+
+.checkout-form__delivery-option {
+  grid-template-columns: auto 1fr;
+  gap: var(--space-sm);
+  align-items: center;
+  border: 1px solid var(--colour-border);
+  padding: var(--space-sm);
+  color: var(--colour-black);
+  cursor: pointer;
+  text-transform: none;
+}
+
+.checkout-form__delivery-option input {
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+  accent-color: var(--colour-black);
+}
+
+.checkout-form__delivery-option span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.checkout-form__delivery-option small {
+  color: var(--colour-muted);
+  font-size: inherit;
+}
+
+.checkout-form__pickup-note {
+  margin: 0;
+  border: 1px solid var(--colour-border);
+  padding: var(--space-md);
+  color: var(--colour-muted);
 }
 
 .checkout-form__submit,
@@ -387,6 +518,13 @@ h1 {
   background: var(--colour-black);
   cursor: pointer;
   text-transform: uppercase;
+}
+
+.checkout-form__mpesa-logo {
+  width: clamp(10.5rem, 28vw, 13rem);
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 .checkout-form__submit:disabled {

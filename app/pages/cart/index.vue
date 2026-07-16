@@ -111,9 +111,9 @@
             <dd>Calculated at checkout</dd>
           </div>
         </dl>
-        <NuxtLink v-if="canCheckout" class="cart-summary__checkout" to="/checkout">
+        <a v-if="canCheckout" class="cart-summary__checkout" href="/checkout">
           Checkout
-        </NuxtLink>
+        </a>
         <button v-else class="cart-summary__checkout" type="button" disabled>
           {{ checkoutBlockedLabel }}
         </button>

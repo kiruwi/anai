@@ -4,16 +4,51 @@
       <div>
         <h2>Get first access to drops, restocks, and offers.</h2>
       </div>
-      <form>
+      <form @submit.prevent="subscribe">
         <label for="newsletter-email">Email address</label>
         <div>
-          <input id="newsletter-email" type="email" placeholder="you@example.com" />
-          <button type="submit">Sign up</button>
+          <input
+            id="newsletter-email"
+            v-model.trim="email"
+            type="email"
+            autocomplete="email"
+            placeholder="you@example.com"
+            required
+          />
+          <button type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? 'Signing up…' : 'Sign up' }}
+          </button>
         </div>
+        <p v-if="message" class="newsletter__message" role="status">{{ message }}</p>
+        <p v-if="errorMessage" class="newsletter__error" role="alert">{{ errorMessage }}</p>
       </form>
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+const email = ref('')
+const isSubmitting = ref(false)
+const message = ref('')
+const errorMessage = ref('')
+
+const subscribe = async () => {
+  isSubmitting.value = true
+  message.value = ''
+  errorMessage.value = ''
+
+  try {
+    await $fetch('/api/newsletter/subscribe', { method: 'POST', body: { email: email.value } })
+    email.value = ''
+    message.value = 'You’re on the list. Watch your inbox for the next drop.'
+  } catch (error) {
+    const fetchError = error as { data?: { statusMessage?: string }; statusMessage?: string }
+    errorMessage.value = fetchError.data?.statusMessage || fetchError.statusMessage || 'Signup failed. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+</script>
 
 <style scoped>
 .newsletter {
@@ -80,6 +115,23 @@ button {
   background: var(--colour-black);
   cursor: pointer;
   text-transform: uppercase;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.newsletter__message,
+.newsletter__error {
+  margin-top: var(--space-sm);
+  font-size: var(--copy-font-size);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.newsletter__error {
+  color: var(--colour-plum);
 }
 
 @media (max-width: 760px) {
