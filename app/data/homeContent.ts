@@ -290,10 +290,10 @@ export const products: HomepageProduct[] = [
     name: 'Mvua flannel',
     slug: 'mvua-flannel',
     priceKes: 4770,
-    stockQuantity: 2,
+    stockQuantity: 3,
     category: 'Tops',
     colours: [
-      { name: 'Black', value: '#111111', imageUrl: '/images/products/Mvua flannel/black.webp', stockQuantity: 2 },
+      { name: 'Black', value: '#111111', imageUrl: '/images/products/Mvua flannel/black.webp', stockQuantity: 3 },
       { name: 'Brown', value: '#6f4631', stockQuantity: 0 },
       { name: 'Cream', value: '#efe7dc', stockQuantity: 0 },
     ],

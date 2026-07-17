@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
+import { resolveInventoryStock } from '../shared/lib/inventory.ts'
 
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -33,4 +34,66 @@ test('success page verifies payment status instead of trusting the URL', async (
   assert.match(successPage, /\/api\/checkout\/payment-status/)
   assert.match(successPage, /v-if="payment\?\.paid"/)
   assert.match(successPage, /This page is not proof of payment/)
+})
+
+test('storefront stock is read from active Supabase variants', async () => {
+  const inventoryApi = await readProjectFile('server/api/catalog/inventory.get.ts')
+  const inventoryComposable = await readProjectFile('app/composables/useInventory.ts')
+
+  assert.match(inventoryApi, /from\('product_variants'\)/)
+  assert.match(inventoryApi, /stock_quantity/)
+  assert.match(inventoryApi, /products!inner\(slug\)/)
+  assert.match(inventoryComposable, /resolveInventoryStock/)
+})
+
+test('loaded inventory fails closed for products and colours omitted by Supabase', () => {
+  const inventory = {
+    updatedAt: '2026-07-16T12:00:00.000Z',
+    products: {
+      jackets: {
+        total: 2,
+        colours: { black: 2 },
+      },
+    },
+  }
+
+  assert.equal(resolveInventoryStock({
+    inventory,
+    productSlug: 'inactive-product',
+    fallbackStock: 10,
+  }), 0)
+  assert.equal(resolveInventoryStock({
+    inventory,
+    productSlug: 'jackets',
+    colour: 'Brown',
+    fallbackStock: 10,
+  }), 0)
+  assert.equal(resolveInventoryStock({
+    inventory: null,
+    productSlug: 'jackets',
+    fallbackStock: 2,
+  }), 2)
+})
+
+test('product cards display live pieces left and enforce colour stock', async () => {
+  const productCard = await readProjectFile('app/components/product/ProductCard.vue')
+  const productPage = await readProjectFile('app/pages/product/[slug].vue')
+  const cart = await readProjectFile('app/composables/useCart.ts')
+
+  assert.match(productCard, /\{\{ stockLabel \}\}/)
+  assert.match(productPage, /\{\{ stockLabel \}\}/)
+  assert.match(productCard, /getProductStock\(props\.product, getProductColourName\(colour\)\)/)
+  assert.match(cart, /clampLiveQuantity/)
+})
+
+test('stocktake quantities are displayed over product photos', async () => {
+  const productCard = await readProjectFile('app/components/product/ProductCard.vue')
+  const productPage = await readProjectFile('app/pages/product/[slug].vue')
+  const stocktake = await readProjectFile('supabase/migrations/20260716170000_apply_stocktake_quantities.sql')
+
+  assert.match(productCard, /product-card__media[\s\S]*product-card__stock[\s\S]*product-card__body/)
+  assert.match(productPage, /product-page__media[\s\S]*product-page__stock[\s\S]*product-page__details/)
+  assert.match(productCard, /getStockLabel\(totalStock\.value\)/)
+  assert.match(stocktake, /'ANAI-MVUA-BLACK-OS', 3/)
+  assert.match(stocktake, /'ANAI-MIA-WHITE-OS', 2/)
 })

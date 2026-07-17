@@ -285,6 +285,7 @@ const checkPaymentStatus = (reference: string) =>
 const completePayment = async (reference: string) => {
   clearCart()
   clearCheckoutSession()
+  await refreshNuxtData('anai-live-inventory-request')
   await router.push({ path: '/checkout/success', query: { reference } })
 }
 

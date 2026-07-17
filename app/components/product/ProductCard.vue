@@ -40,6 +40,13 @@
       >
         {{ productBadgeLabel }}
       </span>
+      <span
+        class="product-card__stock"
+        :class="{ 'product-card__stock--low': totalStock > 0 && totalStock <= 3 }"
+        aria-live="polite"
+      >
+        {{ stockLabel }}
+      </span>
       <button
         class="product-card__wishlist"
         type="button"
@@ -70,10 +77,10 @@
           v-for="colour in product.colours"
           :key="getColourKey(colour)"
           class="product-card__swatch"
-          :class="{ 'product-card__swatch--unavailable': !isProductColourAvailable(colour) }"
+          :class="{ 'product-card__swatch--unavailable': !isColourAvailable(colour) }"
           type="button"
-          :disabled="!isProductColourAvailable(colour)"
-          :aria-label="`${getProductColourName(colour)}${isProductColourAvailable(colour) ? '' : ' — out of stock'}`"
+          :disabled="!isColourAvailable(colour)"
+          :aria-label="`${getProductColourName(colour)}${isColourAvailable(colour) ? '' : ' — out of stock'}`"
           :aria-pressed="selectedColourName === getProductColourName(colour)"
           :style="{ background: getProductColourValue(colour) }"
           @click="selectColour(colour)"
@@ -82,7 +89,7 @@
       <button
         class="product-card__quick-add"
         type="button"
-        :disabled="isSoldOut"
+        :disabled="isSoldOut || selectedStock < 1"
         @click="handleQuickAdd"
       >
         {{ quickAddLabel }}
@@ -97,9 +104,6 @@ import {
   getProductColourName,
   getProductColourValue,
   getProductDefaultColourName,
-  getProductBadgeLabel,
-  isProductColourAvailable,
-  isProductOutOfStock,
   type HomepageProduct,
   type ProductColour,
 } from '../../data/homeContent'
@@ -120,13 +124,20 @@ const photoElement = ref<HTMLImageElement | null>(null)
 const hasJustAdded = ref(false)
 const { toggleWishlist, isInWishlist } = useWishlist()
 const { addToCart } = useCart()
+const { getProductStock, getStockLabel } = useInventory()
 let imageAnimation: { kill: () => void } | undefined
 let addedTimer: number | undefined
 const imageAnimationSetupTimeoutMs = 3000
 
 const isWishlistSaved = computed(() => isInWishlist(props.product.slug))
-const isSoldOut = computed(() => isProductOutOfStock(props.product))
-const productBadgeLabel = computed(() => getProductBadgeLabel(props.product))
+const totalStock = computed(() => getProductStock(props.product))
+const selectedStock = computed(() => getProductStock(props.product, selectedColourName.value))
+const stockLabel = computed(() => getStockLabel(totalStock.value))
+const isSoldOut = computed(() => totalStock.value < 1)
+const productBadgeLabel = computed(() => {
+  if (isSoldOut.value) return 'Out of stock'
+  return props.product.isNew ? 'New' : ''
+})
 const wishlistLabel = computed(() =>
   isWishlistSaved.value
     ? `Remove ${props.product.name} from wishlist`
@@ -171,8 +182,11 @@ watch(
 const getColourKey = (colour: ProductColour) =>
   `${getProductColourName(colour)}-${getProductColourValue(colour)}`
 
+const isColourAvailable = (colour: ProductColour) =>
+  getProductStock(props.product, getProductColourName(colour)) > 0
+
 const selectColour = (colour: ProductColour) => {
-  if (!isProductColourAvailable(colour)) {
+  if (!isColourAvailable(colour)) {
     return
   }
 
@@ -184,8 +198,19 @@ const selectColour = (colour: ProductColour) => {
   }
 }
 
+watchEffect(() => {
+  const selectedColour = props.product.colours.find(
+    (colour) => getProductColourName(colour) === selectedColourName.value,
+  )
+
+  if (selectedColour && isColourAvailable(selectedColour)) return
+
+  const firstAvailableColour = props.product.colours.find(isColourAvailable)
+  if (firstAvailableColour) selectColour(firstAvailableColour)
+})
+
 const handleQuickAdd = () => {
-  if (isSoldOut.value) {
+  if (isSoldOut.value || selectedStock.value < 1) {
     return
   }
 
@@ -500,6 +525,29 @@ strong {
   grid-column: 2;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.product-card__stock {
+  position: absolute;
+  z-index: 4;
+  top: var(--space-sm);
+  left: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  color: var(--colour-black);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.product-card__stock--low {
+  color: var(--colour-white);
+  background: #8d3d3d;
 }
 
 .product-card__footer {

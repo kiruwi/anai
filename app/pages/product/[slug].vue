@@ -38,6 +38,13 @@
       >
         {{ productBadgeLabel }}
       </span>
+      <span
+        class="product-page__stock"
+        :class="{ 'product-page__stock--low': totalStock > 0 && totalStock <= 3 }"
+        aria-live="polite"
+      >
+        {{ stockLabel }}
+      </span>
     </div>
     <div class="product-page__details">
       <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
@@ -60,15 +67,15 @@
             class="product-page__colour"
             :class="{
               'product-page__colour--selected': selectedColourName === getProductColourName(colour),
-              'product-page__colour--unavailable': !isProductColourAvailable(colour),
+              'product-page__colour--unavailable': !isColourAvailable(colour),
             }"
             type="button"
-            :disabled="!isProductColourAvailable(colour)"
-            :aria-label="`${getProductColourName(colour)}${isProductColourAvailable(colour) ? '' : ' — out of stock'}`"
+            :disabled="!isColourAvailable(colour)"
+            :aria-label="`${getProductColourName(colour)}${isColourAvailable(colour) ? '' : ' — out of stock'}`"
             :aria-pressed="selectedColourName === getProductColourName(colour)"
-            :title="isProductColourAvailable(colour) ? getProductColourName(colour) : `${getProductColourName(colour)} — out of stock`"
+            :title="isColourAvailable(colour) ? getProductColourName(colour) : `${getProductColourName(colour)} — out of stock`"
             :style="{ background: getProductColourValue(colour) }"
-            @click="selectedColourName = getProductColourName(colour)"
+            @click="selectColour(colour)"
           />
         </div>
       </div>
@@ -76,7 +83,7 @@
         <button
           class="product-page__add"
           type="button"
-          :disabled="isSoldOut"
+          :disabled="isSoldOut || selectedStock < 1"
           @click="handleAddToCart"
         >
           {{ addButtonLabel }}
@@ -98,18 +105,17 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import {
-  getProductBadgeLabel,
   getProductColourName,
   getProductColourValue,
   getProductDefaultColourName,
-  isProductColourAvailable,
-  isProductOutOfStock,
   products,
+  type ProductColour,
 } from '../../data/homeContent'
 
 const route = useRoute()
 const { addToCart } = useCart()
 const { toggleWishlist, isInWishlist } = useWishlist()
+const { getProductStock, getStockLabel } = useInventory()
 const product = products.find((item) => item.slug === route.params.slug)
 
 if (!product) {
@@ -140,23 +146,49 @@ const galleryImages = [
 const productPageElement = ref<HTMLElement | null>(null)
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = shallowRef<HTMLDivElement[]>([])
-const selectedColourName = ref(getProductDefaultColourName(product))
+const selectedColourName = ref<string | undefined>(getProductDefaultColourName(product))
 const hasJustAdded = ref(false)
 let galleryAnimation: { kill: () => void } | undefined
 let galleryWheelLock: number | undefined
 let addedTimer: number | undefined
 let galleryIndex = 0
 
-const isSoldOut = computed(() => isProductOutOfStock(product))
-const productBadgeLabel = computed(() => getProductBadgeLabel(product))
+const totalStock = computed(() => getProductStock(product))
+const selectedStock = computed(() => getProductStock(product, selectedColourName.value))
+const stockLabel = computed(() => getStockLabel(totalStock.value))
+const isSoldOut = computed(() => totalStock.value < 1)
+const productBadgeLabel = computed(() => {
+  if (isSoldOut.value) return 'Out of stock'
+  return product.isNew ? 'New' : ''
+})
 const addButtonLabel = computed(() => {
-  if (isSoldOut.value) {
+  if (isSoldOut.value || selectedStock.value < 1) {
     return 'Out of stock'
   }
 
   return hasJustAdded.value ? 'Added to Bag' : 'Add to Bag'
 })
 const isWishlistSaved = computed(() => isInWishlist(product.slug))
+
+const isColourAvailable = (colour: ProductColour) =>
+  getProductStock(product, getProductColourName(colour)) > 0
+
+const selectColour = (colour: ProductColour) => {
+  if (isColourAvailable(colour)) selectedColourName.value = getProductColourName(colour)
+}
+
+watchEffect(() => {
+  const selectedColour = product.colours.find(
+    (colour) => getProductColourName(colour) === selectedColourName.value,
+  )
+
+  if (selectedColour && isColourAvailable(selectedColour)) return
+
+  const firstAvailableColour = product.colours.find(isColourAvailable)
+  selectedColourName.value = firstAvailableColour
+    ? getProductColourName(firstAvailableColour)
+    : undefined
+})
 
 const isDesktopGallery = () => window.matchMedia('(min-width: 981px)').matches
 
@@ -228,7 +260,7 @@ const setSlideRef = (
 }
 
 const handleAddToCart = () => {
-  if (isSoldOut.value) {
+  if (isSoldOut.value || selectedStock.value < 1) {
     return
   }
 
@@ -442,6 +474,29 @@ h1 {
   font-size: clamp(3rem, 3.2vw, 4.8rem);
   font-weight: 600;
   line-height: 1;
+}
+
+.product-page__stock {
+  position: absolute;
+  top: var(--space-sm);
+  left: var(--space-sm);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  color: var(--colour-black);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.product-page__stock--low {
+  color: var(--colour-white);
+  background: #8d3d3d;
 }
 
 .product-page__copy {

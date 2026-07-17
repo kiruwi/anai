@@ -2,6 +2,7 @@ insert into public.categories (name, slug, sort_order)
 values
   ('Outerwear', 'outerwear', 10),
   ('Tops', 'tops', 20),
+  ('Bottoms', 'bottoms', 25),
   ('Sets', 'sets', 30),
   ('Accessories', 'accessories', 40)
 on conflict (slug) do update
@@ -187,43 +188,37 @@ with seed_variants (
   stock_quantity
 ) as (
   values
-  ('jackets', 'ANAI-JACKETS-BLACK-OS', 'Black', '#111111', 3780, 10),
-  ('jackets', 'ANAI-JACKETS-BEIGE-OS', 'Beige', '#c8b69c', 3780, 10),
-  ('jackets', 'ANAI-JACKETS-BROWN-OS', 'Brown', '#6f4631', 3780, 10),
-  ('jackets', 'ANAI-JACKETS-GREEN-OS', 'Green', '#55624b', 3780, 10),
-  ('jackets', 'ANAI-JACKETS-GREY-OS', 'Grey', '#74756d', 3780, 10),
-  ('long-sleeve-round-neck', 'ANAI-LSRN-BLACK-OS', 'Black', '#111111', 2680, 10),
-  ('long-sleeve-round-neck', 'ANAI-LSRN-BLUE-OS', 'Blue', '#253b54', 2680, 10),
-  ('long-sleeve-round-neck', 'ANAI-LSRN-BROWN-OS', 'Brown', '#6f4631', 2680, 10),
-  ('long-sleeve-round-neck', 'ANAI-LSRN-GREEN-OS', 'Green', '#586447', 2680, 10),
-  ('long-sleeve-round-neck', 'ANAI-LSRN-NATURAL-OS', 'Natural', '#b89d83', 2680, 10),
-  ('long-sleeve-round-neck', 'ANAI-LSRN-WHITE-OS', 'White', '#f6f1ea', 2680, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-BLACK-OS', 'Black', '#111111', 2980, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-BLUE-OS', 'Blue', '#253b54', 2980, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-BROWN-OS', 'Brown', '#6f4631', 2980, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-GREEN-OS', 'Green', '#586447', 2980, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-OFF-WHITE-OS', 'Off white', '#efe7dc', 2980, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-PINK-OS', 'Pink', '#d8a0a7', 2980, 10),
-  ('long-sleeve-swirl-neck', 'ANAI-LSSN-RED-OS', 'Red', '#9f2526', 2980, 10),
-  ('minit-t-shirt', 'ANAI-MINIT-BLACK-OS', 'Black', '#111111', 2980, 20),
-  ('minit-t-shirt', 'ANAI-MINIT-BLUE-OS', 'Blue', '#253b54', 2980, 20),
-  ('minit-t-shirt', 'ANAI-MINIT-BROWN-OS', 'Brown', '#6f4631', 2980, 20),
-  ('minit-t-shirt', 'ANAI-MINIT-RED-STRIPE-OS', 'Red Stripe', 'repeating-linear-gradient(90deg, #111111 0 8px, #9f2526 8px 14px)', 2980, 20),
-  ('sahara-corsage-set', 'ANAI-SAHARA-BEIGE-OS', 'Beige', '#d7d4c9', 5060, 10),
-  ('sahara-corsage-set', 'ANAI-SAHARA-BLACK-OS', 'Black', '#111111', 5060, 10),
-  ('sahara-corsage-set', 'ANAI-SAHARA-BROWN-OS', 'Brown', '#6f4631', 5060, 10),
-  ('strappy-bra', 'ANAI-BRA-BLACK-OS', 'Black', '#111111', 2680, 15),
-  ('strappy-bra', 'ANAI-BRA-BROWN-OS', 'Brown', '#6f4631', 2680, 15),
-  ('strappy-bra', 'ANAI-BRA-WHITE-OS', 'White', '#f6f1ea', 2680, 15),
-  ('cropped-training-tee', 'ANAI-CTT-BLACK-OS', 'Black', '#111111', 2980, 20),
-  ('cropped-training-tee', 'ANAI-CTT-BURGUNDY-OS', 'Burgundy', '#4a2428', 2980, 20),
-  ('cropped-training-tee', 'ANAI-CTT-GREEN-OS', 'Green', '#4a5134', 2980, 20),
-  ('nuru-short-set', 'ANAI-NURU-BEIGE-OS', 'Beige', '#c9cbc6', 4920, 10),
-  ('nuru-short-set', 'ANAI-NURU-BLACK-OS', 'Black', '#111111', 4920, 10),
-  ('nuru-short-set', 'ANAI-NURU-BROWN-OS', 'Brown', '#6f4631', 4920, 10),
-  ('mia-cropped-tee', 'ANAI-MIA-BLACK-OS', 'Black', '#111111', 2800, 20),
-  ('mia-cropped-tee', 'ANAI-MIA-BROWN-OS', 'Brown', '#6f4631', 2800, 20),
-  ('mia-cropped-tee', 'ANAI-MIA-CREAM-OS', 'Cream', '#e8ddcd', 2800, 20)
+  ('jackets', 'ANAI-JACKETS-BLACK-OS', 'Black', '#111111', 3870, 2),
+  ('jackets', 'ANAI-JACKETS-BROWN-OS', 'Brown', '#6f4631', 3870, 2),
+  ('jackets', 'ANAI-JACKETS-NAVY-OS', 'Navy', '#253b54', 3870, 3),
+  ('long-sleeve-round-neck', 'ANAI-LSRN-BLACK-OS', 'Black', '#111111', 2680, 1),
+  ('long-sleeve-round-neck', 'ANAI-LSRN-BROWN-OS', 'Brown', '#6f4631', 2680, 1),
+  ('long-sleeve-round-neck', 'ANAI-LSRN-WHITE-OS', 'White', '#f6f1ea', 2680, 1),
+  ('long-sleeve-swirl-neck', 'ANAI-LSSN-BLACK-OS', 'Black', '#111111', 2980, 2),
+  ('long-sleeve-swirl-neck', 'ANAI-LSSN-BROWN-OS', 'Brown', '#6f4631', 2980, 0),
+  ('long-sleeve-swirl-neck', 'ANAI-LSSN-CREAM-OS', 'Cream', '#efe7dc', 2980, 1),
+  ('minit-t-shirt', 'ANAI-MINIT-BLACK-OS', 'Black', '#111111', 2980, 1),
+  ('sahara-corsage-set', 'ANAI-SAHARA-BLACK-OS', 'Black', '#111111', 5510, 1),
+  ('sahara-corsage-set', 'ANAI-SAHARA-GREY-OS', 'Grey', '#d7d4c9', 5510, 1),
+  ('sahara-corsage-set', 'ANAI-SAHARA-NAVY-OS', 'Navy blue', '#253b54', 5510, 1),
+  ('lela-set', 'ANAI-LELA-BLACK-OS', 'Black', '#111111', 5060, 0),
+  ('lela-set', 'ANAI-LELA-BROWN-OS', 'Brown', '#6f4631', 5060, 3),
+  ('lela-set', 'ANAI-LELA-WHITE-OS', 'White', '#f6f1ea', 5060, 0),
+  ('mvua-flannel', 'ANAI-MVUA-BLACK-OS', 'Black', '#111111', 4770, 3),
+  ('mvua-flannel', 'ANAI-MVUA-BROWN-OS', 'Brown', '#6f4631', 4770, 0),
+  ('mvua-flannel', 'ANAI-MVUA-CREAM-OS', 'Cream', '#efe7dc', 4770, 0),
+  ('strappy-bra', 'ANAI-BRA-BLACK-OS', 'Black', '#111111', 2680, 1),
+  ('strappy-bra', 'ANAI-BRA-BROWN-OS', 'Brown', '#6f4631', 2680, 1),
+  ('strappy-bra', 'ANAI-BRA-WHITE-OS', 'White', '#f6f1ea', 2680, 1),
+  ('terra-skirt', 'ANAI-TERRA-BLACK-OS', 'Black', '#111111', 2680, 1),
+  ('terra-skirt', 'ANAI-TERRA-BURGUNDY-OS', 'Burgundy', '#4a2428', 2680, 1),
+  ('terra-skirt', 'ANAI-TERRA-GREEN-OS', 'Green', '#4a5134', 2680, 0),
+  ('nuru-short-set', 'ANAI-NURU-BLACK-OS', 'Black', '#111111', 4920, 1),
+  ('nuru-short-set', 'ANAI-NURU-GREY-OS', 'Grey', '#c9cbc6', 4920, 1),
+  ('nuru-short-set', 'ANAI-NURU-NAVY-OS', 'Navy blue', '#253b54', 4920, 1),
+  ('mia-cropped-tee', 'ANAI-MIA-BLACK-OS', 'Black', '#111111', 2980, 2),
+  ('mia-cropped-tee', 'ANAI-MIA-BURGUNDY-OS', 'Burgundy', '#4a2428', 2980, 2),
+  ('mia-cropped-tee', 'ANAI-MIA-WHITE-OS', 'White', '#f6f1ea', 2980, 2)
 )
 
 insert into public.product_variants (
@@ -255,15 +250,28 @@ set color = excluded.color,
     stock_quantity = excluded.stock_quantity,
     is_active = excluded.is_active;
 
-update public.product_variants
+update public.product_variants as variants
 set is_active = false
-where sku in (
-  'ANAI-NURU-BIRCH-OS',
-  'ANAI-NURU-LILAC-OS',
-  'ANAI-NURU-PINK-OS',
-  'ANAI-SOCKS-WHITE-OS',
-  'ANAI-SOCKS-BLACK-OS'
-);
+from public.products as products
+where products.id = variants.product_id
+  and products.slug in (
+    'jackets', 'long-sleeve-round-neck', 'long-sleeve-swirl-neck',
+    'minit-t-shirt', 'sahara-corsage-set', 'lela-set', 'mvua-flannel',
+    'strappy-bra', 'terra-skirt', 'nuru-short-set', 'mia-cropped-tee'
+  )
+  and variants.sku not in (
+    'ANAI-JACKETS-BLACK-OS', 'ANAI-JACKETS-BROWN-OS', 'ANAI-JACKETS-NAVY-OS',
+    'ANAI-LSRN-BLACK-OS', 'ANAI-LSRN-BROWN-OS', 'ANAI-LSRN-WHITE-OS',
+    'ANAI-LSSN-BLACK-OS', 'ANAI-LSSN-BROWN-OS', 'ANAI-LSSN-CREAM-OS',
+    'ANAI-MINIT-BLACK-OS',
+    'ANAI-SAHARA-BLACK-OS', 'ANAI-SAHARA-GREY-OS', 'ANAI-SAHARA-NAVY-OS',
+    'ANAI-LELA-BLACK-OS', 'ANAI-LELA-BROWN-OS', 'ANAI-LELA-WHITE-OS',
+    'ANAI-MVUA-BLACK-OS', 'ANAI-MVUA-BROWN-OS', 'ANAI-MVUA-CREAM-OS',
+    'ANAI-BRA-BLACK-OS', 'ANAI-BRA-BROWN-OS', 'ANAI-BRA-WHITE-OS',
+    'ANAI-TERRA-BLACK-OS', 'ANAI-TERRA-BURGUNDY-OS', 'ANAI-TERRA-GREEN-OS',
+    'ANAI-NURU-BLACK-OS', 'ANAI-NURU-GREY-OS', 'ANAI-NURU-NAVY-OS',
+    'ANAI-MIA-BLACK-OS', 'ANAI-MIA-BURGUNDY-OS', 'ANAI-MIA-WHITE-OS'
+  );
 
 with seed_images (
   product_slug,
