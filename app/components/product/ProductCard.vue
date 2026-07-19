@@ -40,6 +40,7 @@
       >
         {{ productBadgeLabel }}
       </span>
+      <!-- Temporarily hidden: show the number of pieces left.
       <span
         class="product-card__stock"
         :class="{ 'product-card__stock--low': totalStock > 0 && totalStock <= 3 }"
@@ -47,6 +48,7 @@
       >
         {{ stockLabel }}
       </span>
+      -->
       <button
         class="product-card__wishlist"
         type="button"

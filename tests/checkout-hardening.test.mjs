@@ -75,18 +75,18 @@ test('loaded inventory fails closed for products and colours omitted by Supabase
   }), 2)
 })
 
-test('product cards display live pieces left and enforce colour stock', async () => {
+test('product cards hide live pieces left while continuing to enforce colour stock', async () => {
   const productCard = await readProjectFile('app/components/product/ProductCard.vue')
   const productPage = await readProjectFile('app/pages/product/[slug].vue')
   const cart = await readProjectFile('app/composables/useCart.ts')
 
-  assert.match(productCard, /\{\{ stockLabel \}\}/)
-  assert.match(productPage, /\{\{ stockLabel \}\}/)
+  assert.match(productCard, /<!-- Temporarily hidden: show the number of pieces left\.[\s\S]*?\{\{ stockLabel \}\}[\s\S]*?-->/)
+  assert.match(productPage, /<!-- Temporarily hidden: show the number of pieces left\.[\s\S]*?\{\{ stockLabel \}\}[\s\S]*?-->/)
   assert.match(productCard, /getProductStock\(props\.product, getProductColourName\(colour\)\)/)
   assert.match(cart, /clampLiveQuantity/)
 })
 
-test('stocktake quantities are displayed over product photos', async () => {
+test('stocktake quantities remain wired to the temporarily hidden photo labels', async () => {
   const productCard = await readProjectFile('app/components/product/ProductCard.vue')
   const productPage = await readProjectFile('app/pages/product/[slug].vue')
   const stocktake = await readProjectFile('supabase/migrations/20260716170000_apply_stocktake_quantities.sql')

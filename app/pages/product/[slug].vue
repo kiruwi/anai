@@ -38,6 +38,7 @@
       >
         {{ productBadgeLabel }}
       </span>
+      <!-- Temporarily hidden: show the number of pieces left.
       <span
         class="product-page__stock"
         :class="{ 'product-page__stock--low': totalStock > 0 && totalStock <= 3 }"
@@ -45,6 +46,7 @@
       >
         {{ stockLabel }}
       </span>
+      -->
     </div>
     <div class="product-page__details">
       <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
