@@ -108,7 +108,7 @@ export const isProductOutOfStock = (product: HomepageProduct) => getProductStock
 
 // Product photos keep human-readable filenames, so changing the file contents
 // requires a URL revision to prevent browsers and CDNs from reusing an older image.
-const productImageRevision = 'kenyan-models-20260722'
+const productImageRevision = 'kenyan-models-diverse-20260722'
 const versionProductImageUrl = (imageUrl: string) =>
   imageUrl.startsWith('/images/products/')
     ? `${imageUrl}?v=${productImageRevision}`
