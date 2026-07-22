@@ -106,6 +106,29 @@ export const getProductColourStockLimit = (product: HomepageProduct, colourName?
 
 export const isProductOutOfStock = (product: HomepageProduct) => getProductStockQuantity(product) <= 0
 
+// Product photos keep human-readable filenames, so changing the file contents
+// requires a URL revision to prevent browsers and CDNs from reusing an older image.
+const productImageRevision = 'kenyan-models-20260722'
+const versionProductImageUrl = (imageUrl: string) =>
+  imageUrl.startsWith('/images/products/')
+    ? `${imageUrl}?v=${productImageRevision}`
+    : imageUrl
+
+const versionProductImages = (product: HomepageProduct): HomepageProduct => ({
+  ...product,
+  colours: product.colours.map((colour) => {
+    if (typeof colour === 'string' || !colour.imageUrl) return colour
+
+    return {
+      ...colour,
+      imageUrl: versionProductImageUrl(colour.imageUrl),
+    }
+  }),
+  imageUrl: product.imageUrl ? versionProductImageUrl(product.imageUrl) : undefined,
+  hoverImageUrl: product.hoverImageUrl ? versionProductImageUrl(product.hoverImageUrl) : undefined,
+  galleryImages: product.galleryImages?.map(versionProductImageUrl),
+})
+
 export const getProductImageUrlForColour = (product: HomepageProduct, colourName?: string) => {
   const normalizedColourName = colourName?.trim().toLowerCase()
   const matchingColour = normalizedColourName
@@ -395,7 +418,7 @@ export const products: HomepageProduct[] = [
     description: 'A short-sleeve cropped tee with a relaxed boxy shape and clean round neckline.',
     sizeOptions: commonSizeOptions,
   },
-]
+].map(versionProductImages)
 
 export const categoryTiles: ImageTile[] = [
   {
@@ -435,6 +458,9 @@ export const shopLooks: ShopLook[] = [
     imageAlt: 'Terra skirt styled for a court look',
     products: ['Terra skirt', 'Socks', 'Hat'],
   },
-]
+].map((look) => ({
+  ...look,
+  imageUrl: versionProductImageUrl(look.imageUrl),
+}))
 
 export const brandPromises = ['M-Pesa checkout', 'Easy returns', 'Fast delivery', 'Secure payment']
