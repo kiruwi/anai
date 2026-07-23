@@ -282,6 +282,12 @@ const checkPaymentStatus = (reference: string) =>
     body: { reference },
   })
 
+const recoverPaymentStatus = (checkoutIdempotencyKey: string) =>
+  $fetch<PaymentStatusResponse>('/api/checkout/payment-status', {
+    method: 'POST',
+    body: { idempotencyKey: checkoutIdempotencyKey },
+  })
+
 const completePayment = async (reference: string) => {
   clearCart()
   clearCheckoutSession()
@@ -297,6 +303,12 @@ const waitForPaymentConfirmation = async (reference: string) => {
     if (payment.paid) {
       await completePayment(reference)
       return true
+    }
+
+    if (payment.status === 'cancelled') {
+      clearCheckoutSession()
+      paymentError.value = 'Checkout canceled.'
+      return false
     }
 
     if (payment.status === 'failed') {
@@ -341,6 +353,12 @@ const startPayment = async () => {
         return
       }
 
+      if (status.status === 'cancelled') {
+        clearCheckoutSession()
+        paymentError.value = 'Checkout canceled.'
+        return
+      }
+
       if (status.status === 'failed') {
         clearCheckoutSession()
         paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
@@ -373,8 +391,43 @@ const startPayment = async () => {
     await waitForPaymentConfirmation(payment.reference)
   } catch (error) {
     paymentMessage.value = ''
-    paymentError.value = getCheckoutErrorMessage(error)
     const fetchError = error as FetchErrorLike
+
+    const responseWasUnavailable =
+      typeof fetchError.statusCode !== 'number' && typeof fetchError.status !== 'number'
+
+    if (responseWasUnavailable && idempotencyKey.value) {
+      try {
+        const recoveredPayment = await recoverPaymentStatus(idempotencyKey.value)
+        pendingReference.value = recoveredPayment.reference
+        persistCheckoutSession()
+
+        if (recoveredPayment.paid) {
+          await completePayment(recoveredPayment.reference)
+          return
+        }
+
+        if (recoveredPayment.status === 'cancelled') {
+          clearCheckoutSession()
+          paymentError.value = 'Checkout canceled.'
+          return
+        }
+
+        if (recoveredPayment.status === 'failed') {
+          clearCheckoutSession()
+          paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
+          return
+        }
+
+        paymentMessage.value = 'The M-Pesa request is still pending. Do not submit another payment.'
+        await waitForPaymentConfirmation(recoveredPayment.reference)
+        return
+      } catch {
+        // Preserve the original request error if the checkout cannot be recovered.
+      }
+    }
+
+    paymentError.value = getCheckoutErrorMessage(error)
     if (fetchError.statusCode === 502 || fetchError.status === 502) clearCheckoutSession()
   } finally {
     isPaymentLoading.value = false

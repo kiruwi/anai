@@ -21,6 +21,13 @@
       </button>
     </template>
 
+    <template v-else-if="payment?.status === 'cancelled'">
+      <h1>Checkout canceled</h1>
+      <p class="checkout-result__reference">Reference: {{ reference }}</p>
+      <p class="checkout-result__support">No payment was completed. You can return to checkout when ready.</p>
+      <NuxtLink to="/checkout">Return to checkout</NuxtLink>
+    </template>
+
     <template v-else>
       <h1>Payment not confirmed</h1>
       <p v-if="reference" class="checkout-result__reference">Reference: {{ reference }}</p>

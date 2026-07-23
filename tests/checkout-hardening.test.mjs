@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 import { resolveInventoryStock } from '../shared/lib/inventory.ts'
+import { isMpesaCancellation } from '../shared/lib/mpesaStatus.ts'
 
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -22,6 +23,22 @@ test('M-Pesa finalization updates payment and order in the same RPC', async () =
   assert.match(finalizer, /update public\.payments/i)
   assert.match(finalizer, /update public\.orders set status = 'confirmed', payment_status = 'paid'/i)
   assert.match(finalizer, /release_checkout_inventory\(v_payment\.order_id\)/i)
+})
+
+test('M-Pesa cancellation is distinguished from other payment failures', () => {
+  assert.equal(isMpesaCancellation(1032, 'Request cancelled by user'), true)
+  assert.equal(isMpesaCancellation(null, 'Request canceled by user'), true)
+  assert.equal(isMpesaCancellation(1, 'The balance is insufficient for the transaction'), false)
+})
+
+test('checkout recovers a dropped creation response by its idempotency key', async () => {
+  const checkoutPage = await readProjectFile('app/pages/checkout/index.vue')
+  const paymentStatusApi = await readProjectFile('server/api/checkout/payment-status.post.ts')
+
+  assert.match(checkoutPage, /recoverPaymentStatus\(idempotencyKey\.value\)/)
+  assert.match(checkoutPage, /Checkout canceled\./)
+  assert.match(paymentStatusApi, /\.eq\('idempotency_key', idempotencyKey\)/)
+  assert.match(paymentStatusApi, /status = wasCanceled \? 'cancelled'/)
 })
 
 test('cart identity includes selected size', async () => {
