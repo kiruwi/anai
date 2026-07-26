@@ -61,7 +61,7 @@
       </svg>
       <p class="home-hero__preloader-count">{{ introProgress }}%</p>
     </div>
-    <h1>
+    <h1 ref="heroHeadingElement">
       <span
         v-if="!isIntroDisabled && !hasPlayedIntro"
         class="home-hero__preload-guard"
@@ -129,6 +129,7 @@ const shouldLoadVideo = ref(false)
 const isHeroVideoReady = ref(false)
 const heroVideoElement = ref<HTMLVideoElement | null>(null)
 const letterElements = shallowRef<SVGPathElement[]>([])
+const heroHeadingElement = ref<HTMLElement | null>(null)
 const underlineElement = ref<HTMLSpanElement | null>(null)
 const browElement = ref<SVGPathElement | null>(null)
 const columnsElement = ref<HTMLDivElement | null>(null)
@@ -144,11 +145,41 @@ let originalBodyOverflow = ''
 let isScrollLocked = false
 const preloaderDurationMs = 938
 const introSetupTimeoutMs = 3000
+const getUnderlineTransformOrigin = () =>
+  window.matchMedia('(max-width: 760px)').matches ? 'center center' : 'left center'
+
+const updateMobileDockTransform = () => {
+  const heading = heroHeadingElement.value
+  const logo = heading?.querySelector<HTMLElement>('.home-hero__logo')
+  const headerLogo = document.querySelector<HTMLElement>('.site-header__logo')
+  const headerInner = headerLogo?.parentElement
+
+  if (!logo || !heading || !headerLogo || !headerInner || !window.matchMedia('(max-width: 760px)').matches) {
+    return
+  }
+
+  const sourceRect = heading.getBoundingClientRect()
+  const headerRect = headerInner.getBoundingClientRect()
+  const targetWidth = headerLogo.offsetWidth
+  const targetHeight = targetWidth * (92.85 / 340.64)
+  const targetLeft = headerRect.left + ((headerRect.width - targetWidth) / 2)
+  const targetTop = headerRect.top + ((headerRect.height - targetHeight) / 2)
+
+  logo.style.setProperty('--hero-logo-dock-x', `${targetLeft - sourceRect.left}px`)
+  logo.style.setProperty('--hero-logo-dock-y', `${targetTop - sourceRect.top}px`)
+  logo.style.setProperty('--hero-logo-dock-scale', `${targetWidth / sourceRect.width}`)
+}
 
 const updateDockedLogo = () => {
   cancelAnimationFrame(rafId)
   rafId = requestAnimationFrame(() => {
-    isLogoDocked.value = window.scrollY > 32
+    const shouldDock = window.scrollY > 32
+
+    if (shouldDock) {
+      updateMobileDockTransform()
+    }
+
+    isLogoDocked.value = shouldDock
   })
 }
 
@@ -187,7 +218,7 @@ watch(isLogoDocked, async (docked) => {
 
   gsap.to(underline, {
     scaleX: docked ? 0 : 1,
-    transformOrigin: 'left center',
+    transformOrigin: getUnderlineTransformOrigin(),
     duration: 0.42,
     ease: 'power2.out',
     overwrite: true,
@@ -379,8 +410,16 @@ const runIntroCounter = () => new Promise<void>((resolve) => {
 })
 
 onMounted(async () => {
-  isLogoDocked.value = window.scrollY > 32
+  const shouldStartDocked = window.scrollY > 32
+
+  if (shouldStartDocked) {
+    await nextTick()
+    updateMobileDockTransform()
+  }
+
+  isLogoDocked.value = shouldStartDocked
   window.addEventListener('scroll', updateDockedLogo, { passive: true })
+  window.addEventListener('resize', updateMobileDockTransform, { passive: true })
 
   const shouldPrimeHeroVideo = true
   const heroVideoReadyPromise = shouldPrimeHeroVideo
@@ -458,7 +497,7 @@ onMounted(async () => {
   })
   gsap.set(underlineElement.value, {
     scaleX: 0,
-    transformOrigin: 'left center',
+    transformOrigin: getUnderlineTransformOrigin(),
   })
   gsap.set(browElement.value, {
     opacity: 0,
@@ -544,6 +583,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('pointerdown', loadHeroVideo)
   window.removeEventListener('keydown', loadHeroVideo)
   window.removeEventListener('scroll', updateDockedLogo)
+  window.removeEventListener('resize', updateMobileDockTransform)
   isLogoDocked.value = false
   isRisePending.value = false
   isIntroPreloaderRunning.value = false
@@ -809,15 +849,23 @@ h1 {
     justify-content: flex-end;
     min-height: 100svh;
     padding-top: calc(6.4rem + var(--space-md));
-    padding-bottom: clamp(var(--space-xl), 10vh, var(--space-2xl));
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom) + var(--space-lg));
   }
 
   .home-hero h1 {
     width: 100%;
   }
 
+  .home-hero__logo {
+    transform-origin: left top;
+    transition:
+      opacity 720ms ease,
+      transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   .home-hero__underline {
     height: clamp(0.25rem, 0.75vw, 1rem);
+    transform-origin: center center;
   }
 
   .home-hero__columns {
@@ -835,7 +883,10 @@ h1 {
   }
 
   .home-hero--docked .home-hero__logo {
-    transform: translateY(calc(-1 * (6.4rem + var(--space-sm)))) scale(0.24);
+    transform: translate(
+      var(--hero-logo-dock-x, 0),
+      var(--hero-logo-dock-y, calc(-1 * (6.4rem + var(--space-sm))))
+    ) scale(var(--hero-logo-dock-scale, 0.3));
   }
 }
 </style>

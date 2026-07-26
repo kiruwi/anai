@@ -22,18 +22,19 @@
           <path d="M182.45,2.06c.66.64-3.74,5.72-4.53,6.46-16.2,15.08-36.43-10.39-51.12,1.21-1.02.81-.86,2.2-1.98,2.18.41-4.05,5.76-9.27,9.32-10.76,12.12-5.07,27.54,8.51,41.34,4.94,3.3-.85,4.08-3.2,6.96-4.03Z" />
         </svg>
       </NuxtLink>
-      <div class="site-header__links">
+    </nav>
+  </header>
+  <nav class="site-header__links" aria-label="Quick navigation">
         <NuxtLink
           class="site-header__action"
           to="/shop"
           aria-label="Shop all products"
         >
           <span class="site-header__action-label">Shop</span>
-          <!-- Temporarily hidden: mobile navigation icon.
           <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20.4 3.5 16 2a4 4 0 0 1-8 0L3.6 3.5a2 2 0 0 0-1.3 2.2l.6 3.5a2 2 0 0 0 2 1.6l1.1-.1V22h12V10.7l1.1.1a2 2 0 0 0 2-1.6l.6-3.5a2 2 0 0 0-1.3-2.2Z" />
           </svg>
-          -->
+          <span class="site-header__mobile-label">Shop</span>
         </NuxtLink>
         <NuxtLink
           class="site-header__action"
@@ -41,11 +42,10 @@
           aria-label="Contact support"
         >
           <span class="site-header__action-label">Contact</span>
-          <!-- Temporarily hidden: mobile navigation icon.
           <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7.1 3h3l1.3 4.2-2.1 1.3a14 14 0 0 0 6.2 6.2l1.3-2.1 4.2 1.3v3c0 2.3-1.9 4.1-4.2 4A17.8 17.8 0 0 1 3.1 7.2C3 4.9 4.8 3 7.1 3Z" />
           </svg>
-          -->
+          <span class="site-header__mobile-label">Contact</span>
         </NuxtLink>
         <NuxtLink
           class="site-header__action"
@@ -53,14 +53,13 @@
           :aria-label="`Wishlist with ${wishlistCount} items`"
         >
           <span class="site-header__action-label">Wishlist(<span>{{ wishlistCount }}</span>)</span>
-          <!-- Temporarily hidden: mobile navigation icon and count badge.
           <span class="site-header__icon-wrap">
             <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z" />
             </svg>
             <span v-if="wishlistCount" class="site-header__count">{{ wishlistCount }}</span>
           </span>
-          -->
+          <span class="site-header__mobile-label">Wishlist</span>
         </NuxtLink>
         <NuxtLink
           class="site-header__action"
@@ -68,18 +67,15 @@
           :aria-label="`Bag with ${itemCount} items`"
         >
           <span class="site-header__action-label">Bag(<span>{{ itemCount }}</span>)</span>
-          <!-- Temporarily hidden: mobile navigation icon and count badge.
           <span class="site-header__icon-wrap">
             <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" />
             </svg>
             <span v-if="itemCount" class="site-header__count">{{ itemCount }}</span>
           </span>
-          -->
+          <span class="site-header__mobile-label">Bag</span>
         </NuxtLink>
-      </div>
-    </nav>
-  </header>
+  </nav>
 </template>
 
 <script setup lang="ts">
@@ -160,13 +156,19 @@ onBeforeUnmount(() => {
 }
 
 .site-header__links {
+  position: fixed;
+  top: 0;
+  right: var(--page-gutter);
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: clamp(0.8rem, 2vw, calc(var(--space-md) * 2));
+  min-height: 7.2rem;
+  mix-blend-mode: difference;
 }
 
-.site-header__inner a {
+.site-header__action {
   color: var(--colour-white);
   font-size: clamp(1.2rem, 2vw, 2.8rem);
   letter-spacing: 0.04em;
@@ -176,13 +178,15 @@ onBeforeUnmount(() => {
 }
 
 .site-header__action-icon,
-.site-header__icon-wrap {
+.site-header__icon-wrap,
+.site-header__mobile-label {
   display: none;
 }
 
 .site-header__logo {
   display: block;
   width: clamp(9.6rem, 11vw, 15rem);
+  color: var(--colour-white);
   opacity: 0;
   pointer-events: none;
   transform: translateY(1.2rem) scale(0.92);
@@ -205,42 +209,77 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 920px) {
-  .site-header__inner {
+  .site-header__inner,
+  .site-header__links {
     min-height: 6.4rem;
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 760px) {
+  .site-header {
+    pointer-events: none;
+  }
+
   .site-header__logo {
     width: clamp(9.8rem, 30vw, 11.2rem);
+    color: var(--colour-white);
   }
 
   .site-header__inner {
-    gap: var(--space-sm);
+    justify-content: center;
+    min-height: 6.4rem;
   }
 
   .site-header__links {
-    gap: 0.2rem;
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    min-height: calc(7rem + env(safe-area-inset-bottom));
+    padding: 0.55rem max(0.8rem, env(safe-area-inset-right)) calc(0.55rem + env(safe-area-inset-bottom)) max(0.8rem, env(safe-area-inset-left));
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--colour-white);
+    background: rgba(0, 0, 0, 0.96);
+    box-shadow: 0 -0.8rem 2.4rem rgba(0, 0, 0, 0.16);
+    isolation: isolate;
+    mix-blend-mode: normal;
+    pointer-events: auto;
   }
 
-  .site-header__action {
+  .site-header__links .site-header__action {
     position: relative;
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    width: auto;
-    height: 4.4rem;
-    padding-inline: 0.35rem;
-    font-size: clamp(0.9rem, 3vw, 1.2rem);
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+    height: 5.9rem;
+    padding: 0.35rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+    text-transform: none;
+    transition: color 180ms ease;
+  }
+
+  .site-header__links .site-header__action.router-link-active {
+    color: #d6c1a9;
   }
 
   .site-header__action-label {
-    display: inline;
+    display: none;
   }
 
   .site-header__action-icon {
     display: block;
-    width: 2.1rem;
-    height: 2.1rem;
+    width: 2.25rem;
+    height: 2.25rem;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -253,10 +292,18 @@ onBeforeUnmount(() => {
     display: block;
   }
 
+  .site-header__mobile-label {
+    display: block;
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .site-header__count {
     position: absolute;
-    top: -0.8rem;
-    right: -0.9rem;
+    top: -0.7rem;
+    right: -1rem;
     display: grid;
     place-items: center;
     min-width: 1.6rem;
@@ -268,6 +315,10 @@ onBeforeUnmount(() => {
     font-size: 0.9rem;
     letter-spacing: 0;
     line-height: 1;
+  }
+
+  :global(.site-footer) {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom));
   }
 }
 </style>

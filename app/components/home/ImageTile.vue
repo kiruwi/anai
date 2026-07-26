@@ -7,8 +7,8 @@
     <img
       :src="tile.imageUrl"
       :alt="tile.title"
-      width="546"
-      height="683"
+      width="640"
+      height="640"
       loading="lazy"
       decoding="async"
     />
@@ -23,8 +23,8 @@
     <img
       :src="tile.imageUrl"
       :alt="tile.title"
-      width="546"
-      height="683"
+      width="640"
+      height="640"
       loading="lazy"
       decoding="async"
     />
@@ -46,7 +46,7 @@ defineProps<{
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 1;
   overflow: hidden;
   padding: var(--space-md);
   color: var(--colour-white);

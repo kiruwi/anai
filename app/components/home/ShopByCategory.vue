@@ -28,6 +28,8 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--page-gutter);
+  width: min(100%, 100rem);
+  margin-inline: auto;
 }
 
 @media (max-width: 560px) {

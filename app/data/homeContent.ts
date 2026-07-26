@@ -424,14 +424,14 @@ export const categoryTiles: ImageTile[] = [
   {
     title: 'Men',
     href: '/shop?gender=men',
-    imageUrl: '/images/categories/men.webp',
+    imageUrl: '/images/categories/men-square-v2.webp',
     imageTone: 'linear-gradient(135deg, #000000, #4a481d)',
     isComingSoon: true,
   },
   {
     title: 'Women',
     href: '/shop?gender=women',
-    imageUrl: '/images/categories/women.webp',
+    imageUrl: '/images/categories/women-square-v2.webp',
     imageTone: 'linear-gradient(135deg, #d7c1a9, #ffffff)',
   },
 ]

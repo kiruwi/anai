@@ -180,6 +180,11 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .shop-the-look__header {
+    justify-items: center;
+    text-align: center;
+  }
+
   .shop-the-look__header,
   .shop-the-look__card {
     width: 100%;
