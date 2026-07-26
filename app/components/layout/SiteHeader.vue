@@ -29,9 +29,11 @@
           aria-label="Shop all products"
         >
           <span class="site-header__action-label">Shop</span>
+          <!-- Temporarily hidden: mobile navigation icon.
           <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20.4 3.5 16 2a4 4 0 0 1-8 0L3.6 3.5a2 2 0 0 0-1.3 2.2l.6 3.5a2 2 0 0 0 2 1.6l1.1-.1V22h12V10.7l1.1.1a2 2 0 0 0 2-1.6l.6-3.5a2 2 0 0 0-1.3-2.2Z" />
           </svg>
+          -->
         </NuxtLink>
         <NuxtLink
           class="site-header__action"
@@ -39,9 +41,11 @@
           aria-label="Contact support"
         >
           <span class="site-header__action-label">Contact</span>
+          <!-- Temporarily hidden: mobile navigation icon.
           <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7.1 3h3l1.3 4.2-2.1 1.3a14 14 0 0 0 6.2 6.2l1.3-2.1 4.2 1.3v3c0 2.3-1.9 4.1-4.2 4A17.8 17.8 0 0 1 3.1 7.2C3 4.9 4.8 3 7.1 3Z" />
           </svg>
+          -->
         </NuxtLink>
         <NuxtLink
           class="site-header__action"
@@ -49,12 +53,14 @@
           :aria-label="`Wishlist with ${wishlistCount} items`"
         >
           <span class="site-header__action-label">Wishlist(<span>{{ wishlistCount }}</span>)</span>
+          <!-- Temporarily hidden: mobile navigation icon and count badge.
           <span class="site-header__icon-wrap">
             <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z" />
             </svg>
             <span v-if="wishlistCount" class="site-header__count">{{ wishlistCount }}</span>
           </span>
+          -->
         </NuxtLink>
         <NuxtLink
           class="site-header__action"
@@ -62,12 +68,14 @@
           :aria-label="`Bag with ${itemCount} items`"
         >
           <span class="site-header__action-label">Bag(<span>{{ itemCount }}</span>)</span>
+          <!-- Temporarily hidden: mobile navigation icon and count badge.
           <span class="site-header__icon-wrap">
             <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" />
             </svg>
             <span v-if="itemCount" class="site-header__count">{{ itemCount }}</span>
           </span>
+          -->
         </NuxtLink>
       </div>
     </nav>
@@ -217,14 +225,16 @@ onBeforeUnmount(() => {
 
   .site-header__action {
     position: relative;
-    display: grid;
-    place-items: center;
-    width: 4rem;
+    display: inline-flex;
+    align-items: center;
+    width: auto;
     height: 4.4rem;
+    padding-inline: 0.35rem;
+    font-size: clamp(0.9rem, 3vw, 1.2rem);
   }
 
   .site-header__action-label {
-    display: none;
+    display: inline;
   }
 
   .site-header__action-icon {
