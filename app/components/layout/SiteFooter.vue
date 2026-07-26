@@ -42,6 +42,14 @@
             <li><NuxtLink to="/legal">Policies</NuxtLink></li>
           </ul>
         </section>
+        <section class="site-footer__contact">
+          <h2>Contact</h2>
+          <ul>
+            <li><a href="mailto:info@anaibymurda.com">info@anaibymurda.com</a></li>
+            <li><a href="mailto:sales@anaibymurda.com">sales@anaibymurda.com</a></li>
+            <li><a href="mailto:support@anaibymurda.com">support@anaibymurda.com</a></li>
+          </ul>
+        </section>
       </nav>
       <p class="site-footer__copyright">&copy; 2026 Anai. All rights reserved.</p>
     </div>
@@ -64,7 +72,7 @@ const openCookieSettings = () => {
 
 .site-footer__inner {
   display: grid;
-  grid-template-columns: minmax(24rem, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(20rem, 0.75fr) minmax(0, 2.25fr);
   gap: var(--space-xl);
   padding: var(--space-2xl) 0;
 }
@@ -92,8 +100,9 @@ const openCookieSettings = () => {
 
 nav {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
-  gap: var(--space-xl);
+  grid-template-columns: repeat(3, minmax(11rem, 0.8fr)) minmax(20rem, 1.6fr);
+  gap: var(--space-md);
+  padding-inline: var(--space-md);
 }
 
 nav section {
@@ -122,6 +131,15 @@ li {
 
 nav a {
   color: var(--colour-white);
+  overflow-wrap: anywhere;
+}
+
+.site-footer__contact {
+  font-size: 1.4rem;
+}
+
+.site-footer__contact a {
+  white-space: nowrap;
 }
 
 .site-footer__cookie-settings {
@@ -149,12 +167,19 @@ nav a:hover,
   text-transform: uppercase;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 980px) {
   .site-footer__inner {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 760px) {
+  .site-footer__contact a {
+    white-space: normal;
+  }
 
   nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-lg);
   }
 }

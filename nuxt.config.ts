@@ -133,7 +133,7 @@ const modules: any[] = [
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-05-14',
-  devtools: { enabled: process.env.NODE_ENV === 'development' },
+  devtools: { enabled: false },
   app: {
     head: {
       htmlAttrs: {

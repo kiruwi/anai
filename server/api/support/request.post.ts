@@ -32,19 +32,30 @@ export default defineEventHandler(async (event) => {
 
   const requestNumber = `SUP-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`
   const supabase = getSupabaseAdmin()
-  const { error } = await supabase.from('support_requests').insert({
-    request_number: requestNumber,
-    full_name: fullName,
-    email,
-    phone: phone || null,
-    category,
-    order_reference: orderReference || null,
-    message,
-  })
+  const { data: supportRequest, error } = await supabase
+    .from('support_requests')
+    .insert({
+      request_number: requestNumber,
+      full_name: fullName,
+      email,
+      phone: phone || null,
+      category,
+      order_reference: orderReference || null,
+      message,
+    })
+    .select('id')
+    .single()
 
   if (error) {
     console.error('[ANAI] Support request failed:', error)
     throw createError({ statusCode: 500, statusMessage: 'Support requests are temporarily unavailable.' })
+  }
+
+  const { error: notificationError } = await supabase.functions.invoke('notify-support-request', {
+    body: { requestId: supportRequest.id },
+  })
+  if (notificationError) {
+    console.error('[ANAI] Support request was saved but its email notification failed:', notificationError)
   }
 
   return { submitted: true, requestNumber }

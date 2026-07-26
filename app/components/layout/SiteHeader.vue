@@ -23,12 +23,51 @@
         </svg>
       </NuxtLink>
       <div class="site-header__links">
-        <NuxtLink to="/">Shop</NuxtLink>
-        <NuxtLink to="/wishlist" :aria-label="`Wishlist with ${wishlistCount} items`">
-          Wishlist(<span>{{ wishlistCount }}</span>)
+        <NuxtLink
+          class="site-header__action site-header__action--text-mobile"
+          to="/shop"
+          aria-label="Shop all products"
+        >
+          <span class="site-header__action-label">Shop</span>
+          <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+          </svg>
         </NuxtLink>
-        <NuxtLink to="/cart" :aria-label="`Bag with ${itemCount} items`">
-          Bag(<span>{{ itemCount }}</span>)
+        <NuxtLink
+          class="site-header__action site-header__action--text-mobile"
+          to="/contact"
+          aria-label="Contact support"
+        >
+          <span class="site-header__action-label">Contact</span>
+          <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 5.5h18v13H3zM3.5 6l8.5 7 8.5-7" />
+          </svg>
+        </NuxtLink>
+        <NuxtLink
+          class="site-header__action"
+          to="/wishlist"
+          :aria-label="`Wishlist with ${wishlistCount} items`"
+        >
+          <span class="site-header__action-label">Wishlist(<span>{{ wishlistCount }}</span>)</span>
+          <span class="site-header__icon-wrap">
+            <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z" />
+            </svg>
+            <span v-if="wishlistCount" class="site-header__count">{{ wishlistCount }}</span>
+          </span>
+        </NuxtLink>
+        <NuxtLink
+          class="site-header__action"
+          to="/cart"
+          :aria-label="`Bag with ${itemCount} items`"
+        >
+          <span class="site-header__action-label">Bag(<span>{{ itemCount }}</span>)</span>
+          <span class="site-header__icon-wrap">
+            <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" />
+            </svg>
+            <span v-if="itemCount" class="site-header__count">{{ itemCount }}</span>
+          </span>
         </NuxtLink>
       </div>
     </nav>
@@ -128,6 +167,11 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.site-header__action-icon,
+.site-header__icon-wrap {
+  display: none;
+}
+
 .site-header__logo {
   display: block;
   width: clamp(9.6rem, 11vw, 15rem);
@@ -155,6 +199,79 @@ onBeforeUnmount(() => {
 @media (max-width: 920px) {
   .site-header__inner {
     min-height: 6.4rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .site-header__logo {
+    width: clamp(8.4rem, 26vw, 9.6rem);
+  }
+
+  .site-header__inner {
+    gap: var(--space-sm);
+  }
+
+  .site-header__links {
+    gap: 0.2rem;
+  }
+
+  .site-header__action {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4.4rem;
+  }
+
+  .site-header__action-label {
+    display: none;
+  }
+
+  .site-header__action--text-mobile {
+    width: auto;
+    padding-inline: 0.4rem;
+    font-size: 1.1rem;
+  }
+
+  .site-header__action--text-mobile .site-header__action-label {
+    display: inline;
+  }
+
+  .site-header__action--text-mobile .site-header__action-icon {
+    display: none;
+  }
+
+  .site-header__action-icon {
+    display: block;
+    width: 2.1rem;
+    height: 2.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+  }
+
+  .site-header__icon-wrap {
+    position: relative;
+    display: block;
+  }
+
+  .site-header__count {
+    position: absolute;
+    top: -0.8rem;
+    right: -0.9rem;
+    display: grid;
+    place-items: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    padding: 0 0.35rem;
+    color: var(--colour-black);
+    background: var(--colour-white);
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    line-height: 1;
   }
 }
 </style>

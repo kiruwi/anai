@@ -7,23 +7,50 @@
       </p>
     </header>
 
+    <section class="contact-page__direct" aria-labelledby="direct-contact-heading">
+      <h2 id="direct-contact-heading">Contact support directly</h2>
+      <div class="contact-page__direct-options">
+        <article>
+          <h3>Email</h3>
+          <a href="mailto:support@anaibymurda.com">support@anaibymurda.com</a>
+        </article>
+        <article>
+          <h3>WhatsApp</h3>
+          <a href="#phone">Add your number for a WhatsApp reply</a>
+        </article>
+        <article>
+          <h3>Response time</h3>
+          <p>We usually respond within 1 business day.</p>
+        </article>
+      </div>
+    </section>
+
     <form class="contact-page__form" @submit.prevent="submitRequest">
       <h2>Send a support request</h2>
       <div class="contact-page__fields">
         <label>
-          Full name
+          <span>Full name <span aria-hidden="true">*</span></span>
           <input v-model.trim="form.fullName" type="text" autocomplete="name" maxlength="120" required />
         </label>
         <label>
-          Email address
+          <span>Email address <span aria-hidden="true">*</span></span>
           <input v-model.trim="form.email" type="email" autocomplete="email" maxlength="254" required />
         </label>
-        <label>
-          Phone or WhatsApp number
-          <input v-model.trim="form.phone" type="tel" autocomplete="tel" maxlength="30" />
+        <label for="phone">
+          <span>Phone number (optional)</span>
+          <input
+            id="phone"
+            v-model.trim="form.phone"
+            type="tel"
+            autocomplete="tel"
+            maxlength="30"
+            placeholder="+254 7XX XXX XXX"
+            aria-describedby="phone-example"
+          />
+          <small id="phone-example">Include your country code, for example +254 7XX XXX XXX.</small>
         </label>
         <label>
-          Help with
+          <span>Help with <span aria-hidden="true">*</span></span>
           <select v-model="form.category" required>
             <option value="order">An order</option>
             <option value="payment">M-Pesa payment</option>
@@ -33,50 +60,56 @@
             <option value="general">Something else</option>
           </select>
         </label>
-        <label class="contact-page__field--wide">
-          Order number or M-Pesa reference, if applicable
+        <label v-if="showOrderReference" class="contact-page__field--wide">
+          <span>Order number or M-Pesa reference (optional)</span>
           <input v-model.trim="form.orderReference" type="text" maxlength="80" />
         </label>
         <label class="contact-page__field--wide">
-          How can we help?
+          <span>How can we help? <span aria-hidden="true">*</span></span>
           <textarea v-model.trim="form.message" rows="6" minlength="10" maxlength="3000" required />
         </label>
       </div>
-      <p v-if="successMessage" class="contact-page__success" role="status">{{ successMessage }}</p>
+      <div v-if="successMessage" class="contact-page__success" role="status">
+        <strong>Request sent</strong>
+        <p>{{ successMessage }}</p>
+      </div>
       <p v-if="errorMessage" class="contact-page__error" role="alert">{{ errorMessage }}</p>
-      <button type="submit" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Sending…' : 'Send request' }}
-      </button>
+      <div class="contact-page__submit">
+        <button type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Sending…' : 'Send support request →' }}
+        </button>
+        <p>We usually respond within 1 business day.</p>
+      </div>
+      <p class="contact-page__privacy">
+        We only use the details you provide to handle and follow up on your support request.
+      </p>
     </form>
 
-    <div class="contact-page__grid">
-      <article>
-        <h2>Customer support</h2>
-        <p>Use this page for order, delivery, return, refund, and product support.</p>
-        <p>Include your name, order number, phone number, and the email used at checkout.</p>
-      </article>
-
-      <article>
-        <h2>Payment support</h2>
+    <section class="contact-page__faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Frequently asked questions</h2>
+      <details>
+        <summary>What should I include in a customer support request?</summary>
+        <p>Include your name, order number when relevant, phone number, and the email used at checkout.</p>
+      </details>
+      <details>
+        <summary>What details do you need for an M-Pesa payment issue?</summary>
         <p>
-          If your M-Pesa payment failed, was deducted, or was duplicated, send your order number
-          and M-Pesa transaction reference so we can trace the payment.
+          Send your order number and M-Pesa transaction reference if a payment failed, was
+          deducted, or was duplicated so we can trace it.
         </p>
-      </article>
-
-      <article>
-        <h2>Returns and refunds</h2>
+      </details>
+      <details>
+        <summary>What should I include for a return or refund?</summary>
         <p>
-          For returns, include your order number, payment reference, photos where needed, and a
-          short description of the issue.
+          Include your order number, payment reference, photos where needed, and a short
+          description of the issue.
         </p>
-      </article>
-
-      <article>
-        <h2>Business location</h2>
-        <p>Anai operates from Nairobi, Kenya.</p>
-      </article>
-    </div>
+      </details>
+      <details>
+        <summary>Where is Anai based?</summary>
+        <p>Based in Nairobi, Kenya. Online orders are available nationwide.</p>
+      </details>
+    </section>
   </section>
 </template>
 
@@ -92,6 +125,12 @@ const form = reactive({
 const isSubmitting = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const referenceCategories = new Set(['order', 'payment', 'return'])
+const showOrderReference = computed(() => referenceCategories.has(form.category))
+
+watch(showOrderReference, (isVisible) => {
+  if (!isVisible) form.orderReference = ''
+})
 
 const submitRequest = async () => {
   isSubmitting.value = true
@@ -128,8 +167,10 @@ useSeoMeta({
 .contact-page__hero {
   display: grid;
   gap: var(--space-sm);
-  max-width: 78rem;
+  max-width: 104rem;
+  margin-inline: auto;
   margin-bottom: var(--space-xl);
+  text-align: center;
 }
 
 .contact-page__hero p {
@@ -139,24 +180,63 @@ useSeoMeta({
 
 h1 {
   margin: 0;
-  font-size: clamp(5.2rem, 8vw, 10rem);
-  line-height: 0.92;
-  text-align: start;
+  font-size: clamp(4.4rem, 6.6vw, 8.2rem);
+  line-height: 0.96;
 }
 
-.contact-page__grid {
+.contact-page__direct,
+.contact-page__faq {
+  width: min(100%, 104rem);
+  margin-inline: auto;
+}
+
+.contact-page__direct {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-lg);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.contact-page__direct-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid #d8cfc7;
+}
+
+.contact-page__direct article {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+}
+
+.contact-page__direct article + article {
+  border-left: 1px solid #d8cfc7;
+}
+
+.contact-page__direct h3 {
+  margin: 0;
+  color: var(--colour-muted);
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+
+.contact-page__direct a {
+  width: fit-content;
+  border-bottom: 1px solid currentColor;
+}
+
+.contact-page__direct p {
+  color: var(--colour-black);
 }
 
 .contact-page__form {
   display: grid;
   gap: var(--space-md);
-  max-width: 90rem;
+  width: min(100%, 104rem);
+  margin-inline: auto;
   margin-bottom: var(--space-2xl);
-  border: 1px solid var(--colour-border);
-  padding: var(--space-lg);
+  border: 1px solid #d8cfc7;
+  padding: clamp(var(--space-md), 3vw, var(--space-xl));
+  background: #faf8f6;
 }
 
 .contact-page__fields {
@@ -173,6 +253,13 @@ h1 {
   text-transform: uppercase;
 }
 
+.contact-page__form small {
+  color: var(--colour-muted);
+  font-size: 1.1rem;
+  line-height: 1.35;
+  text-transform: none;
+}
+
 .contact-page__field--wide {
   grid-column: 1 / -1;
 }
@@ -183,6 +270,7 @@ h1 {
   width: 100%;
   border: 1px solid var(--colour-border);
   border-radius: 0;
+  min-height: 4.8rem;
   padding: 1.2rem;
   color: var(--colour-black);
   background: var(--colour-surface);
@@ -191,13 +279,29 @@ h1 {
   text-transform: none;
 }
 
+.contact-page__form input:focus-visible,
+.contact-page__form select:focus-visible,
+.contact-page__form textarea:focus-visible {
+  border-color: var(--colour-black);
+  outline: 1px solid var(--colour-black);
+  outline-offset: 1px;
+}
+
+.contact-page__submit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: center;
+}
+
 .contact-page__form button {
-  justify-self: start;
+  min-height: 4.8rem;
   border: 1px solid var(--colour-black);
-  padding: 1.2rem 1.6rem;
+  padding: 1.4rem 2.2rem;
   color: var(--colour-white);
   background: var(--colour-black);
   cursor: pointer;
+  font-size: 1.4rem;
   text-transform: uppercase;
 }
 
@@ -211,15 +315,31 @@ h1 {
   margin: 0;
 }
 
-.contact-page__error {
-  color: var(--colour-plum);
+.contact-page__success {
+  display: grid;
+  gap: var(--space-xs);
+  border-left: 3px solid var(--colour-olive);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--colour-white);
 }
 
-article {
-  display: grid;
-  gap: var(--space-sm);
-  border-top: 1px solid var(--colour-border);
-  padding-top: var(--space-md);
+.contact-page__success p,
+.contact-page__submit p,
+.contact-page__privacy {
+  margin: 0;
+}
+
+.contact-page__submit p,
+.contact-page__privacy {
+  color: var(--colour-muted);
+}
+
+.contact-page__privacy {
+  font-size: 1.2rem;
+}
+
+.contact-page__error {
+  color: var(--colour-plum);
 }
 
 h2,
@@ -232,7 +352,32 @@ h2 {
   line-height: 1.1;
 }
 
-article p {
+.contact-page__faq {
+  display: grid;
+}
+
+.contact-page__faq > h2 {
+  margin-bottom: var(--space-md);
+}
+
+.contact-page__faq details {
+  border-top: 1px solid #d8cfc7;
+}
+
+.contact-page__faq details:last-child {
+  border-bottom: 1px solid #d8cfc7;
+}
+
+.contact-page__faq summary {
+  padding: var(--space-md) 3.2rem var(--space-md) 0;
+  cursor: pointer;
+  font-size: var(--copy-font-size);
+  list-style-position: inside;
+}
+
+.contact-page__faq details p {
+  max-width: 78rem;
+  padding: 0 3.2rem var(--space-md) 1.8rem;
   color: var(--colour-muted);
   font-size: var(--copy-font-size);
   line-height: var(--copy-line-height);
@@ -240,12 +385,31 @@ article p {
 
 @media (max-width: 760px) {
   .contact-page__fields,
-  .contact-page__grid {
+  .contact-page__direct-options {
     grid-template-columns: 1fr;
   }
 
   .contact-page__field--wide {
     grid-column: auto;
+  }
+
+  .contact-page__direct article + article {
+    border-top: 1px solid #d8cfc7;
+    border-left: 0;
+  }
+
+  .contact-page__form input,
+  .contact-page__form select {
+    min-height: 4.8rem;
+  }
+
+  .contact-page__submit {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .contact-page__form button {
+    width: 100%;
   }
 }
 </style>
