@@ -24,7 +24,11 @@
       </NuxtLink>
     </nav>
   </header>
-  <nav class="site-header__links" aria-label="Quick navigation">
+  <nav
+    class="site-header__links"
+    :class="{ 'site-header__links--visible': !props.overHero || hasMobileNavRevealed }"
+    aria-label="Quick navigation"
+  >
         <NuxtLink
           class="site-header__action"
           to="/shop"
@@ -86,6 +90,7 @@ const props = withDefaults(defineProps<{
 })
 const hasPlayedIntro = useState('site-header-intro-played', () => false)
 const isLogoDocked = useState('anai-logo-docked', () => false)
+const hasMobileNavRevealed = ref(!props.overHero)
 const { itemCount } = useCart()
 const { itemCount: wishlistCount } = useWishlist()
 const isLogoVisible = computed(() => !props.overHero || isLogoDocked.value)
@@ -93,7 +98,22 @@ const isIntroPending = ref(!hasPlayedIntro.value)
 const headerElement = ref<HTMLElement | null>(null)
 let introAnimation: { kill: () => void } | undefined
 
+const revealMobileNavOnScroll = () => {
+  if (window.scrollY > 0) {
+    hasMobileNavRevealed.value = true
+  }
+}
+
+watch(isLogoDocked, (isDocked) => {
+  if (isDocked) {
+    hasMobileNavRevealed.value = true
+  }
+}, { immediate: true })
+
 onMounted(async () => {
+  revealMobileNavOnScroll()
+  window.addEventListener('scroll', revealMobileNavOnScroll, { passive: true })
+
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   if (hasPlayedIntro.value || prefersReducedMotion) {
@@ -124,6 +144,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   introAnimation?.kill()
+  window.removeEventListener('scroll', revealMobileNavOnScroll)
   isIntroPending.value = false
 })
 </script>
@@ -248,7 +269,18 @@ onBeforeUnmount(() => {
     box-shadow: 0 -0.8rem 2.4rem rgba(0, 0, 0, 0.16);
     isolation: isolate;
     mix-blend-mode: normal;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+    transition:
+      opacity 240ms ease,
+      transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .site-header__links--visible {
+    opacity: 1;
     pointer-events: auto;
+    transform: translateY(0);
   }
 
   .site-header__links .site-header__action {
