@@ -29,11 +29,11 @@
       <h2>Send a support request</h2>
       <div class="contact-page__fields">
         <label>
-          <span>Full name <span aria-hidden="true">*</span></span>
+          <span>Full name <span class="contact-page__required" aria-hidden="true">*</span></span>
           <input v-model.trim="form.fullName" type="text" autocomplete="name" maxlength="120" required />
         </label>
         <label>
-          <span>Email address <span aria-hidden="true">*</span></span>
+          <span>Email address <span class="contact-page__required" aria-hidden="true">*</span></span>
           <input v-model.trim="form.email" type="email" autocomplete="email" maxlength="254" required />
         </label>
         <label for="phone">
@@ -50,7 +50,7 @@
           <small id="phone-example">Include your country code, for example +254 7XX XXX XXX.</small>
         </label>
         <label>
-          <span>Help with <span aria-hidden="true">*</span></span>
+          <span>Help with <span class="contact-page__required" aria-hidden="true">*</span></span>
           <select v-model="form.category" required>
             <option value="order">An order</option>
             <option value="payment">M-Pesa payment</option>
@@ -65,7 +65,7 @@
           <input v-model.trim="form.orderReference" type="text" maxlength="80" />
         </label>
         <label class="contact-page__field--wide">
-          <span>How can we help? <span aria-hidden="true">*</span></span>
+          <span>How can we help? <span class="contact-page__required" aria-hidden="true">*</span></span>
           <textarea v-model.trim="form.message" rows="6" minlength="10" maxlength="3000" required />
         </label>
       </div>
@@ -243,6 +243,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-md);
+  align-items: start;
 }
 
 .contact-page__form label {
@@ -258,6 +259,10 @@ h1 {
   font-size: 1.1rem;
   line-height: 1.35;
   text-transform: none;
+}
+
+.contact-page__required {
+  color: #b42318;
 }
 
 .contact-page__field--wide {

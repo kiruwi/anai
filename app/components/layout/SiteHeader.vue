@@ -34,13 +34,13 @@
           </svg>
         </NuxtLink>
         <NuxtLink
-          class="site-header__action site-header__action--text-mobile"
+          class="site-header__action"
           to="/contact"
           aria-label="Contact support"
         >
           <span class="site-header__action-label">Contact</span>
           <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 5.5h18v13H3zM3.5 6l8.5 7 8.5-7" />
+            <path d="M7.1 3h3l1.3 4.2-2.1 1.3a14 14 0 0 0 6.2 6.2l1.3-2.1 4.2 1.3v3c0 2.3-1.9 4.1-4.2 4A17.8 17.8 0 0 1 3.1 7.2C3 4.9 4.8 3 7.1 3Z" />
           </svg>
         </NuxtLink>
         <NuxtLink
@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 520px) {
   .site-header__logo {
-    width: clamp(8.4rem, 26vw, 9.6rem);
+    width: clamp(9.8rem, 30vw, 11.2rem);
   }
 
   .site-header__inner {
@@ -229,8 +229,8 @@ onBeforeUnmount(() => {
 
   .site-header__action--text-mobile {
     width: auto;
-    padding-inline: 0.4rem;
-    font-size: 1.1rem;
+    padding-inline: 0.5rem;
+    font-size: 1.4rem;
   }
 
   .site-header__action--text-mobile .site-header__action-label {
