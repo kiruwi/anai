@@ -1,6 +1,5 @@
 <template>
   <section
-    ref="productPageElement"
     class="product-page"
     :class="{ 'product-page--sold-out': isSoldOut }"
   >
@@ -49,36 +48,38 @@
       -->
     </div>
     <div class="product-page__details">
-      <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
-        <span aria-hidden="true">←</span>
-        Return to Shop
-      </NuxtLink>
+      <div class="product-page__details-content" data-lenis-prevent>
+        <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
+          <span aria-hidden="true">←</span>
+          Return to Shop
+        </NuxtLink>
 
-      <h1>{{ product.name }}</h1>
-      <p class="product-page__price">KES {{ product.priceKes.toLocaleString() }}</p>
-      <p class="product-page__copy">{{ productCopy }}</p>
-      <div v-if="product.colours.length" class="product-page__colours">
-        <p>
-          Colour
-          <span>{{ selectedColourName ?? 'Out of stock' }}</span>
-        </p>
-        <div>
-          <button
-            v-for="colour in product.colours"
-            :key="getProductColourName(colour)"
-            class="product-page__colour"
-            :class="{
-              'product-page__colour--selected': selectedColourName === getProductColourName(colour),
-              'product-page__colour--unavailable': !isColourAvailable(colour),
-            }"
-            type="button"
-            :disabled="!isColourAvailable(colour)"
-            :aria-label="`${getProductColourName(colour)}${isColourAvailable(colour) ? '' : ' — out of stock'}`"
-            :aria-pressed="selectedColourName === getProductColourName(colour)"
-            :title="isColourAvailable(colour) ? getProductColourName(colour) : `${getProductColourName(colour)} — out of stock`"
-            :style="{ background: getProductColourValue(colour) }"
-            @click="selectColour(colour)"
-          />
+        <h1>{{ product.name }}</h1>
+        <p class="product-page__price">KES {{ product.priceKes.toLocaleString() }}</p>
+        <p class="product-page__copy">{{ productCopy }}</p>
+        <div v-if="product.colours.length" class="product-page__colours">
+          <p>
+            Colour
+            <span>{{ selectedColourName ?? 'Out of stock' }}</span>
+          </p>
+          <div>
+            <button
+              v-for="colour in product.colours"
+              :key="getProductColourName(colour)"
+              class="product-page__colour"
+              :class="{
+                'product-page__colour--selected': selectedColourName === getProductColourName(colour),
+                'product-page__colour--unavailable': !isColourAvailable(colour),
+              }"
+              type="button"
+              :disabled="!isColourAvailable(colour)"
+              :aria-label="`${getProductColourName(colour)}${isColourAvailable(colour) ? '' : ' — out of stock'}`"
+              :aria-pressed="selectedColourName === getProductColourName(colour)"
+              :title="isColourAvailable(colour) ? getProductColourName(colour) : `${getProductColourName(colour)} — out of stock`"
+              :style="{ background: getProductColourValue(colour) }"
+              @click="selectColour(colour)"
+            />
+          </div>
         </div>
       </div>
       <div class="product-page__actions">
@@ -95,9 +96,20 @@
           class="product-page__wishlist"
           type="button"
           :aria-pressed="isWishlistSaved"
+          :aria-label="wishlistLabel"
+          :title="wishlistLabel"
           @click="handleWishlistToggle"
         >
-          {{ isWishlistSaved ? 'Saved' : 'Add to Wishlist' }}
+          <svg
+            class="product-page__wishlist-icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M12 21s-7.2-4.5-9.4-9.1C.9 8.2 2.9 4 6.8 4c2 0 3.7 1.1 4.7 2.7C12.5 5.1 14.2 4 16.2 4c3.9 0 5.9 4.2 4.2 7.9C19.2 16.5 12 21 12 21Z"
+            />
+          </svg>
         </button>
       </div>
     </div>
@@ -145,7 +157,6 @@ const colourImageUrls = product.colours
 const galleryImages = [
   ...new Set(product.galleryImages ?? [product.imageUrl, ...colourImageUrls]),
 ].filter((imageUrl): imageUrl is string => Boolean(imageUrl))
-const productPageElement = ref<HTMLElement | null>(null)
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = shallowRef<HTMLDivElement[]>([])
 const selectedColourName = ref<string | undefined>(getProductDefaultColourName(product))
@@ -171,6 +182,11 @@ const addButtonLabel = computed(() => {
   return hasJustAdded.value ? 'Added to Bag' : 'Add to Bag'
 })
 const isWishlistSaved = computed(() => isInWishlist(product.slug))
+const wishlistLabel = computed(() =>
+  isWishlistSaved.value
+    ? `Remove ${product.name} from wishlist`
+    : `Add ${product.name} to wishlist`,
+)
 
 const isColourAvailable = (colour: ProductColour) =>
   getProductStock(product, getProductColourName(colour)) > 0
@@ -195,17 +211,15 @@ watchEffect(() => {
 const isDesktopGallery = () => window.matchMedia('(min-width: 981px)').matches
 
 const handleProductWheel = (event: WheelEvent) => {
-  const productPage = productPageElement.value
   const carousel = carouselElement.value
   const slides = slideElements.value.filter(Boolean)
 
   if (
-    !productPage ||
     !carousel ||
     slides.length < 2 ||
     !isDesktopGallery() ||
     !(event.target instanceof Node) ||
-    !productPage.contains(event.target)
+    !carousel.contains(event.target)
   ) {
     return
   }
@@ -437,10 +451,17 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-self: start;
-  max-height: calc(100vh - 7.2rem - (var(--space-xl) * 2));
+  height: calc(100vh - 7.2rem - (var(--space-xl) * 2));
+  min-height: 0;
+  overflow: hidden;
+}
+
+.product-page__details-content {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   padding-right: var(--space-sm);
+  scrollbar-width: thin;
 }
 
 .product-page__back {
@@ -449,7 +470,7 @@ onBeforeUnmount(() => {
   gap: var(--space-md);
   width: fit-content;
   margin-bottom: var(--space-md);
-  font-size: clamp(1.8rem, 1.8vw, 2.4rem);
+  font-size: clamp(1.6rem, 1.4vw, 2rem);
   line-height: 1;
 }
 
@@ -462,7 +483,7 @@ h1 {
   max-width: 58rem;
   margin: 0;
   font-family: var(--font-brand-display);
-  font-size: clamp(4.8rem, 5vw, 7.6rem);
+  font-size: clamp(3.8rem, 4vw, 6.2rem);
   font-weight: 400;
   letter-spacing: 0.055em;
   line-height: 0.9;
@@ -473,7 +494,7 @@ h1 {
 
 .product-page__price {
   margin: var(--space-md) 0 0;
-  font-size: clamp(3rem, 3.2vw, 4.8rem);
+  font-size: clamp(2.4rem, 2.5vw, 3.6rem);
   font-weight: 600;
   line-height: 1;
 }
@@ -556,10 +577,12 @@ h1 {
 
 .product-page__actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: var(--space-md);
   align-items: center;
-  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  background: var(--colour-surface);
 }
 
 .product-page__add,
@@ -586,18 +609,47 @@ h1 {
 }
 
 .product-page__wishlist {
-  border: 1px solid var(--colour-black);
-  padding: 1rem 1.2rem;
+  justify-content: center;
+  width: 4.4rem;
+  min-height: 4.4rem;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
   color: var(--colour-black);
-  background: var(--colour-surface);
-  font-size: 1.2rem;
-  line-height: 1;
-  text-transform: uppercase;
+  background: var(--colour-white);
+  box-shadow: inset 0 0 0 1px var(--colour-border);
 }
 
 .product-page__wishlist[aria-pressed='true'] {
   color: var(--colour-white);
   background: var(--colour-black);
+  box-shadow: none;
+}
+
+.product-page__wishlist-icon {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition:
+    fill 160ms ease,
+    transform 180ms ease;
+}
+
+.product-page__wishlist:hover .product-page__wishlist-icon,
+.product-page__wishlist:focus-visible .product-page__wishlist-icon {
+  transform: scale(0.86);
+}
+
+.product-page__wishlist:active .product-page__wishlist-icon {
+  transform: scale(0.74);
+}
+
+.product-page__wishlist[aria-pressed='true'] .product-page__wishlist-icon {
+  fill: currentColor;
 }
 
 .product-page__add span {
@@ -632,8 +684,13 @@ h1 {
 
   .product-page__details {
     position: static;
-    max-height: none;
+    height: auto;
     overflow: visible;
+  }
+
+  .product-page__details-content {
+    overflow: visible;
+    padding-right: 0;
   }
 
   .product-page__slide img {
@@ -650,12 +707,12 @@ h1 {
   }
 
   h1 {
-    font-size: clamp(4.8rem, 15vw, 8rem);
+    font-size: clamp(4rem, 12vw, 6.4rem);
   }
 
   .product-page__price {
     margin-top: var(--space-md);
-    font-size: clamp(3.2rem, 10vw, 5.2rem);
+    font-size: clamp(2.8rem, 8vw, 4.4rem);
   }
 
   .product-page__copy {
@@ -665,7 +722,7 @@ h1 {
   }
 
   .product-page__actions {
-    margin-top: var(--space-xl);
+    padding-top: var(--space-xl);
   }
 
   .product-page__add {

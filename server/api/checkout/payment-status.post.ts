@@ -76,5 +76,26 @@ export default defineEventHandler(async (event) => {
   )
   const status = wasCanceled ? 'cancelled' : order.payment_status
 
+  if (status === 'paid') {
+    const { data: paidPayment } = await supabase
+      .from('payments')
+      .select('mpesa_checkout_request_id')
+      .eq('order_id', order.id)
+      .eq('provider', 'mpesa')
+      .eq('status', 'paid')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (paidPayment?.mpesa_checkout_request_id) {
+      const { error: notificationError } = await supabase.functions.invoke('notify-paid-order', {
+        body: { checkoutRequestId: paidPayment.mpesa_checkout_request_id },
+      })
+      if (notificationError) {
+        console.error('[ANAI] Paid-order email retry failed:', notificationError)
+      }
+    }
+  }
+
   return { reference: orderReference, status, paid: status === 'paid' }
 })

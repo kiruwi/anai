@@ -366,6 +366,7 @@ export const useCart = () => {
 
   return {
     items,
+    isLoaded,
     lines,
     itemCount,
     subtotalKes,

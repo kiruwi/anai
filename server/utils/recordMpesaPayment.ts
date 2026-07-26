@@ -72,6 +72,15 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
   const result = (Array.isArray(data) ? data[0] : data) as FinalizeResult | undefined
   if (!result?.recorded) return { recorded: false, checkoutRequestId, paid: false, failed: false }
 
+  if (result.paid) {
+    const { error: notificationError } = await supabase.functions.invoke('notify-paid-order', {
+      body: { checkoutRequestId },
+    })
+    if (notificationError) {
+      console.error('[ANAI] Payment was recorded but paid-order email notification failed:', notificationError)
+    }
+  }
+
   const { error: processedError } = await supabase
     .from('mpesa_callback_events')
     .update({ processed_at: new Date().toISOString() })

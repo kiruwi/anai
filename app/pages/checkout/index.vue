@@ -4,7 +4,11 @@
       <h1>Complete order</h1>
     </div>
 
-    <div v-if="lines.length" class="checkout-page__layout">
+    <div v-if="!isCartLoaded" class="checkout-page__loading" role="status">
+      <p>Loading your bag…</p>
+    </div>
+
+    <div v-else-if="lines.length" class="checkout-page__layout">
       <form class="checkout-form" @submit.prevent="startPayment">
         <fieldset>
           <legend>Contact</legend>
@@ -149,7 +153,7 @@ import {
   type ProductColour,
 } from '../../data/homeContent'
 
-const { lines, subtotalKes, clearCart } = useCart()
+const { lines, subtotalKes, clearCart, isLoaded: isCartLoaded } = useCart()
 const router = useRouter()
 
 const customer = reactive({
@@ -459,7 +463,8 @@ onMounted(() => {
   margin-bottom: var(--space-xl);
 }
 
-.checkout-page__empty p {
+.checkout-page__empty p,
+.checkout-page__loading p {
   margin: 0;
   color: var(--colour-muted);
   text-transform: uppercase;
@@ -714,6 +719,10 @@ h1 {
   display: grid;
   justify-items: start;
   gap: var(--space-md);
+}
+
+.checkout-page__loading {
+  min-height: 24rem;
 }
 
 .checkout-page__empty a {
