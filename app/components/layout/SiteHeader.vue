@@ -24,13 +24,13 @@
       </NuxtLink>
       <div class="site-header__links">
         <NuxtLink
-          class="site-header__action site-header__action--text-mobile"
+          class="site-header__action"
           to="/shop"
           aria-label="Shop all products"
         >
           <span class="site-header__action-label">Shop</span>
           <svg class="site-header__action-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+            <path d="M20.4 3.5 16 2a4 4 0 0 1-8 0L3.6 3.5a2 2 0 0 0-1.3 2.2l.6 3.5a2 2 0 0 0 2 1.6l1.1-.1V22h12V10.7l1.1.1a2 2 0 0 0 2-1.6l.6-3.5a2 2 0 0 0-1.3-2.2Z" />
           </svg>
         </NuxtLink>
         <NuxtLink
@@ -224,20 +224,6 @@ onBeforeUnmount(() => {
   }
 
   .site-header__action-label {
-    display: none;
-  }
-
-  .site-header__action--text-mobile {
-    width: auto;
-    padding-inline: 0.5rem;
-    font-size: 1.4rem;
-  }
-
-  .site-header__action--text-mobile .site-header__action-label {
-    display: inline;
-  }
-
-  .site-header__action--text-mobile .site-header__action-icon {
     display: none;
   }
 
