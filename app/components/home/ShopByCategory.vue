@@ -21,6 +21,7 @@ defineProps<{
 
 <style scoped>
 .shop-by-category {
+  background-color: #dbdad8;
   padding: var(--space-2xl) 0;
 }
 

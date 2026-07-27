@@ -438,21 +438,21 @@ export const categoryTiles: ImageTile[] = [
 
 export const shopLooks: ShopLook[] = [
   {
-    title: 'Studio Look',
+    title: 'Studio look',
     href: '/product/lela-set',
     imageUrl: '/images/products/Lela set/white.webp',
     imageAlt: 'Lela set styled for a studio look',
     products: ['Lela set', 'Yoga mat', 'Socks'],
   },
   {
-    title: 'Training Look',
+    title: 'Training look',
     href: '/product/nuru-short-set',
     imageUrl: '/images/products/Jua jogger set/navy blue.webp',
     imageAlt: 'Jua jogger set styled for a training look',
     products: ['Jua jogger set', 'Ankle weights', 'Resistance bands'],
   },
   {
-    title: 'Court Look',
+    title: 'Court look',
     href: '/product/terra-skirt',
     imageUrl: '/images/products/Terra skirt - Padel tennis bubble set/brown.webp',
     imageAlt: 'Terra skirt styled for a court look',

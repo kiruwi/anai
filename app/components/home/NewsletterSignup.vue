@@ -78,6 +78,7 @@ p {
 h2 {
   max-width: 74rem;
   margin-top: var(--space-sm);
+  color: var(--colour-black);
   font-family: var(--font-brand-display);
   font-weight: 400;
   font-size: clamp(3.2rem, 5vw, 6.4rem);
