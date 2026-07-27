@@ -188,6 +188,12 @@ const visibleProducts = computed(() => props.products.slice(0, 4))
 
   .product-rail__header {
     align-items: center;
+    margin-bottom: 0;
+    padding: var(--space-xl) 0;
+  }
+
+  .product-rail__content {
+    padding-top: 0;
   }
 
   .product-rail__track {
