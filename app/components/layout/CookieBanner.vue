@@ -178,13 +178,17 @@ const openPreferences = () => {
   isVisible.value = true
 }
 
-watch(cookieSettingsRequested, (isRequested) => {
-  if (!isRequested) return
+const handleCookieSettingsRequest = () => {
   openPreferences()
   cookieSettingsRequested.value = false
-})
+}
+
+watch(cookieSettingsRequested, (isRequested) => {
+  if (isRequested) handleCookieSettingsRequest()
+}, { immediate: true, flush: 'sync' })
 
 onMounted(() => {
+  window.addEventListener('anai:open-cookie-settings', handleCookieSettingsRequest)
   savedPreferences.value = parseStoredPreferences()
 
   if (savedPreferences.value) {
@@ -198,6 +202,10 @@ onMounted(() => {
     isVisible.value = true
   }
 
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('anai:open-cookie-settings', handleCookieSettingsRequest)
 })
 
 router.afterEach(() => {

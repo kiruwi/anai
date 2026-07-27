@@ -75,6 +75,7 @@ const cookieSettingsRequested = useState('anai-cookie-settings-requested', () =>
 
 const openCookieSettings = () => {
   cookieSettingsRequested.value = true
+  window.dispatchEvent(new CustomEvent('anai:open-cookie-settings'))
 }
 </script>
 
