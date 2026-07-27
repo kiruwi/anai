@@ -79,7 +79,6 @@ main {
   font-weight: 400;
   letter-spacing: 0.055em;
   text-align: center;
-  text-transform: uppercase;
 }
 
 :where(main h2, main h3) {

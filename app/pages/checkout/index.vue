@@ -503,7 +503,6 @@ h1 {
   padding: 0;
   font-size: 1.8rem;
   font-weight: 600;
-  text-transform: uppercase;
 }
 
 .checkout-form label {

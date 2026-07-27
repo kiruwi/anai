@@ -85,7 +85,6 @@ h2 {
   font-weight: 400;
   letter-spacing: 0.055em;
   line-height: 1;
-  text-transform: uppercase;
 }
 
 h2 span {
@@ -158,7 +157,6 @@ p {
   font-size: clamp(1.7rem, 1.6vw, 2.4rem);
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

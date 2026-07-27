@@ -83,7 +83,6 @@ h2 {
   font-size: clamp(3.2rem, 5vw, 6.4rem);
   letter-spacing: 0.055em;
   line-height: 0.98;
-  text-transform: uppercase;
 }
 
 label {

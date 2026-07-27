@@ -100,7 +100,6 @@ h1 {
   font-weight: 400;
   letter-spacing: 0.055em;
   line-height: 0.92;
-  text-transform: uppercase;
 }
 
 .shop-page__grid {

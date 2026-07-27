@@ -37,7 +37,6 @@ h2 {
   font-size: clamp(3.2rem, 4vw, 5.6rem);
   letter-spacing: 0.055em;
   line-height: 1;
-  text-transform: uppercase;
 }
 
 a {

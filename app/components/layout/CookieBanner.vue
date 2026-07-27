@@ -244,7 +244,6 @@ p {
 h2 {
   font-size: 2rem;
   font-weight: 500;
-  text-transform: uppercase;
 }
 
 p {
@@ -288,7 +287,6 @@ a {
 .cookie-banner__category strong {
   font-size: 1.3rem;
   font-weight: 500;
-  text-transform: uppercase;
 }
 
 .cookie-banner__category small {

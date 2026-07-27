@@ -165,7 +165,6 @@ h2 {
   font-size: clamp(1.6rem, 1.15vw, 1.9rem);
   font-weight: 400;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 ul {

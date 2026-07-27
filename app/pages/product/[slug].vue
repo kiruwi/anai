@@ -489,7 +489,6 @@ h1 {
   line-height: 0.9;
   text-align: start;
   text-wrap: balance;
-  text-transform: uppercase;
 }
 
 .product-page__price {

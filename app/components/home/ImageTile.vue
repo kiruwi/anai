@@ -97,7 +97,6 @@ img {
   font-size: 2.4rem;
   font-weight: 400;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .image-tile__status {
