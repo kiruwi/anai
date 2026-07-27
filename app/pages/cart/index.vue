@@ -261,6 +261,10 @@ h1 {
   font-size: 1.8rem;
 }
 
+.cart-line__details h2 {
+  text-transform: none;
+}
+
 .cart-line__details p {
   margin: var(--space-xs) 0;
   color: var(--colour-muted);

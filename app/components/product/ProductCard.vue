@@ -521,6 +521,7 @@ h3 {
   grid-column: 1;
   font-weight: 400;
   letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 strong {

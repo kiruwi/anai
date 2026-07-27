@@ -663,6 +663,7 @@ h1 {
 
 .checkout-summary__item h3 {
   font-size: 1.4rem;
+  text-transform: none;
 }
 
 .checkout-summary__item p {

@@ -53,6 +53,10 @@ body {
   line-height: var(--copy-line-height);
 }
 
+:where(h1, h2, h3, h4, h5, h6) {
+  text-transform: uppercase;
+}
+
 a {
   color: inherit;
   text-decoration: none;

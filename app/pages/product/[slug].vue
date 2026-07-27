@@ -119,6 +119,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import {
+  getProductColourImageUrl,
   getProductColourName,
   getProductColourValue,
   getProductDefaultColourName,
@@ -191,8 +192,29 @@ const wishlistLabel = computed(() =>
 const isColourAvailable = (colour: ProductColour) =>
   getProductStock(product, getProductColourName(colour)) > 0
 
-const selectColour = (colour: ProductColour) => {
-  if (isColourAvailable(colour)) selectedColourName.value = getProductColourName(colour)
+const selectColour = async (colour: ProductColour) => {
+  if (!isColourAvailable(colour)) return
+
+  selectedColourName.value = getProductColourName(colour)
+
+  const imageUrl = getProductColourImageUrl(colour)
+  const targetIndex = imageUrl ? galleryImages.indexOf(imageUrl) : -1
+
+  if (targetIndex < 0) return
+
+  await nextTick()
+
+  const carousel = carouselElement.value
+  const targetSlide = slideElements.value[targetIndex]
+
+  if (!carousel || !targetSlide) return
+
+  galleryIndex = targetIndex
+  carousel.scrollTo({
+    top: isDesktopGallery() ? targetSlide.offsetTop : 0,
+    left: isDesktopGallery() ? 0 : targetSlide.offsetLeft,
+    behavior: 'smooth',
+  })
 }
 
 watchEffect(() => {
@@ -488,6 +510,7 @@ h1 {
   letter-spacing: 0.055em;
   line-height: 0.9;
   text-align: start;
+  text-transform: none;
   text-wrap: balance;
 }
 
