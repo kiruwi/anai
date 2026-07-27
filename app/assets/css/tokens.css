@@ -10,7 +10,7 @@
   --colour-muted: #6f6863;
 
   --font-body-copy: "Canva Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-brand-display: var(--font-body-copy);
+  --font-brand-display: "Bodoni 72", Didot, "Bodoni MT", "Times New Roman", serif;
   --copy-font-size: 1.5rem;
   --copy-line-height: 1.35;
 
