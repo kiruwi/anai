@@ -2,6 +2,9 @@
   <HomeHero />
   <ProductRail
     id="products"
+    title="New Items"
+    action="View all new"
+    href="/shop"
     :products="newReleaseProducts"
   />
   <ShopByCategory :tiles="categoryTiles" />
