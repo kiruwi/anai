@@ -5,9 +5,7 @@
       <NuxtPage />
     </main>
     <SiteFooter />
-    <ClientOnly>
-      <component :is="MouseCursorComponent" v-if="MouseCursorComponent" />
-    </ClientOnly>
+    <MouseCursor />
     <ClientOnly>
       <CookieBanner />
     </ClientOnly>
@@ -18,12 +16,27 @@
 import CookieBanner from './components/layout/CookieBanner.vue'
 import SiteFooter from './components/layout/SiteFooter.vue'
 import SiteHeader from './components/layout/SiteHeader.vue'
+import MouseCursor from './components/shared/MouseCursor.vue'
 import type { InventoryResponse } from '../shared/types/inventory'
+import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
 
 const route = useRoute()
 const router = useRouter()
 const isHomeRoute = computed(() => route.path === '/')
-const MouseCursorComponent = shallowRef()
+const canonicalUrl = computed(() => {
+  const path = route.path === '/' ? '/' : route.path.replace(/\/$/, '')
+  return `${canonicalSiteUrl}${path}`
+})
+
+useHead({
+  link: [
+    {
+      key: 'canonical',
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
+  ],
+})
 let removeInventoryRouteHook: (() => void) | undefined
 const inventory = useState<InventoryResponse | null>('anai-live-inventory', () => null)
 const { data: liveInventory, error: liveInventoryError } = await useFetch<InventoryResponse>('/api/catalog/inventory', {
@@ -38,20 +51,10 @@ watch([liveInventory, liveInventoryError], ([value, error]) => {
   }
 }, { immediate: true })
 
-onMounted(async () => {
+onMounted(() => {
   removeInventoryRouteHook = router.afterEach(() => {
     void refreshNuxtData('anai-live-inventory-request')
   })
-
-  const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-  if (!canHover || reduceMotion) {
-    return
-  }
-
-  const component = await import('./components/shared/MouseCursor.vue')
-  MouseCursorComponent.value = markRaw(component.default)
 })
 
 onBeforeUnmount(() => removeInventoryRouteHook?.())

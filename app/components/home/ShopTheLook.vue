@@ -6,10 +6,12 @@
           <h2>Looks that move with you</h2>
         </div>
         <span class="shop-the-look__rule" aria-hidden="true" />
+        <!-- TODO: Restore this link when the Shop the Look editorial page is ready.
         <NuxtLink class="shop-the-look__button" to="/shop-the-look">
           Explore looks
           <span aria-hidden="true">→</span>
         </NuxtLink>
+        -->
       </header>
 
       <div class="shop-the-look__grid">
@@ -63,7 +65,7 @@ defineProps<{
 
 .shop-the-look__header {
   display: grid;
-  grid-template-columns: max-content minmax(8rem, 1fr) auto;
+  grid-template-columns: max-content minmax(8rem, 1fr);
   gap: var(--space-lg);
   align-items: center;
 }

@@ -1,3 +1,3 @@
 <script setup lang="ts">
-await navigateTo('/shop?category=outerwear', { redirectCode: 301 })
+await navigateTo('/shop/outerwear', { redirectCode: 301 })
 </script>

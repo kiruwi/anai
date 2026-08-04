@@ -49,9 +49,10 @@
     </div>
     <div class="product-page__details">
       <div class="product-page__details-content" data-lenis-prevent>
-        <NuxtLink class="product-page__back" to="/" aria-label="Return to shop">
+        <BreadcrumbTrail :items="breadcrumbItems" />
+        <NuxtLink class="product-page__back" :to="categoryPath" :aria-label="`Return to ${product.category}`">
           <span aria-hidden="true">←</span>
-          Return to Shop
+          Return to {{ product.category }}
         </NuxtLink>
 
         <h1>{{ product.name }}</h1>
@@ -118,20 +119,35 @@
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
+import BreadcrumbTrail, { type BreadcrumbItem } from '../../components/shared/BreadcrumbTrail.vue'
 import {
   getProductColourImageUrl,
   getProductColourName,
   getProductColourValue,
   getProductDefaultColourName,
+  getProductPath,
+  getProductUrlSlug,
   products,
   type ProductColour,
 } from '../../data/homeContent'
+import { getCollectionPathForCategory } from '#shared/lib/catalogNavigation'
 
 const route = useRoute()
 const { addToCart } = useCart()
 const { toggleWishlist, isInWishlist } = useWishlist()
 const { getProductStock, getStockLabel } = useInventory()
-const product = products.find((item) => item.slug === route.params.slug)
+const requestedSlug = Array.isArray(route.params.slug)
+  ? route.params.slug[0] ?? ''
+  : String(route.params.slug ?? '')
+const legacyProduct = products.find((item) =>
+  item.slug === requestedSlug && getProductUrlSlug(item) !== requestedSlug,
+)
+
+if (legacyProduct) {
+  await navigateTo(getProductPath(legacyProduct), { redirectCode: 301, replace: true })
+}
+
+const product = legacyProduct ?? products.find((item) => getProductUrlSlug(item) === requestedSlug)
 
 if (!product) {
   throw createError({
@@ -150,6 +166,22 @@ const fallbackProductCopyByCategory: Record<string, string> = {
 const productCopy = product.description
   ?? fallbackProductCopyByCategory[product.category]
   ?? 'A movement-ready essential for training and everyday wear.'
+const categoryPath = getCollectionPathForCategory(product.category)
+const breadcrumbItems: BreadcrumbItem[] = [
+  { label: 'Home', to: '/' },
+  { label: 'Women', to: '/shop/women' },
+  { label: product.category, to: categoryPath },
+  { label: product.name },
+]
+
+useSeoMeta({
+  title: `${product.name} | AÑAI Kenya`,
+  description: productCopy,
+  ogTitle: `${product.name} | AÑAI Kenya`,
+  ogDescription: productCopy,
+  ogImage: product.imageUrl,
+  ogUrl: `https://anaibymurda.com${getProductPath(product)}`,
+})
 
 const colourImageUrls = product.colours
   .map((colour) => (typeof colour === 'string' ? undefined : colour.imageUrl))

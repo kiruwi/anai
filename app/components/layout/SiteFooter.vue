@@ -30,19 +30,21 @@
         <section>
           <h2>Shop</h2>
           <ul>
-            <li><NuxtLink to="/#products">All products</NuxtLink></li>
-            <li><NuxtLink to="/shop?new=true">New in</NuxtLink></li>
-            <li><NuxtLink to="/shop?category=sets">Sets</NuxtLink></li>
-            <li><NuxtLink to="/shop?category=tops">Tops</NuxtLink></li>
-            <li><NuxtLink to="/shop?category=outerwear">Outerwear</NuxtLink></li>
-            <li><NuxtLink to="/shop?category=accessories">Accessories</NuxtLink></li>
+            <li><NuxtLink to="/shop">All products</NuxtLink></li>
+            <li><NuxtLink to="/shop/new-in">New in</NuxtLink></li>
+            <li><NuxtLink to="/shop/sets">Sets</NuxtLink></li>
+            <li><NuxtLink to="/shop/tops">Tops</NuxtLink></li>
+            <li><NuxtLink to="/shop/bottoms">Bottoms</NuxtLink></li>
+            <li><NuxtLink to="/shop/outerwear">Outerwear</NuxtLink></li>
           </ul>
         </section>
         <section>
           <h2>Explore</h2>
           <ul>
+            <!-- TODO: Restore these links when the editorial pages are complete.
             <li><NuxtLink to="/lookbook">Lookbook</NuxtLink></li>
             <li><NuxtLink to="/shop-the-look">Shop the look</NuxtLink></li>
+            -->
             <li><NuxtLink to="/about">About</NuxtLink></li>
             <li><NuxtLink to="/wishlist">Wishlist</NuxtLink></li>
           </ul>
@@ -52,6 +54,7 @@
           <ul>
             <li><NuxtLink to="/size-guide">Size guide</NuxtLink></li>
             <li><NuxtLink to="/contact">Contact</NuxtLink></li>
+            <li><NuxtLink to="/legal/delivery-policy">Shipping and returns</NuxtLink></li>
             <li><button class="site-footer__cookie-settings" type="button" @click="openCookieSettings">Cookie settings</button></li>
             <li><NuxtLink to="/legal">Policies</NuxtLink></li>
           </ul>

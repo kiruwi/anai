@@ -3,7 +3,7 @@
     <div class="product-card__media">
       <NuxtLink
         class="product-card__image"
-        :to="`/product/${product.slug}`"
+        :to="getProductPath(product)"
         :aria-label="`View ${product.name}`"
       >
         <img
@@ -106,6 +106,7 @@ import {
   getProductColourName,
   getProductColourValue,
   getProductDefaultColourName,
+  getProductPath,
   type HomepageProduct,
   type ProductColour,
 } from '../../data/homeContent'

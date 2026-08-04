@@ -1,11 +1,16 @@
-import { getRequestURL, setHeader } from 'h3'
+import { setHeader } from 'h3'
+import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
 
 export default defineEventHandler((event) => {
-  const config = useRuntimeConfig()
-  const configuredSiteUrl = typeof config.public.siteUrl === 'string' ? config.public.siteUrl.trim() : ''
-  const requestUrl = getRequestURL(event)
-  const siteUrl = (configuredSiteUrl || `${requestUrl.protocol}//${requestUrl.host}`).replace(/\/$/, '')
-
   setHeader(event, 'content-type', 'text/plain; charset=utf-8')
-  return `User-agent: *\nAllow: /\nDisallow: /checkout\nDisallow: /cart\nSitemap: ${siteUrl}/sitemap.xml\n`
+
+  return [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /account',
+    'Disallow: /cart',
+    'Disallow: /checkout',
+    `Sitemap: ${canonicalSiteUrl}/sitemap.xml`,
+    '',
+  ].join('\n')
 })

@@ -10,6 +10,7 @@ export type ProductColour =
 export type HomepageProduct = {
   name: string
   slug: string
+  urlSlug?: string
   priceKes: number
   stockQuantity: number
   category: string
@@ -106,6 +107,10 @@ export const getProductColourStockLimit = (product: HomepageProduct, colourName?
 
 export const isProductOutOfStock = (product: HomepageProduct) => getProductStockQuantity(product) <= 0
 
+export const getProductUrlSlug = (product: HomepageProduct) => product.urlSlug ?? product.slug
+
+export const getProductPath = (product: HomepageProduct) => `/product/${getProductUrlSlug(product)}`
+
 // Product photos keep human-readable filenames, so changing the file contents
 // requires a URL revision to prevent browsers and CDNs from reusing an older image.
 const productImageRevision = 'kenyan-models-diverse-20260722'
@@ -173,7 +178,9 @@ export const products: HomepageProduct[] = [
   {
     name: 'Nuru Zip-up',
     slug: 'jackets',
-    priceKes: 3870,
+    urlSlug: 'nuru-zip-up',
+    // TEMP: Restore to 3870 after the live M-Pesa payment test.
+    priceKes: 50,
     stockQuantity: 7,
     category: 'Outerwear',
     colours: [
@@ -248,6 +255,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Aya Mini tee',
     slug: 'minit-t-shirt',
+    urlSlug: 'aya-mini-tee',
     priceKes: 2980,
     stockQuantity: 1,
     category: 'Tops',
@@ -266,6 +274,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Nia jogger set',
     slug: 'sahara-corsage-set',
+    urlSlug: 'nia-jogger-set',
     priceKes: 5510,
     stockQuantity: 3,
     category: 'Sets',
@@ -332,6 +341,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Zuri bra',
     slug: 'strappy-bra',
+    urlSlug: 'zuri-bra',
     priceKes: 2680,
     stockQuantity: 3,
     category: 'Tops',
@@ -375,6 +385,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Jua jogger set',
     slug: 'nuru-short-set',
+    urlSlug: 'jua-jogger-set',
     priceKes: 4920,
     stockQuantity: 3,
     category: 'Sets',
@@ -422,19 +433,33 @@ export const products: HomepageProduct[] = [
 
 export const categoryTiles: ImageTile[] = [
   {
-    title: 'Men',
-    href: '/shop?gender=men',
-    imageUrl: '/images/categories/men-square-v2.webp',
-    imageTone: 'linear-gradient(135deg, #000000, #4a481d)',
-    isComingSoon: true,
+    title: 'Sets',
+    href: '/shop/sets',
+    imageUrl: '/images/products/Lela set/brown.webp',
+    imageTone: 'linear-gradient(135deg, #461828, #d7c1a9)',
   },
   {
-    title: 'Women',
-    href: '/shop?gender=women',
-    imageUrl: '/images/categories/women-square-v2.webp',
+    title: 'Tops',
+    href: '/shop/tops',
+    imageUrl: '/images/products/Reya Long sleeve, round neck/white.webp',
     imageTone: 'linear-gradient(135deg, #d7c1a9, #ffffff)',
   },
-]
+  {
+    title: 'Bottoms',
+    href: '/shop/bottoms',
+    imageUrl: '/images/products/Terra skirt - Padel tennis bubble set/brown.webp',
+    imageTone: 'linear-gradient(135deg, #4a481d, #d7c1a9)',
+  },
+  {
+    title: 'Outerwear',
+    href: '/shop/outerwear',
+    imageUrl: '/images/products/Nuru Zip-up/navy.webp',
+    imageTone: 'linear-gradient(135deg, #111111, #253b54)',
+  },
+].map((tile) => ({
+  ...tile,
+  imageUrl: versionProductImageUrl(tile.imageUrl),
+}))
 
 export const shopLooks: ShopLook[] = [
   {
@@ -446,7 +471,7 @@ export const shopLooks: ShopLook[] = [
   },
   {
     title: 'Training look',
-    href: '/product/nuru-short-set',
+    href: '/product/jua-jogger-set',
     imageUrl: '/images/products/Jua jogger set/navy blue.webp',
     imageAlt: 'Jua jogger set styled for a training look',
     products: ['Jua jogger set', 'Ankle weights', 'Resistance bands'],

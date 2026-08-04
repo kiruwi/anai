@@ -1,6 +1,14 @@
-import { getRequestURL, setHeader } from 'h3'
-import { products } from '../../app/data/homeContent'
+import { setHeader } from 'h3'
+import {
+  getProductUrlSlug,
+  products,
+} from '../../app/data/homeContent'
 import { legalPaths } from '../../app/data/legalContent'
+import {
+  canonicalSiteUrl,
+  collectionDefinitions,
+  collectionSlugs,
+} from '#shared/lib/catalogNavigation'
 
 const staticPaths = [
   '/',
@@ -8,8 +16,20 @@ const staticPaths = [
   '/about',
   '/size-guide',
   '/contact',
+  '/legal',
   ...legalPaths,
 ]
+
+const hasProductsForCollection = (slug: (typeof collectionSlugs)[number]) => {
+  const collection = collectionDefinitions[slug]
+
+  if (collection.filter === 'new') return products.some((product) => product.isNew)
+  if (collection.filter === 'women') return products.length > 0
+
+  return products.some((product) =>
+    product.category.toLowerCase() === collection.category?.toLowerCase(),
+  )
+}
 
 const escapeXml = (value: string) =>
   value
@@ -20,31 +40,22 @@ const escapeXml = (value: string) =>
     .replaceAll("'", '&apos;')
 
 export default defineEventHandler((event) => {
-  const config = useRuntimeConfig()
-  const configuredSiteUrl =
-    typeof config.public.siteUrl === 'string' ? config.public.siteUrl.trim() : ''
-  const requestUrl = getRequestURL(event)
-  const siteUrl = (configuredSiteUrl || `${requestUrl.protocol}//${requestUrl.host}`).replace(/\/$/, '')
-  const paths = [
-    ...staticPaths,
-    ...products.map((product) => `/product/${product.slug}`),
-  ]
+  const collectionPaths = collectionSlugs
+    .filter(hasProductsForCollection)
+    .map((slug) => `/shop/${slug}`)
+  const productPaths = products.map((product) => `/product/${getProductUrlSlug(product)}`)
+  const paths = [...new Set([...staticPaths, ...collectionPaths, ...productPaths])]
 
   setHeader(event, 'content-type', 'application/xml; charset=utf-8')
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...paths.map((path) => {
-      const priority = path === '/' ? '1.0' : path.startsWith('/product/') ? '0.7' : '0.8'
-
-      return [
-        '  <url>',
-        `    <loc>${escapeXml(`${siteUrl}${path}`)}</loc>`,
-        `    <priority>${priority}</priority>`,
-        '  </url>',
-      ].join('\n')
-    }),
+    ...paths.map((path) => [
+      '  <url>',
+      `    <loc>${escapeXml(`${canonicalSiteUrl}${path}`)}</loc>`,
+      '  </url>',
+    ].join('\n')),
     '</urlset>',
   ].join('\n')
 })

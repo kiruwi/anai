@@ -1,7 +1,7 @@
 <template>
   <section class="shop-by-category">
     <div class="container">
-      <SectionHeader title="Shop by category" />
+      <SectionHeader title="Shop by collection" />
       <div class="shop-by-category__grid">
         <ImageTile v-for="tile in tiles" :key="tile.title" :tile="tile" />
       </div>
@@ -29,7 +29,7 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--page-gutter);
-  width: min(100%, 100rem);
+  width: min(100%, 112rem);
   margin-inline: auto;
 }
 

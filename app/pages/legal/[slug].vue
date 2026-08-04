@@ -1,6 +1,7 @@
 <template>
   <section class="legal-reader container">
     <aside class="legal-reader__rail" aria-label="Legal documents" data-lenis-prevent>
+      <!-- TODO: Restore policy search when the legal document library grows.
       <label class="legal-reader__search">
         <input
           v-model.trim="searchQuery"
@@ -10,6 +11,7 @@
           autocomplete="off"
         />
       </label>
+      -->
 
       <nav class="legal-reader__documents">
         <details

@@ -51,7 +51,6 @@ defineProps<{
   padding: var(--space-md);
   color: var(--colour-white);
   background-color: var(--colour-plum);
-  transition: transform 180ms ease;
 }
 
 .image-tile::after {
@@ -73,18 +72,15 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 180ms ease;
 }
 
-.image-tile:hover {
+.image-tile:not(.image-tile--locked):hover img {
   transform: scale(1.015);
 }
 
 .image-tile--locked {
   cursor: default;
-}
-
-.image-tile--locked:hover {
-  transform: none;
 }
 
 .image-tile__title,

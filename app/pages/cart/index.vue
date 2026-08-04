@@ -7,7 +7,7 @@
     <div v-if="lines.length" class="cart-page__layout">
       <div class="cart-page__items">
         <article v-for="line in lines" :key="line.key" class="cart-line">
-          <NuxtLink class="cart-line__image" :to="`/product/${line.product.slug}`">
+          <NuxtLink class="cart-line__image" :to="getProductPath(line.product)">
             <img
               v-if="getProductImageUrlForColour(line.product, line.colour)"
               :src="getProductImageUrlForColour(line.product, line.colour)"
@@ -21,7 +21,7 @@
           </NuxtLink>
 
           <div class="cart-line__details">
-            <NuxtLink :to="`/product/${line.product.slug}`">
+            <NuxtLink :to="getProductPath(line.product)">
               <h2>{{ line.product.name }}</h2>
             </NuxtLink>
             <p>{{ line.product.category }}</p>
@@ -130,6 +130,7 @@
 <script setup lang="ts">
 import {
   getProductImageUrlForColour,
+  getProductPath,
   getProductColourStockLimit,
   getProductColourName,
   getProductColourValue,

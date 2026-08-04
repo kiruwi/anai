@@ -180,6 +180,24 @@ export default defineNuxtConfig({
           'cache-control': 'public, max-age=3600, must-revalidate',
         },
       },
+      '/account/**': {
+        headers: { 'x-robots-tag': 'noindex, nofollow' },
+      },
+      '/cart/**': {
+        headers: { 'x-robots-tag': 'noindex, nofollow' },
+      },
+      '/checkout/**': {
+        headers: { 'x-robots-tag': 'noindex, nofollow' },
+      },
+      '/wishlist/**': {
+        headers: { 'x-robots-tag': 'noindex, nofollow' },
+      },
+      '/lookbook/**': {
+        headers: { 'x-robots-tag': 'noindex, nofollow' },
+      },
+      '/shop-the-look/**': {
+        headers: { 'x-robots-tag': 'noindex, nofollow' },
+      },
     },
   },
   runtimeConfig: {
@@ -196,7 +214,7 @@ export default defineNuxtConfig({
     emailApiKey: '',
     adminOrderEmail: '',
     public: {
-      siteUrl: '',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://anaibymurda.com',
       supabaseUrl,
       supabasePublishableKey,
       supabaseAnonKey: supabasePublishableKey,

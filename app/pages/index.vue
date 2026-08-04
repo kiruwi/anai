@@ -4,7 +4,7 @@
     id="products"
     title="New Items"
     action="View all new"
-    href="/shop"
+    href="/shop/new-in"
     :products="newReleaseProducts"
   />
   <ShopByCategory :tiles="categoryTiles" />
@@ -29,4 +29,9 @@ const photographedProducts = products.filter((product) =>
   product.imageUrl?.startsWith('/images/products/') || homepageProductSlugsWithoutPhotos.has(product.slug),
 )
 const newReleaseProducts = photographedProducts
+
+useSeoMeta({
+  title: 'AÑAI | Activewear and Athleisure in Kenya',
+  description: 'Shop AÑAI activewear, athleisure sets, tops, outerwear, and movement-ready essentials in Kenya.',
+})
 </script>
