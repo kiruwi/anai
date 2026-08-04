@@ -179,7 +179,7 @@ export const products: HomepageProduct[] = [
     name: 'Nuru Zip-up',
     slug: 'jackets',
     urlSlug: 'nuru-zip-up',
-    priceKes: 3870,
+    priceKes: 2200,
     stockQuantity: 7,
     category: 'Outerwear',
     colours: [
@@ -204,7 +204,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Reya Long sleeve, round neck',
     slug: 'long-sleeve-round-neck',
-    priceKes: 2680,
+    priceKes: 1990,
     stockQuantity: 3,
     category: 'Tops',
     colours: [
@@ -229,7 +229,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Reya Long sleeve, swirl neck',
     slug: 'long-sleeve-swirl-neck',
-    priceKes: 2980,
+    priceKes: 1990,
     stockQuantity: 3,
     category: 'Tops',
     colours: [
@@ -255,7 +255,7 @@ export const products: HomepageProduct[] = [
     name: 'Aya Mini tee',
     slug: 'minit-t-shirt',
     urlSlug: 'aya-mini-tee',
-    priceKes: 2980,
+    priceKes: 1500,
     stockQuantity: 1,
     category: 'Tops',
     colours: [
@@ -274,7 +274,7 @@ export const products: HomepageProduct[] = [
     name: 'Nia jogger set',
     slug: 'sahara-corsage-set',
     urlSlug: 'nia-jogger-set',
-    priceKes: 5510,
+    priceKes: 4490,
     stockQuantity: 3,
     category: 'Sets',
     colours: [
@@ -297,7 +297,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Lela set',
     slug: 'lela-set',
-    priceKes: 5060,
+    priceKes: 4990,
     stockQuantity: 3,
     category: 'Sets',
     colours: [
@@ -320,7 +320,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Mvua flannel',
     slug: 'mvua-flannel',
-    priceKes: 4770,
+    priceKes: 3290,
     stockQuantity: 3,
     category: 'Tops',
     colours: [
@@ -341,7 +341,7 @@ export const products: HomepageProduct[] = [
     name: 'Zuri bra',
     slug: 'strappy-bra',
     urlSlug: 'zuri-bra',
-    priceKes: 2680,
+    priceKes: 1499,
     stockQuantity: 3,
     category: 'Tops',
     colours: [
@@ -364,7 +364,7 @@ export const products: HomepageProduct[] = [
   {
     name: 'Terra skirt - Padel/tennis bubble set',
     slug: 'terra-skirt',
-    priceKes: 2680,
+    priceKes: 2490,
     stockQuantity: 2,
     category: 'Bottoms',
     colours: [
@@ -385,7 +385,7 @@ export const products: HomepageProduct[] = [
     name: 'Jua jogger set',
     slug: 'nuru-short-set',
     urlSlug: 'jua-jogger-set',
-    priceKes: 4920,
+    priceKes: 4490,
     stockQuantity: 3,
     category: 'Sets',
     colours: [
@@ -408,7 +408,7 @@ export const products: HomepageProduct[] = [
   {
     name: "Mia cropped t'S",
     slug: 'mia-cropped-tee',
-    priceKes: 2980,
+    priceKes: 1600,
     stockQuantity: 6,
     category: 'Tops',
     colours: [
