@@ -179,8 +179,7 @@ export const products: HomepageProduct[] = [
     name: 'Nuru Zip-up',
     slug: 'jackets',
     urlSlug: 'nuru-zip-up',
-    // TEMP: Restore to 3870 after the live M-Pesa payment test.
-    priceKes: 50,
+    priceKes: 3870,
     stockQuantity: 7,
     category: 'Outerwear',
     colours: [
