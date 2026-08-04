@@ -30,7 +30,7 @@ The application adds a private `token` query parameter to that URL automatically
 
 1. In the same Daraja app, use **Go Live** and select the Lipa na M-Pesa Online product. Complete the organisation/individual and business verification details requested by Safaricom.
 2. Use the production credentials issued during Go Live: production Consumer Key, Consumer Secret, business shortcode, and Lipa na M-Pesa Online passkey.
-3. For a PayBill use `CustomerPayBillOnline`; for a Buy Goods Till use `CustomerBuyGoodsOnline`. The shortcode, passkey, and transaction type must all belong to the same collection setup.
+3. For a PayBill use `CustomerPayBillOnline`; for a Buy Goods Till use `CustomerBuyGoodsOnline`. The shortcode, passkey, transaction type, and (for Buy Goods) Till number must all belong to the same collection setup.
 4. Set production environment variables on the production host:
 
    ```dotenv
@@ -38,6 +38,16 @@ The application adds a private `token` query parameter to that URL automatically
    NUXT_MPESA_SHORTCODE=your_live_shortcode
    NUXT_MPESA_CALLBACK_URL=https://your-live-domain.com/api/webhooks/mpesa
    ```
+
+   For a Buy Goods Till, the business/store shortcode used to generate the Lipa na M-PESA password and the customer-facing Till number are separate fields:
+
+   ```dotenv
+   NUXT_MPESA_TRANSACTION_TYPE=CustomerBuyGoodsOnline
+   NUXT_MPESA_SHORTCODE=your_live_business_or_store_shortcode
+   NUXT_MPESA_TILL_NUMBER=your_customer_facing_till_number
+   ```
+
+   `NUXT_MPESA_SHORTCODE` must be the shortcode paired with the production passkey issued during Go Live. `NUXT_MPESA_TILL_NUMBER` is sent as the payment destination (`PartyB`). A PayBill deployment does not need `NUXT_MPESA_TILL_NUMBER`.
 
 5. Keep the Consumer Secret, passkey, Supabase secret key, and callback token private. Never use `NUXT_PUBLIC_` for any of them.
 6. Redeploy, make one low-value real payment, and verify the callback/payment/order status before announcing the new payment method.

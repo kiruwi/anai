@@ -206,6 +206,7 @@ export default defineNuxtConfig({
     mpesaConsumerKey: process.env.NUXT_MPESA_CONSUMER_KEY || '',
     mpesaConsumerSecret: process.env.NUXT_MPESA_CONSUMER_SECRET || '',
     mpesaShortcode: process.env.NUXT_MPESA_SHORTCODE || '',
+    mpesaTillNumber: process.env.NUXT_MPESA_TILL_NUMBER || '',
     mpesaPasskey: process.env.NUXT_MPESA_PASSKEY || '',
     mpesaCallbackUrl: process.env.NUXT_MPESA_CALLBACK_URL || '',
     mpesaCallbackToken: process.env.NUXT_MPESA_CALLBACK_TOKEN || '',

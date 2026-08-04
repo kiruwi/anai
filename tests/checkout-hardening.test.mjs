@@ -31,6 +31,16 @@ test('M-Pesa cancellation is distinguished from other payment failures', () => {
   assert.equal(isMpesaCancellation(1, 'The balance is insufficient for the transaction'), false)
 })
 
+test('M-Pesa Buy Goods uses the Till number as PartyB', async () => {
+  const mpesa = await readProjectFile('server/utils/mpesa.ts')
+  const nuxtConfig = await readProjectFile('nuxt.config.ts')
+
+  assert.match(nuxtConfig, /mpesaTillNumber: process\.env\.NUXT_MPESA_TILL_NUMBER/)
+  assert.match(mpesa, /CustomerBuyGoodsOnline' && !tillNumber && 'NUXT_MPESA_TILL_NUMBER'/)
+  assert.match(mpesa, /Buffer\.from\(`\$\{config\.shortcode\}\$\{config\.passkey\}\$\{timestamp\}`\)/)
+  assert.match(mpesa, /PartyB: config\.transactionType === 'CustomerBuyGoodsOnline' \? config\.tillNumber : config\.shortcode/)
+})
+
 test('checkout recovers a dropped creation response by its idempotency key', async () => {
   const checkoutPage = await readProjectFile('app/pages/checkout/index.vue')
   const paymentStatusApi = await readProjectFile('server/api/checkout/payment-status.post.ts')

@@ -5,6 +5,7 @@ type MpesaRuntimeConfig = {
   consumerKey: string
   consumerSecret: string
   shortcode: string
+  tillNumber: string
   passkey: string
   callbackUrl: string
   callbackToken: string
@@ -34,6 +35,7 @@ const getConfig = (): MpesaRuntimeConfig => {
   const consumerKey = getStringConfig(runtimeConfig.mpesaConsumerKey)
   const consumerSecret = getStringConfig(runtimeConfig.mpesaConsumerSecret)
   const shortcode = getStringConfig(runtimeConfig.mpesaShortcode)
+  const tillNumber = getStringConfig(runtimeConfig.mpesaTillNumber)
   const passkey = getStringConfig(runtimeConfig.mpesaPasskey)
   const callbackUrl = getStringConfig(runtimeConfig.mpesaCallbackUrl)
   const callbackToken = getStringConfig(runtimeConfig.mpesaCallbackToken)
@@ -48,6 +50,7 @@ const getConfig = (): MpesaRuntimeConfig => {
     !consumerKey && 'NUXT_MPESA_CONSUMER_KEY',
     !consumerSecret && 'NUXT_MPESA_CONSUMER_SECRET',
     !shortcode && 'NUXT_MPESA_SHORTCODE',
+    transactionType === 'CustomerBuyGoodsOnline' && !tillNumber && 'NUXT_MPESA_TILL_NUMBER',
     !passkey && 'NUXT_MPESA_PASSKEY',
     !callbackUrl && 'NUXT_MPESA_CALLBACK_URL',
     !callbackToken && 'NUXT_MPESA_CALLBACK_TOKEN',
@@ -62,6 +65,10 @@ const getConfig = (): MpesaRuntimeConfig => {
 
   if (!/^\d+$/.test(shortcode)) {
     throw createError({ statusCode: 500, statusMessage: 'M-Pesa shortcode must contain only numbers.' })
+  }
+
+  if (tillNumber && !/^\d+$/.test(tillNumber)) {
+    throw createError({ statusCode: 500, statusMessage: 'M-Pesa Till number must contain only numbers.' })
   }
 
   try {
@@ -82,6 +89,7 @@ const getConfig = (): MpesaRuntimeConfig => {
     consumerKey,
     consumerSecret,
     shortcode,
+    tillNumber,
     passkey,
     callbackUrl,
     callbackToken,
@@ -173,7 +181,7 @@ export const initiateMpesaStkPush = async ({
       TransactionType: config.transactionType,
       Amount: Math.round(amountKes),
       PartyA: phoneNumber,
-      PartyB: config.shortcode,
+      PartyB: config.transactionType === 'CustomerBuyGoodsOnline' ? config.tillNumber : config.shortcode,
       PhoneNumber: phoneNumber,
       CallBackURL: getCallbackUrl(config),
       AccountReference: accountReference,
