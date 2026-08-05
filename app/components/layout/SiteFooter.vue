@@ -62,6 +62,7 @@
         <section class="site-footer__contact">
           <h2>Contact</h2>
           <ul>
+            <li><a href="tel:+254758807077">+254 758 807 077</a></li>
             <li><a href="mailto:info@anaibymurda.com">info@anaibymurda.com</a></li>
             <li><a href="mailto:sales@anaibymurda.com">sales@anaibymurda.com</a></li>
             <li><a href="mailto:support@anaibymurda.com">support@anaibymurda.com</a></li>

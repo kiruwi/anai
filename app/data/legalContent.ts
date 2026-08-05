@@ -17,7 +17,7 @@ export const lastUpdated = '10 June 2026'
 
 export const supportDetails = {
   email: 'Submit a support request at /contact so it receives a traceable request number.',
-  phone: 'Include your phone or WhatsApp number in the support form if you want us to follow up there.',
+  phone: 'Phone: +254 758 807 077.',
   location: 'Anai operates from Nairobi, Kenya.',
 }
 

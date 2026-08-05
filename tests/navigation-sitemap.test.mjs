@@ -61,6 +61,16 @@ test('mobile Shop navigation is a dialog trigger with complete close behavior', 
   assert.match(header, /mobileShopTriggerElement\.value\?\.focus\(\)/)
 })
 
+test('navigation labels use sentence case and contact areas show the support number', async () => {
+  const header = await readProjectFile('app/components/layout/SiteHeader.vue')
+  const footer = await readProjectFile('app/components/layout/SiteFooter.vue')
+  const contactPage = await readProjectFile('app/pages/contact/index.vue')
+
+  assert.doesNotMatch(header, /\.site-header__desktop-links\s*\{[^}]*text-transform:\s*uppercase/s)
+  assert.match(footer, /href="tel:\+254758807077">\+254 758 807 077<\/a>/)
+  assert.match(contactPage, /href="tel:\+254758807077">\+254 758 807 077<\/a>/)
+})
+
 test('unfinished editorial links remain commented out and noindexed', async () => {
   const footer = await readProjectFile('app/components/layout/SiteFooter.vue')
   const shopTheLookSection = await readProjectFile('app/components/home/ShopTheLook.vue')

@@ -381,7 +381,6 @@ onBeforeUnmount(() => {
   margin-left: auto;
   font-size: clamp(1.65rem, 1.65vw, 2.25rem);
   letter-spacing: 0.055em;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 

@@ -91,8 +91,8 @@
               <path d="M7 4h3l1.4 4-2.2 1.4a13.5 13.5 0 0 0 5.4 5.4l1.4-2.2 4 1.4v3a3 3 0 0 1-3.2 3A14 14 0 0 1 4 7.2 3 3 0 0 1 7 4Z" />
             </svg>
             <div>
-              <h2>WhatsApp reply</h2>
-              <a href="#phone">Add your number in the form</a>
+              <h2>Phone</h2>
+              <a href="tel:+254758807077">+254 758 807 077</a>
             </div>
           </article>
           <article>
