@@ -61,7 +61,7 @@
       </svg>
       <p class="home-hero__preloader-count">{{ introProgress }}%</p>
     </div>
-    <h1 ref="heroHeadingElement">
+    <div ref="heroBrandElement" class="home-hero__brand-lockup">
       <span
         v-if="!isIntroDisabled && !hasPlayedIntro"
         class="home-hero__preload-guard"
@@ -89,9 +89,9 @@
         </svg>
       </NuxtLink>
       <span ref="underlineElement" class="home-hero__underline" aria-hidden="true" />
-    </h1>
+    </div>
     <div ref="columnsElement" class="home-hero__columns">
-      <p>ANAI</p>
+      <h1 class="home-hero__descriptor">AÑAI Activewear &amp; Athleisure</h1>
       <div class="home-hero__why">
         <h2>Why</h2>
         <p>AÑAI: From the Maa word Enai, meaning 'mine.' Designed to become yours.</p>
@@ -136,7 +136,7 @@ const shouldLoadVideo = ref(false)
 const isHeroVideoReady = ref(false)
 const heroVideoElement = ref<HTMLVideoElement | null>(null)
 const letterElements = shallowRef<SVGPathElement[]>([])
-const heroHeadingElement = ref<HTMLElement | null>(null)
+const heroBrandElement = ref<HTMLElement | null>(null)
 const underlineElement = ref<HTMLSpanElement | null>(null)
 const browElement = ref<SVGPathElement | null>(null)
 const columnsElement = ref<HTMLDivElement | null>(null)
@@ -156,7 +156,7 @@ const getUnderlineTransformOrigin = () =>
   window.matchMedia('(max-width: 760px)').matches ? 'center center' : 'left center'
 
 const updateMobileDockTransform = () => {
-  const heading = heroHeadingElement.value
+  const heading = heroBrandElement.value
   const logo = heading?.querySelector<HTMLElement>('.home-hero__logo')
   const headerLogo = document.querySelector<HTMLElement>('.site-header__logo')
   const headerInner = headerLogo?.parentElement
@@ -726,13 +726,13 @@ onBeforeUnmount(() => {
   }
 }
 
-.home-hero h1,
+.home-hero__brand-lockup,
 .home-hero__columns {
   position: relative;
   z-index: 2;
 }
 
-h1 {
+.home-hero__brand-lockup {
   margin: 0;
 }
 
@@ -813,14 +813,25 @@ h1 {
   transform: translateY(-1.2rem);
 }
 
+.home-hero__columns h1,
 .home-hero__columns h2,
 .home-hero__columns p {
   margin: 0;
 }
 
+.home-hero__columns > h1,
 .home-hero__columns > p,
 .home-hero__columns h2 {
   font-weight: 600;
+}
+
+.home-hero__descriptor {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: left;
+  text-transform: uppercase;
 }
 
 .home-hero__columns h2 {
@@ -859,7 +870,7 @@ h1 {
     padding-bottom: calc(7rem + env(safe-area-inset-bottom) + var(--space-lg));
   }
 
-  .home-hero h1 {
+  .home-hero__brand-lockup {
     width: 100%;
   }
 

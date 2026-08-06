@@ -16,3 +16,13 @@ test('the New Items heading uses the same trailing rule treatment as Shop the Lo
   assert.match(productRail, /\.product-rail__rule\s*\{[\s\S]*height: 1px;[\s\S]*background: var\(--colour-border\)/)
   assert.match(shopTheLook, /\.shop-the-look__rule\s*\{[\s\S]*height: 1px;[\s\S]*background: var\(--colour-border\)/)
 })
+
+test('the homepage hero has a textual heading hierarchy without changing branded type sizes', async () => {
+  const hero = await readProjectFile('app/components/home/HomeHero.vue')
+
+  assert.match(hero, /<div ref="heroBrandElement" class="home-hero__brand-lockup">/)
+  assert.match(hero, /<h1 class="home-hero__descriptor">AÑAI Activewear &amp; Athleisure<\/h1>/)
+  assert.match(hero, /<h2>Why<\/h2>/)
+  assert.equal(hero.match(/<h1\b/g)?.length, 1)
+  assert.match(hero, /\.home-hero__descriptor\s*\{[^}]*font-family: inherit;[^}]*font-size: inherit;[^}]*line-height: inherit;[^}]*text-align: left;/s)
+})
