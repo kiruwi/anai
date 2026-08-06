@@ -11,7 +11,7 @@
             <path d="M182.45,2.06c.66.64-3.74,5.72-4.53,6.46-16.2,15.08-36.43-10.39-51.12,1.21-1.02.81-.86,2.2-1.98,2.18.41-4.05,5.76-9.27,9.32-10.76,12.12-5.07,27.54,8.51,41.34,4.94,3.3-.85,4.08-3.2,6.96-4.03Z" />
           </svg>
         </NuxtLink>
-        <p>Athleisure pieces for training, errands, and everyday comfort.</p>
+        <p>AÑAI activewear and athleisure designed in Kenya for training, errands, and everyday comfort.</p>
         <a
           class="site-footer__instagram"
           href="https://www.instagram.com/anai.nairobi_/"
