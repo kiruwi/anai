@@ -18,7 +18,7 @@ export const lastUpdated = '10 June 2026'
 export const supportDetails = {
   email: 'Submit a support request at /contact so it receives a traceable request number.',
   phone: 'Phone: +254 758 807 077.',
-  location: 'Anai operates from Nairobi, Kenya.',
+  location: 'Anai operates from 9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.',
 }
 
 export const legalPolicies: LegalPolicy[] = [

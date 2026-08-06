@@ -112,7 +112,7 @@
             </svg>
             <div>
               <h2>Based in</h2>
-              <p>Nairobi, Kenya. Online orders are available nationwide.</p>
+              <p>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.</p>
             </div>
           </article>
         </div>
@@ -141,7 +141,7 @@
       </details>
       <details>
         <summary>Where is Anai based?</summary>
-        <p>Based in Nairobi, Kenya. Online orders are available nationwide.</p>
+        <p>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.</p>
       </details>
     </section>
   </section>
