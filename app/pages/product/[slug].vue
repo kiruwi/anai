@@ -183,16 +183,35 @@ useSeoMeta({
   ogUrl: `https://anaibymurda.com${getProductPath(product)}`,
 })
 
+const requestedColour = typeof route.query.colour === 'string'
+  ? route.query.colour.trim()
+  : ''
+const requestedProductColour = requestedColour
+  ? product.colours.find(
+      (colour) => getProductColourName(colour).trim().toLowerCase() === requestedColour.toLowerCase(),
+    )
+  : undefined
+const requestedColourName = requestedProductColour
+  ? getProductColourName(requestedProductColour)
+  : undefined
+const selectedColourName = ref<string | undefined>(
+  requestedColourName ?? getProductDefaultColourName(product),
+)
+const requestedColourImageUrl = requestedProductColour
+  ? getProductColourImageUrl(requestedProductColour)
+  : undefined
 const colourImageUrls = product.colours
   .map((colour) => (typeof colour === 'string' ? undefined : colour.imageUrl))
   .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
 
 const galleryImages = [
-  ...new Set(product.galleryImages ?? [product.imageUrl, ...colourImageUrls]),
+  ...new Set([
+    requestedColourImageUrl,
+    ...(product.galleryImages ?? [product.imageUrl, ...colourImageUrls]),
+  ]),
 ].filter((imageUrl): imageUrl is string => Boolean(imageUrl))
 const carouselElement = ref<HTMLDivElement | null>(null)
 const slideElements = shallowRef<HTMLDivElement[]>([])
-const selectedColourName = ref<string | undefined>(getProductDefaultColourName(product))
 const hasJustAdded = ref(false)
 let galleryAnimation: { kill: () => void } | undefined
 let galleryWheelLock: number | undefined
@@ -254,7 +273,10 @@ watchEffect(() => {
     (colour) => getProductColourName(colour) === selectedColourName.value,
   )
 
-  if (selectedColour && isColourAvailable(selectedColour)) return
+  if (
+    selectedColour &&
+    (isColourAvailable(selectedColour) || selectedColourName.value === requestedColourName)
+  ) return
 
   const firstAvailableColour = product.colours.find(isColourAvailable)
   selectedColourName.value = firstAvailableColour
