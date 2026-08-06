@@ -34,6 +34,7 @@
     <div class="product-rail__content container">
       <header v-if="title || (action && href)" class="product-rail__header">
         <h2 v-if="title">{{ title }}</h2>
+        <span v-if="title" class="product-rail__rule" aria-hidden="true" />
         <NuxtLink v-if="action && href" :to="href">
           {{ action }}
           <span aria-hidden="true">→</span>
@@ -116,10 +117,10 @@ const visibleProducts = computed(() => props.products.slice(0, 4))
 }
 
 .product-rail__header {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(8rem, 1fr) max-content;
   gap: var(--space-lg);
   align-items: center;
-  justify-content: space-between;
   margin-bottom: var(--space-lg);
 }
 
@@ -130,6 +131,14 @@ const visibleProducts = computed(() => props.products.slice(0, 4))
   font-weight: 400;
   letter-spacing: 0.055em;
   line-height: 1;
+  white-space: nowrap;
+}
+
+.product-rail__rule {
+  display: block;
+  align-self: center;
+  height: 1px;
+  background: var(--colour-border);
 }
 
 .product-rail__header a {
@@ -140,6 +149,7 @@ const visibleProducts = computed(() => props.products.slice(0, 4))
   font-size: 1.2rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .product-rail__header a span {
@@ -187,6 +197,8 @@ const visibleProducts = computed(() => props.products.slice(0, 4))
   }
 
   .product-rail__header {
+    grid-template-columns: max-content minmax(1.6rem, 1fr) max-content;
+    gap: var(--space-sm);
     align-items: center;
     margin-bottom: 0;
     padding: var(--space-xl) 0;

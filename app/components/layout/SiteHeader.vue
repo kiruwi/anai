@@ -171,7 +171,11 @@ const props = withDefaults(defineProps<{
   overHero: false,
 })
 
-const hasPlayedIntro = useState('site-header-intro-played', () => false)
+const hasPlayedIntro = useCookie<boolean>('site-header-intro-played', {
+  default: () => false,
+  path: '/',
+  sameSite: 'lax',
+})
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const hasMobileNavRevealed = ref(!props.overHero)
 const isShopDropdownOpen = ref(false)

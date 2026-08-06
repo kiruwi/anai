@@ -113,7 +113,14 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 
-const hasPlayedIntro = useState('anai-logo-intro-played', () => false)
+// A session cookie keeps the branded intro from replaying after a hard refresh.
+// Unlike client-only storage, it is available during SSR, so repeat loads do not
+// render a loader that disappears only after hydration.
+const hasPlayedIntro = useCookie<boolean>('anai-logo-intro-played', {
+  default: () => false,
+  path: '/',
+  sameSite: 'lax',
+})
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const isIntroDisabled = false
 

@@ -68,7 +68,10 @@ test('navigation labels use sentence case and contact areas show the support num
 
   assert.doesNotMatch(header, /\.site-header__desktop-links\s*\{[^}]*text-transform:\s*uppercase/s)
   assert.match(footer, /href="tel:\+254758807077">\+254 758 807 077<\/a>/)
-  assert.match(footer, /9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West\./)
+  assert.match(footer, /<section class="site-footer__address">[\s\S]*<h2>Address<\/h2>[\s\S]*<address>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West\.<\/address>/)
+  assert.doesNotMatch(footer, /site-footer__contact[\s\S]*Nairobi West\.<\/li>/)
+  assert.doesNotMatch(footer, /\.site-footer__contact a\s*\{[^}]*font-size/s)
+  assert.match(footer, /"contact contact"\s*"address address"/)
   assert.match(contactPage, /href="tel:\+254758807077">\+254 758 807 077<\/a>/)
 })
 

@@ -27,7 +27,7 @@
         </a>
       </div>
       <nav aria-label="Footer navigation">
-        <section>
+        <section class="site-footer__shop">
           <h2>Shop</h2>
           <ul>
             <li><NuxtLink to="/shop">All products</NuxtLink></li>
@@ -38,7 +38,7 @@
             <li><NuxtLink to="/shop/outerwear">Outerwear</NuxtLink></li>
           </ul>
         </section>
-        <section>
+        <section class="site-footer__explore">
           <h2>Explore</h2>
           <ul>
             <!-- TODO: Restore these links when the editorial pages are complete.
@@ -49,7 +49,7 @@
             <li><NuxtLink to="/wishlist">Wishlist</NuxtLink></li>
           </ul>
         </section>
-        <section>
+        <section class="site-footer__support">
           <h2>Support</h2>
           <ul>
             <li><NuxtLink to="/size-guide">Size guide</NuxtLink></li>
@@ -66,8 +66,11 @@
             <li><a href="mailto:info@anaibymurda.com">info@anaibymurda.com</a></li>
             <li><a href="mailto:sales@anaibymurda.com">sales@anaibymurda.com</a></li>
             <li><a href="mailto:support@anaibymurda.com">support@anaibymurda.com</a></li>
-            <li>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.</li>
           </ul>
+        </section>
+        <section class="site-footer__address">
+          <h2>Address</h2>
+          <address>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.</address>
         </section>
       </nav>
       <p class="site-footer__copyright">&copy; 2026 Anai. All rights reserved.</p>
@@ -156,8 +159,36 @@ const openCookieSettings = () => {
 
 nav {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(var(--space-md), 2.5vw, var(--space-xl));
+  grid-template-areas: "shop explore support contact address";
+  grid-template-columns:
+    minmax(0, 0.75fr)
+    minmax(0, 0.75fr)
+    minmax(0, 0.9fr)
+    minmax(24rem, 1.45fr)
+    minmax(21rem, 1.15fr);
+  column-gap: clamp(var(--space-md), 1.8vw, var(--space-xl));
+  row-gap: var(--space-xl);
+  align-items: start;
+}
+
+.site-footer__shop {
+  grid-area: shop;
+}
+
+.site-footer__explore {
+  grid-area: explore;
+}
+
+.site-footer__support {
+  grid-area: support;
+}
+
+.site-footer__contact {
+  grid-area: contact;
+}
+
+.site-footer__address {
+  grid-area: address;
 }
 
 nav section {
@@ -183,6 +214,12 @@ ul {
 li {
   margin: 0;
   font-size: clamp(1.6rem, 1.1vw, 1.8rem);
+}
+
+address {
+  font-size: clamp(1.6rem, 1.1vw, 1.8rem);
+  font-style: normal;
+  line-height: var(--copy-line-height);
 }
 
 nav a {
@@ -219,7 +256,7 @@ nav a:hover,
   text-transform: uppercase;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1280px) {
   .site-footer__inner {
     grid-template-columns: 1fr;
   }
@@ -229,23 +266,24 @@ nav a:hover,
   }
 }
 
+@media (max-width: 900px) {
+  nav {
+    grid-template-areas:
+      "shop explore"
+      "support support"
+      "contact contact"
+      "address address";
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-lg);
+  }
+}
+
 @media (max-width: 760px) {
   .site-footer__intro {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-  }
-
-  .site-footer__contact a {
-    font-size: clamp(1.1rem, 3.35vw, 1.35rem);
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-  }
-
-  nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-lg);
   }
 }
 </style>
