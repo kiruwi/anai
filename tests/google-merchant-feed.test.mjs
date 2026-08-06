@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 import { products } from '../app/data/homeContent.ts'
 import {
@@ -7,6 +8,16 @@ import {
 } from '../server/utils/googleMerchantFeed.ts'
 
 const siteUrl = 'https://anaibymurda.com'
+
+test('Google Merchant route always uses the verified canonical store domain', async () => {
+  const route = await readFile(
+    new URL('../server/routes/google-merchant.xml.ts', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(route, /siteUrl: canonicalSiteUrl/g)
+  assert.doesNotMatch(route, /useRuntimeConfig|config\.public\.siteUrl/)
+})
 
 test('Google Merchant items use live variant price, stock and a colour landing URL', () => {
   const product = products.find((item) => item.slug === 'strappy-bra')

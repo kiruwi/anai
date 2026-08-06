@@ -17,13 +17,6 @@ const getProductRecord = (variant: VariantRecord) =>
   Array.isArray(variant.products) ? variant.products[0] : variant.products
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  const configuredSiteUrl = typeof config.public.siteUrl === 'string'
-    ? config.public.siteUrl
-    : canonicalSiteUrl
-  const siteUrl = configuredSiteUrl.startsWith('https://')
-    ? configuredSiteUrl
-    : canonicalSiteUrl
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
     .from('product_variants')
@@ -47,7 +40,7 @@ export default defineEventHandler(async (event) => {
       const product = productRecord ? catalogBySlug.get(productRecord.slug) : undefined
 
       return product
-        ? createGoogleMerchantItem({ product, variant, siteUrl })
+        ? createGoogleMerchantItem({ product, variant, siteUrl: canonicalSiteUrl })
         : null
     })
     .filter((item) => item !== null)
@@ -55,5 +48,5 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'content-type', 'application/xml; charset=utf-8')
   setResponseHeader(event, 'cache-control', 'public, max-age=300, s-maxage=300')
 
-  return buildGoogleMerchantFeed({ items, siteUrl })
+  return buildGoogleMerchantFeed({ items, siteUrl: canonicalSiteUrl })
 })
