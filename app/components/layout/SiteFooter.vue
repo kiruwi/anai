@@ -66,6 +66,7 @@
             <li><a href="mailto:info@anaibymurda.com">info@anaibymurda.com</a></li>
             <li><a href="mailto:sales@anaibymurda.com">sales@anaibymurda.com</a></li>
             <li><a href="mailto:support@anaibymurda.com">support@anaibymurda.com</a></li>
+            <li>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.</li>
           </ul>
         </section>
       </nav>
