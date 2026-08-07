@@ -2,7 +2,7 @@ import {
   getProductImageUrlForColour,
   getProductUrlSlug,
   type HomepageProduct,
-} from '../../app/data/homeContent.ts'
+} from '../../app/data/homeContent'
 
 export type MerchantVariant = {
   id: string
