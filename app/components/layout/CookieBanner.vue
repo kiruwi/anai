@@ -74,6 +74,8 @@ type CookiePreferences = {
 }
 
 const cookieConsentKey = 'anai-cookie-consent'
+const googleTagGatewayPath = '/2wu4/'
+const googleTagScriptId = 'anai-google-tag'
 const config = useRuntimeConfig()
 const analyticsId =
   typeof config.public.googleTagId === 'string' ? config.public.googleTagId.trim() : ''
@@ -128,11 +130,12 @@ const loadAnalytics = () => {
     analyticsWindow.anaiGoogleTagConfigured = true
   }
 
-  if (document.querySelector(`script[src*="${analyticsId}"]`)) return
+  if (document.getElementById(googleTagScriptId)) return
 
   const script = document.createElement('script')
+  script.id = googleTagScriptId
   script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsId}`
+  script.src = googleTagGatewayPath
   document.head.appendChild(script)
 }
 
