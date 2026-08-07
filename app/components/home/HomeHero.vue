@@ -94,12 +94,14 @@
       <h1 class="home-hero__descriptor">AÑAI Activewear &amp; Athleisure</h1>
       <div class="home-hero__why">
         <h2>Why</h2>
-        <p>AÑAI: From the Maa word Enai, meaning 'mine.' Designed to become yours.</p>
         <p>
-          The name reflects our belief that the clothes you wear should become a part of your
-          life. Inspired by the versatility of the shuka, a garment worn through movement, work,
-          rest, and everyday moments, AÑAI creates pieces designed to move with you beyond the
-          workout.
+          AÑAI comes from the Maa word <em>Enai</em>, meaning “mine”, inspired by the idea that
+          your clothes should feel truly yours.
+        </p>
+        <p>
+          Like the shuka, worn through movement, work, rest and everyday life by the Eastern
+          Nilotes, AÑAI creates versatile pieces that move with you beyond the workout and become
+          part of your everyday story.
         </p>
       </div>
       <p class="home-hero__meta">
