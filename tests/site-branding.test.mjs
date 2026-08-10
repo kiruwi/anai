@@ -37,3 +37,17 @@ test('footer description naturally supports the homepage title and H1 language',
 
   assert.match(footer, /AÑAI activewear and athleisure designed in Kenya for training, errands, and everyday comfort\./)
 })
+
+test('repeated footer contact details are excluded from Google snippets', async () => {
+  const footer = await readProjectFile('app/components/layout/SiteFooter.vue')
+
+  assert.match(footer, /<section class="site-footer__contact" data-nosnippet>/)
+  assert.match(footer, /<section class="site-footer__address" data-nosnippet>/)
+})
+
+test('the About page has its own search description', async () => {
+  const aboutPage = await readProjectFile('app/pages/about/index.vue')
+
+  assert.match(aboutPage, /title: 'About AÑAI \| Kenyan Activewear & Athleisure'/)
+  assert.match(aboutPage, /description: 'Discover the story behind AÑAI/)
+})

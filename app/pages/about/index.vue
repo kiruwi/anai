@@ -34,6 +34,13 @@
   </section>
 </template>
 
+<script setup lang="ts">
+useSeoMeta({
+  title: 'About AÑAI | Kenyan Activewear & Athleisure',
+  description: 'Discover the story behind AÑAI and our Kenyan activewear and athleisure designed to move from training into everyday life.',
+})
+</script>
+
 <style scoped>
 .about-page {
   padding: var(--space-2xl) 0;

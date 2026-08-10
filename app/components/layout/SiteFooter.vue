@@ -59,7 +59,7 @@
             <li><NuxtLink to="/legal">Policies</NuxtLink></li>
           </ul>
         </section>
-        <section class="site-footer__contact">
+        <section class="site-footer__contact" data-nosnippet>
           <h2>Contact</h2>
           <ul>
             <li><a href="tel:+254758807077">+254 758 807 077</a></li>
@@ -68,7 +68,7 @@
             <li><a href="mailto:support@anaibymurda.com">support@anaibymurda.com</a></li>
           </ul>
         </section>
-        <section class="site-footer__address">
+        <section class="site-footer__address" data-nosnippet>
           <h2>Address</h2>
           <address>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West.</address>
         </section>

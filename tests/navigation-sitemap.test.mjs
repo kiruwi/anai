@@ -10,6 +10,7 @@ import {
   collectionDefinitions,
   collectionSlugs,
 } from '../shared/lib/catalogNavigation.ts'
+import { getCanonicalRedirectUrl } from '../shared/lib/canonicalHost.ts'
 
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -30,6 +31,19 @@ test('clean collection routes have unique SEO definitions', () => {
   assert.equal(new Set(titles).size, titles.length)
   assert.equal(new Set(descriptions).size, descriptions.length)
   assert.equal(canonicalSiteUrl, 'https://anaibymurda.com')
+})
+
+test('non-canonical public hosts permanently resolve to the primary domain', () => {
+  assert.equal(
+    getCanonicalRedirectUrl(new URL('https://main.example.amplifyapp.com/legal/privacy?section=2')),
+    'https://anaibymurda.com/legal/privacy?section=2',
+  )
+  assert.equal(
+    getCanonicalRedirectUrl(new URL('https://www.anaibymurda.com/shop')),
+    'https://anaibymurda.com/shop',
+  )
+  assert.equal(getCanonicalRedirectUrl(new URL('https://anaibymurda.com/legal')), null)
+  assert.equal(getCanonicalRedirectUrl(new URL('http://localhost:3000/legal')), null)
 })
 
 test('public product URLs use corrected slugs without changing inventory IDs', () => {
@@ -68,7 +82,7 @@ test('navigation labels use sentence case and contact areas show the support num
 
   assert.doesNotMatch(header, /\.site-header__desktop-links\s*\{[^}]*text-transform:\s*uppercase/s)
   assert.match(footer, /href="tel:\+254758807077">\+254 758 807 077<\/a>/)
-  assert.match(footer, /<section class="site-footer__address">[\s\S]*<h2>Address<\/h2>[\s\S]*<address>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West\.<\/address>/)
+  assert.match(footer, /<section class="site-footer__address"[^>]*>[\s\S]*<h2>Address<\/h2>[\s\S]*<address>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West\.<\/address>/)
   assert.doesNotMatch(footer, /site-footer__contact[\s\S]*Nairobi West\.<\/li>/)
   assert.doesNotMatch(footer, /\.site-footer__contact a\s*\{[^}]*font-size/s)
   assert.match(footer, /"contact contact"\s*"address address"/)

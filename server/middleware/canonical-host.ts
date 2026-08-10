@@ -1,16 +1,13 @@
 import { getRequestURL, sendRedirect } from 'h3'
-import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
+import { getCanonicalRedirectUrl } from '#shared/lib/canonicalHost'
 
 export default defineEventHandler((event) => {
   const requestUrl = getRequestURL(event)
+  const redirectUrl = getCanonicalRedirectUrl(requestUrl)
 
-  if (requestUrl.hostname.toLowerCase() !== 'www.anaibymurda.com') {
+  if (!redirectUrl) {
     return
   }
 
-  return sendRedirect(
-    event,
-    `${canonicalSiteUrl}${requestUrl.pathname}${requestUrl.search}`,
-    301,
-  )
+  return sendRedirect(event, redirectUrl, 301)
 })
