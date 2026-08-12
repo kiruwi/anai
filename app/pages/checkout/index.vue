@@ -55,12 +55,11 @@
           Select town pickup and we will contact you with collection details after payment.
         </p>
 
-        <p v-if="paymentMessage" class="checkout-form__message" role="status">
-          {{ paymentMessage }}
-        </p>
-        <p v-if="paymentError" class="checkout-form__error" role="alert">
-          {{ paymentError }}
-        </p>
+        <AppNotification
+          v-if="paymentNotice"
+          :notification="paymentNotice"
+          inline
+        />
 
         <div class="checkout-form__payment-note">
           <p>
@@ -145,6 +144,8 @@
 </template>
 
 <script setup lang="ts">
+import AppNotification from '../../components/shared/AppNotification.vue'
+import type { AppNotification as AppNotificationModel } from '../../composables/useNotifications'
 import {
   getProductImageUrlForColour,
   getProductColourName,
@@ -152,6 +153,12 @@ import {
   isSizeLabelInStock,
   type ProductColour,
 } from '../../data/homeContent'
+import {
+  createCheckoutNotice,
+  getCheckoutErrorStatus,
+  mapCheckoutError,
+  shouldRecoverCheckout,
+} from '#shared/lib/checkoutNotifications'
 
 const { lines, subtotalKes, clearCart, isLoaded: isCartLoaded } = useCart()
 const router = useRouter()
@@ -164,8 +171,7 @@ const customer = reactive({
 })
 const deliveryMethod = ref<'nairobi-delivery' | 'town-pickup'>('nairobi-delivery')
 const isPaymentLoading = ref(false)
-const paymentError = ref('')
-const paymentMessage = ref('')
+const paymentNotice = ref<AppNotificationModel | null>(null)
 const pendingReference = ref('')
 const idempotencyKey = ref('')
 const checkoutSessionStorageKey = 'anai-checkout-session'
@@ -183,17 +189,6 @@ type PaymentStatusResponse = {
   paid: boolean
   status: string
   reference: string
-}
-
-type FetchErrorLike = {
-  data?: {
-    statusMessage?: string
-    message?: string
-  }
-  statusMessage?: string
-  message?: string
-  statusCode?: number
-  status?: number
 }
 
 const hasMissingSizes = computed(() =>
@@ -243,20 +238,16 @@ const getLineColourValue = (line: { product: { colours: ProductColour[] }; colou
   return matchingColour ? getProductColourValue(matchingColour) : 'transparent'
 }
 
-const getCheckoutErrorMessage = (error: unknown) => {
-  const fetchError = error as FetchErrorLike
-  const message =
-    fetchError.data?.statusMessage ||
-    fetchError.data?.message ||
-    fetchError.statusMessage ||
-    fetchError.message
-
-  return message
-    ? `Checkout could not start: ${message}`
-    : 'Checkout could not start. Please refresh and try again.'
-}
-
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+
+const createCheckoutFormNotice = (title: string, message: string): AppNotificationModel => ({
+  id: `checkout-form-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+  type: 'error',
+  title,
+  message,
+  dismissible: false,
+  duration: null,
+})
 
 const persistCheckoutSession = () => {
   if (!import.meta.client) return
@@ -299,49 +290,68 @@ const completePayment = async (reference: string) => {
   await router.push({ path: '/checkout/success', query: { reference } })
 }
 
+const handlePaymentStatus = async (
+  payment: PaymentStatusResponse,
+  reference: string,
+) => {
+  if (payment.paid) {
+    await completePayment(reference)
+    return true
+  }
+
+  if (payment.status === 'cancelled') {
+    clearCheckoutSession()
+    paymentNotice.value = createCheckoutNotice('cancelled')
+    return true
+  }
+
+  if (payment.status === 'failed') {
+    clearCheckoutSession()
+    paymentNotice.value = createCheckoutNotice('failed')
+    return true
+  }
+
+  return false
+}
+
 const waitForPaymentConfirmation = async (reference: string) => {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await wait(3_000)
     const payment = await checkPaymentStatus(reference)
 
-    if (payment.paid) {
-      await completePayment(reference)
-      return true
-    }
-
-    if (payment.status === 'cancelled') {
-      clearCheckoutSession()
-      paymentError.value = 'Checkout canceled.'
-      return false
-    }
-
-    if (payment.status === 'failed') {
-      clearCheckoutSession()
-      paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
+    if (await handlePaymentStatus(payment, reference)) {
       return false
     }
   }
 
-  paymentMessage.value = `We are still waiting for M-Pesa confirmation for order ${reference}. If you entered your PIN, do not pay again—use “Check payment status” or contact support.`
+  paymentNotice.value = createCheckoutNotice('processing', { reference })
   return false
 }
 
 const startPayment = async () => {
-  paymentError.value = ''
-  paymentMessage.value = ''
+  paymentNotice.value = null
 
   if (!lines.value.length) {
-    paymentError.value = 'Your bag is empty.'
+    paymentNotice.value = createCheckoutFormNotice(
+      'Your bag is empty',
+      'Add an item to your bag before starting payment.',
+    )
     return
   }
 
   if (hasMissingSizes.value) {
-    paymentError.value = 'Choose a size for every item in your bag before checkout.'
+    paymentNotice.value = createCheckoutFormNotice(
+      'Select item sizes',
+      'Choose a size for every item in your bag before checkout.',
+    )
     return
   }
 
   if (hasUnavailableSizes.value) {
-    paymentError.value = 'That size is not in stock. More sizes will be restocked in a few months.'
+    paymentNotice.value = createCheckoutFormNotice(
+      'Size unavailable',
+      'Return to your bag and choose an available size before checkout.',
+    )
     return
   }
 
@@ -349,31 +359,22 @@ const startPayment = async () => {
 
   try {
     if (pendingReference.value) {
-      paymentMessage.value = 'Checking M-Pesa payment status.'
+      paymentNotice.value = createCheckoutNotice('checking', {
+        reference: pendingReference.value,
+      })
       const status = await checkPaymentStatus(pendingReference.value)
 
-      if (status.paid) {
-        await completePayment(pendingReference.value)
+      if (await handlePaymentStatus(status, pendingReference.value)) {
         return
       }
 
-      if (status.status === 'cancelled') {
-        clearCheckoutSession()
-        paymentError.value = 'Checkout canceled.'
-        return
-      }
-
-      if (status.status === 'failed') {
-        clearCheckoutSession()
-        paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
-        return
-      }
-
-      paymentMessage.value = `M-Pesa confirmation for order ${pendingReference.value} is still pending. If you entered your PIN, do not pay again.`
+      paymentNotice.value = createCheckoutNotice('processing', {
+        reference: pendingReference.value,
+      })
       return
     }
 
-    paymentMessage.value = 'Sending an M-Pesa prompt to your phone.'
+    paymentNotice.value = createCheckoutNotice('sending')
     const payment = await $fetch<CreatePaymentResponse>('/api/checkout/create-payment', {
       method: 'POST',
       body: {
@@ -391,48 +392,37 @@ const startPayment = async () => {
 
     pendingReference.value = payment.reference
     persistCheckoutSession()
-    paymentMessage.value = payment.customerMessage || 'Check your phone and enter your M-Pesa PIN to pay.'
+    paymentNotice.value = createCheckoutNotice('check-phone')
     await waitForPaymentConfirmation(payment.reference)
   } catch (error) {
-    paymentMessage.value = ''
-    const fetchError = error as FetchErrorLike
+    const recoveryIsNeeded = shouldRecoverCheckout(error)
+    let paymentMayHaveStarted = Boolean(pendingReference.value)
 
-    const responseWasUnavailable =
-      typeof fetchError.statusCode !== 'number' && typeof fetchError.status !== 'number'
-
-    if (responseWasUnavailable && idempotencyKey.value) {
+    if (recoveryIsNeeded && idempotencyKey.value) {
       try {
         const recoveredPayment = await recoverPaymentStatus(idempotencyKey.value)
         pendingReference.value = recoveredPayment.reference
         persistCheckoutSession()
 
-        if (recoveredPayment.paid) {
-          await completePayment(recoveredPayment.reference)
+        if (await handlePaymentStatus(recoveredPayment, recoveredPayment.reference)) {
           return
         }
 
-        if (recoveredPayment.status === 'cancelled') {
-          clearCheckoutSession()
-          paymentError.value = 'Checkout canceled.'
-          return
-        }
-
-        if (recoveredPayment.status === 'failed') {
-          clearCheckoutSession()
-          paymentError.value = 'M-Pesa did not complete the payment. You can try again when ready.'
-          return
-        }
-
-        paymentMessage.value = 'The M-Pesa request is still pending. Do not submit another payment.'
+        paymentNotice.value = createCheckoutNotice('processing', {
+          reference: recoveredPayment.reference,
+        })
         await waitForPaymentConfirmation(recoveredPayment.reference)
         return
-      } catch {
+      } catch (recoveryError) {
+        paymentMayHaveStarted = getCheckoutErrorStatus(recoveryError) !== 404
         // Preserve the original request error if the checkout cannot be recovered.
       }
     }
 
-    paymentError.value = getCheckoutErrorMessage(error)
-    if (fetchError.statusCode === 502 || fetchError.status === 502) clearCheckoutSession()
+    paymentNotice.value = mapCheckoutError(error, {
+      reference: pendingReference.value,
+      paymentMayHaveStarted,
+    })
   } finally {
     isPaymentLoading.value = false
   }
@@ -445,7 +435,12 @@ onMounted(() => {
       reference?: unknown
     }
     if (typeof storedSession.idempotencyKey === 'string') idempotencyKey.value = storedSession.idempotencyKey
-    if (typeof storedSession.reference === 'string') pendingReference.value = storedSession.reference
+    if (typeof storedSession.reference === 'string') {
+      pendingReference.value = storedSession.reference
+      paymentNotice.value = createCheckoutNotice('processing', {
+        reference: storedSession.reference,
+      })
+    }
   } catch {
     window.localStorage.removeItem(checkoutSessionStorageKey)
   }
@@ -592,11 +587,6 @@ h1 {
   cursor: not-allowed;
 }
 
-.checkout-form__message,
-.checkout-form__error {
-  margin: 0;
-}
-
 .checkout-form__payment-note {
   display: grid;
   gap: var(--space-xs);
@@ -608,10 +598,6 @@ h1 {
 
 .checkout-form__payment-note p {
   margin: 0;
-}
-
-.checkout-form__error {
-  color: var(--colour-plum);
 }
 
 .checkout-summary {

@@ -46,7 +46,7 @@ test('checkout recovers a dropped creation response by its idempotency key', asy
   const paymentStatusApi = await readProjectFile('server/api/checkout/payment-status.post.ts')
 
   assert.match(checkoutPage, /recoverPaymentStatus\(idempotencyKey\.value\)/)
-  assert.match(checkoutPage, /Checkout canceled\./)
+  assert.match(checkoutPage, /createCheckoutNotice\('cancelled'\)/)
   assert.match(paymentStatusApi, /\.eq\('idempotency_key', idempotencyKey\)/)
   assert.match(paymentStatusApi, /status = wasCanceled \? 'cancelled'/)
 })

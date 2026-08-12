@@ -624,7 +624,7 @@ onBeforeUnmount(() => {
     width: 4.4rem;
     height: 4.4rem;
     border: 1px solid currentColor;
-    border-radius: 50%;
+    border-radius: 0;
     place-items: center;
     color: inherit;
     background: transparent;

@@ -299,7 +299,7 @@ h1 {
   aspect-ratio: 1;
   box-sizing: border-box;
   border: 1px solid var(--colour-border);
-  border-radius: 50%;
+  border-radius: 0;
   padding: 0;
   cursor: pointer;
 }

@@ -127,6 +127,7 @@ const photoElement = ref<HTMLImageElement | null>(null)
 const hasJustAdded = ref(false)
 const { toggleWishlist, isInWishlist } = useWishlist()
 const { addToCart } = useCart()
+const { notify } = useNotifications()
 const { getProductStock, getStockLabel } = useInventory()
 let imageAnimation: { kill: () => void } | undefined
 let addedTimer: number | undefined
@@ -217,10 +218,24 @@ const handleQuickAdd = () => {
     return
   }
 
-  addToCart(props.product, 1, {
+  const result = addToCart(props.product, 1, {
     colour: selectedColourName.value,
   })
+
+  if (!result.added) {
+    return
+  }
+
   hasJustAdded.value = true
+  notify({
+    type: 'success',
+    title: 'Added to your bag',
+    message: `${props.product.name} · ${selectedColourName.value}`,
+    action: {
+      label: 'View bag',
+      to: '/cart',
+    },
+  })
 
   if (addedTimer) {
     window.clearTimeout(addedTimer)
@@ -233,7 +248,13 @@ const handleQuickAdd = () => {
 }
 
 const handleWishlistToggle = () => {
+  const wasSaved = isWishlistSaved.value
   toggleWishlist(props.product)
+  notify({
+    type: wasSaved ? 'info' : 'success',
+    title: wasSaved ? 'Removed from wishlist' : 'Saved to wishlist',
+    message: props.product.name,
+  })
 }
 
 const loadAnimationModule = async () => {
@@ -574,7 +595,7 @@ strong {
   aspect-ratio: 1;
   box-sizing: border-box;
   border: 1px solid var(--colour-border);
-  border-radius: 50%;
+  border-radius: 0;
   padding: 0;
   cursor: pointer;
 }
@@ -592,7 +613,7 @@ strong {
 
 .product-card__quick-add {
   border: 1px solid var(--colour-black);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   padding: 0.7rem 1rem;
   background: var(--colour-surface);
   cursor: pointer;

@@ -50,11 +50,11 @@
               <textarea v-model.trim="form.message" rows="6" minlength="10" maxlength="3000" required />
             </label>
           </div>
-          <div v-if="successMessage" class="contact-page__success" role="status">
-            <strong>Request sent</strong>
-            <p>{{ successMessage }}</p>
-          </div>
-          <p v-if="errorMessage" class="contact-page__error" role="alert">{{ errorMessage }}</p>
+          <AppNotification
+            v-if="notification"
+            :notification="notification"
+            inline
+          />
           <div class="contact-page__submit">
             <button type="submit" :disabled="isSubmitting">
               {{ isSubmitting ? 'Sending…' : 'Send support request' }}
@@ -148,6 +148,17 @@
 </template>
 
 <script setup lang="ts">
+import AppNotification from '../../components/shared/AppNotification.vue'
+
+type ContactNotification = {
+  id: string
+  type: 'success' | 'error'
+  title: string
+  message: string
+  dismissible: false
+  duration: null
+}
+
 const form = reactive({
   fullName: '',
   email: '',
@@ -157,8 +168,7 @@ const form = reactive({
   message: '',
 })
 const isSubmitting = ref(false)
-const successMessage = ref('')
-const errorMessage = ref('')
+const notification = ref<ContactNotification | null>(null)
 const referenceCategories = new Set(['order', 'payment', 'return'])
 const showOrderReference = computed(() => referenceCategories.has(form.category))
 
@@ -168,20 +178,32 @@ watch(showOrderReference, (isVisible) => {
 
 const submitRequest = async () => {
   isSubmitting.value = true
-  successMessage.value = ''
-  errorMessage.value = ''
+  notification.value = null
 
   try {
     const response = await $fetch<{ requestNumber: string }>('/api/support/request', {
       method: 'POST',
       body: form,
     })
-    successMessage.value = `Your request ${response.requestNumber} was received. Keep this number for follow-up.`
+    notification.value = {
+      id: 'support-request-success',
+      type: 'success',
+      title: 'Request sent',
+      message: `Your request ${response.requestNumber} was received. Keep this number for follow-up.`,
+      dismissible: false,
+      duration: null,
+    }
     form.orderReference = ''
     form.message = ''
-  } catch (error) {
-    const fetchError = error as { data?: { statusMessage?: string }; statusMessage?: string }
-    errorMessage.value = fetchError.data?.statusMessage || fetchError.statusMessage || 'Your request could not be sent. Please try again.'
+  } catch {
+    notification.value = {
+      id: 'support-request-error',
+      type: 'error',
+      title: 'Request not sent',
+      message: 'We couldn’t send your support request. Please try again.',
+      dismissible: false,
+      duration: null,
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -320,20 +342,6 @@ h1 {
   opacity: 0.65;
 }
 
-.contact-page__success,
-.contact-page__error {
-  margin: 0;
-}
-
-.contact-page__success {
-  display: grid;
-  gap: var(--space-xs);
-  border-left: 3px solid var(--colour-olive);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--colour-white);
-}
-
-.contact-page__success p,
 .contact-page__submit p,
 .contact-page__privacy {
   margin: 0;
@@ -346,10 +354,6 @@ h1 {
 
 .contact-page__privacy {
   font-size: 1.2rem;
-}
-
-.contact-page__error {
-  color: var(--colour-plum);
 }
 
 p {

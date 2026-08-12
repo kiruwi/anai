@@ -70,6 +70,10 @@ textarea {
   font: inherit;
 }
 
+button {
+  border-radius: 0;
+}
+
 main {
   min-height: 70vh;
 }
