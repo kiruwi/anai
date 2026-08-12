@@ -10,7 +10,10 @@ import {
   collectionDefinitions,
   collectionSlugs,
 } from '../shared/lib/catalogNavigation.ts'
-import { getCanonicalRedirectUrl } from '../shared/lib/canonicalHost.ts'
+import {
+  getCanonicalRedirectUrl,
+  isAmplifyPreviewHostname,
+} from '../shared/lib/canonicalHost.ts'
 
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -35,7 +38,7 @@ test('clean collection routes have unique SEO definitions', () => {
 
 test('non-canonical public hosts permanently resolve to the primary domain', () => {
   assert.equal(
-    getCanonicalRedirectUrl(new URL('https://main.example.amplifyapp.com/legal/privacy?section=2')),
+    getCanonicalRedirectUrl(new URL('https://preview.example.com/legal/privacy?section=2')),
     'https://anaibymurda.com/legal/privacy?section=2',
   )
   assert.equal(
@@ -44,6 +47,20 @@ test('non-canonical public hosts permanently resolve to the primary domain', () 
   )
   assert.equal(getCanonicalRedirectUrl(new URL('https://anaibymurda.com/legal')), null)
   assert.equal(getCanonicalRedirectUrl(new URL('http://localhost:3000/legal')), null)
+})
+
+test('Amplify branch previews render without becoming indexable duplicates', async () => {
+  const previewUrl = new URL(
+    'https://feature-app-improvements.dmbgmdp7k25pm.amplifyapp.com/product/nuru-zip-up',
+  )
+
+  assert.equal(isAmplifyPreviewHostname(previewUrl.hostname), true)
+  assert.equal(isAmplifyPreviewHostname('exampleamplifyapp.com'), false)
+  assert.equal(getCanonicalRedirectUrl(previewUrl), null)
+
+  const middleware = await readProjectFile('server/middleware/canonical-host.ts')
+  assert.match(middleware, /isAmplifyPreviewHostname\(requestUrl\.hostname\)/)
+  assert.match(middleware, /setResponseHeader\(event, 'x-robots-tag', 'noindex, nofollow'\)/)
 })
 
 test('public product URLs use corrected slugs without changing inventory IDs', () => {
