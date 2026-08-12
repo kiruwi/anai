@@ -5,6 +5,11 @@ import {
   products,
   type HomepageProduct,
 } from '../data/homeContent'
+import {
+  clampCartQuantity,
+  createHydratedCartWarning,
+  createQuantityAdjustedNotification,
+} from '#shared/lib/cartNotifications'
 
 export type CartItem = {
   slug: string
@@ -23,9 +28,6 @@ const CART_STORAGE_KEY = 'anai-cart'
 
 const getProductStockLimit = (product: HomepageProduct, colour?: string) =>
   getProductColourStockLimit(product, colour)
-
-const clampQuantity = (product: HomepageProduct, quantity: number, colour?: string) =>
-  Math.min(Math.max(Math.floor(quantity), 1), getProductStockLimit(product, colour))
 
 const getProductSizeLabels = (product: HomepageProduct) =>
   product.sizeOptions?.map((option) => option.label) ?? []
@@ -67,27 +69,44 @@ const normalizeColour = (product: HomepageProduct, colour: unknown) => {
 export const getCartItemKey = (item: Pick<CartItem, 'slug' | 'colour' | 'size'>) =>
   `${item.slug}:${item.colour ?? ''}:${item.size ?? ''}`
 
-const getStoredCart = () => {
+type StoredCartResult = {
+  items: CartItem[]
+  removedItems: boolean
+  quantityAdjustments: Array<{ product: HomepageProduct; quantity: number }>
+}
+
+const emptyStoredCart = (removedItems = false): StoredCartResult => ({
+  items: [],
+  removedItems,
+  quantityAdjustments: [],
+})
+
+const getStoredCart = (
+  getStockLimit: (product: HomepageProduct, colour?: string) => number = getProductStockLimit,
+): StoredCartResult => {
   if (!import.meta.client) {
-    return []
+    return emptyStoredCart()
   }
 
   try {
     const storedValue = window.localStorage.getItem(CART_STORAGE_KEY)
 
     if (!storedValue) {
-      return []
+      return emptyStoredCart()
     }
 
     const parsedValue = JSON.parse(storedValue)
 
     if (!Array.isArray(parsedValue)) {
-      return []
+      return emptyStoredCart(true)
     }
 
+    let removedItems = false
+    const quantityAdjustments: StoredCartResult['quantityAdjustments'] = []
     const normalizedItems = parsedValue
       .map((item): CartItem | undefined => {
         if (!item || typeof item.slug !== 'string') {
+          removedItems = true
           return undefined
         }
 
@@ -96,45 +115,74 @@ const getStoredCart = () => {
 
         const colour = product ? normalizeColour(product, item.colour ?? item.color) : undefined
 
+        const stockLimit = product && colour ? getStockLimit(product, colour) : 0
+
         if (
           !product ||
           !Number.isFinite(quantity) ||
           quantity < 1 ||
           !colour ||
-          getProductStockLimit(product, colour) < 1
+          stockLimit < 1
         ) {
+          removedItems = true
           return undefined
+        }
+
+        const quantityResult = clampCartQuantity(quantity, stockLimit)
+        if (quantityResult.wasAdjusted) {
+          quantityAdjustments.push({ product, quantity: quantityResult.quantity })
         }
 
         return {
           slug: product.slug,
-          quantity: clampQuantity(product, quantity, colour),
+          quantity: quantityResult.quantity,
           size: normalizeSize(product, item.size),
           colour,
         }
       })
       .filter((item): item is CartItem => Boolean(item))
 
-    return normalizedItems.reduce<CartItem[]>((mergedItems, item) => {
+    const items = normalizedItems.reduce<CartItem[]>((mergedItems, item) => {
       const existingItem = mergedItems.find((candidate) => getCartItemKey(candidate) === getCartItemKey(item))
       const product = products.find((candidate) => candidate.slug === item.slug)
       if (!existingItem || !product) return [...mergedItems, item]
-      existingItem.quantity = clampQuantity(product, existingItem.quantity + item.quantity, item.colour)
+      const quantityResult = clampCartQuantity(
+        existingItem.quantity + item.quantity,
+        getStockLimit(product, item.colour),
+      )
+      existingItem.quantity = quantityResult.quantity
+      if (quantityResult.wasAdjusted) {
+        quantityAdjustments.push({ product, quantity: quantityResult.quantity })
+      }
       return mergedItems
     }, [])
+
+    return { items, removedItems, quantityAdjustments }
   } catch {
-    return []
+    return emptyStoredCart(true)
   }
 }
 
 export const useCart = () => {
   const items = useState<CartItem[]>('anai-cart-items', () => [])
   const isLoaded = useState('anai-cart-loaded', () => false)
-  const { getProductStock } = useInventory()
+  const hasShownHydrationWarning = useState('anai-cart-hydration-warning-shown', () => false)
+  const { inventory, getProductStock } = useInventory()
+  const { notify } = useNotifications()
   const getLiveStockLimit = (product: HomepageProduct, colour?: string) =>
     getProductStock(product, colour)
   const clampLiveQuantity = (product: HomepageProduct, quantity: number, colour?: string) =>
-    Math.min(Math.max(Math.floor(quantity), 1), getLiveStockLimit(product, colour))
+    clampCartQuantity(quantity, getLiveStockLimit(product, colour)).quantity
+
+  const notifyQuantityAdjustment = (product: HomepageProduct, quantity: number) => {
+    notify(createQuantityAdjustedNotification(product.name, quantity))
+  }
+
+  const notifyHydratedCartUpdate = () => {
+    if (hasShownHydrationWarning.value) return
+    hasShownHydrationWarning.value = true
+    notify(createHydratedCartWarning())
+  }
 
   const persistCart = () => {
     if (!import.meta.client) {
@@ -149,8 +197,21 @@ export const useCart = () => {
       return
     }
 
-    items.value = getStoredCart()
+    const storedCart = getStoredCart(getLiveStockLimit)
+    items.value = storedCart.items
     isLoaded.value = true
+
+    if (storedCart.removedItems) {
+      notifyHydratedCartUpdate()
+    }
+
+    for (const adjustment of storedCart.quantityAdjustments) {
+      notifyQuantityAdjustment(adjustment.product, adjustment.quantity)
+    }
+
+    if (storedCart.removedItems || storedCart.quantityAdjustments.length) {
+      persistCart()
+    }
   }
 
   const addToCart = (
@@ -166,7 +227,7 @@ export const useCart = () => {
     const colour = normalizeColour(product, options.colour)
 
     if (!colour || getLiveStockLimit(product, colour) < 1) {
-      return
+      return { added: false, quantity: 0, adjusted: false }
     }
     const size = normalizeSize(product, options.size)
     const existingItem = items.value.find((item) =>
@@ -175,8 +236,12 @@ export const useCart = () => {
       normalizeSize(product, item.size) === size,
     )
 
+    const previousQuantity = existingItem?.quantity ?? 0
+    const requestedQuantity = previousQuantity + quantity
+    const quantityResult = clampCartQuantity(requestedQuantity, getLiveStockLimit(product, colour))
+
     if (existingItem) {
-      existingItem.quantity = clampLiveQuantity(product, existingItem.quantity + quantity, colour)
+      existingItem.quantity = quantityResult.quantity
       existingItem.size = size
       existingItem.colour = colour
     } else {
@@ -184,7 +249,7 @@ export const useCart = () => {
         ...items.value,
         {
           slug: product.slug,
-          quantity: clampLiveQuantity(product, quantity, colour),
+          quantity: quantityResult.quantity,
           size,
           colour,
         },
@@ -192,6 +257,16 @@ export const useCart = () => {
     }
 
     persistCart()
+
+    if (quantityResult.wasAdjusted) {
+      notifyQuantityAdjustment(product, quantityResult.quantity)
+    }
+
+    return {
+      added: quantityResult.quantity > previousQuantity,
+      quantity: quantityResult.quantity,
+      adjusted: quantityResult.wasAdjusted,
+    }
   }
 
   const updateQuantity = (key: string, quantity: number) => {
@@ -206,14 +281,19 @@ export const useCart = () => {
     if (quantity < 1 || !product || !colour || getLiveStockLimit(product, colour) < 1) {
       items.value = items.value.filter((item) => getCartItemKey(item) !== key)
     } else {
+      const quantityResult = clampCartQuantity(quantity, getLiveStockLimit(product, colour))
       items.value = items.value.map((item) =>
         getCartItemKey(item) === key
           ? {
               ...item,
-              quantity: clampLiveQuantity(product, quantity, colour),
+              quantity: quantityResult.quantity,
             }
           : item,
       )
+
+      if (quantityResult.wasAdjusted) {
+        notifyQuantityAdjustment(product, quantityResult.quantity)
+      }
     }
 
     persistCart()
@@ -240,12 +320,19 @@ export const useCart = () => {
     if (existingIndex >= 0) {
       const existingItem = nextItems[existingIndex]
       if (!existingItem) return
+      const quantityResult = clampCartQuantity(
+        existingItem.quantity + item.quantity,
+        getLiveStockLimit(product, existingItem.colour),
+      )
       nextItems[existingIndex] = {
         ...existingItem,
-        quantity: clampLiveQuantity(product, existingItem.quantity + item.quantity, existingItem.colour),
+        quantity: quantityResult.quantity,
         size: nextSize,
       }
       nextItems.splice(itemIndex, 1)
+      if (quantityResult.wasAdjusted) {
+        notifyQuantityAdjustment(product, quantityResult.quantity)
+      }
     } else {
       nextItems[itemIndex] = { ...item, size: nextSize }
     }
@@ -293,18 +380,29 @@ export const useCart = () => {
         return
       }
 
+      const quantityResult = clampCartQuantity(
+        existingItem.quantity + item.quantity,
+        getLiveStockLimit(product, nextColour),
+      )
       nextItems[existingIndex] = {
         ...existingItem,
-        quantity: clampLiveQuantity(product, existingItem.quantity + item.quantity, nextColour),
+        quantity: quantityResult.quantity,
         size: existingItem.size,
         colour: nextColour,
       }
       nextItems.splice(itemIndex, 1)
+      if (quantityResult.wasAdjusted) {
+        notifyQuantityAdjustment(product, quantityResult.quantity)
+      }
     } else {
+      const quantityResult = clampCartQuantity(item.quantity, getLiveStockLimit(product, nextColour))
       nextItems[itemIndex] = {
         ...item,
         colour: nextColour,
-        quantity: clampLiveQuantity(product, item.quantity, nextColour),
+        quantity: quantityResult.quantity,
+      }
+      if (quantityResult.wasAdjusted) {
+        notifyQuantityAdjustment(product, quantityResult.quantity)
       }
     }
 
@@ -322,6 +420,48 @@ export const useCart = () => {
     hydrateCart()
     items.value = []
     persistCart()
+  }
+
+  const reconcileCartStock = () => {
+    if (!import.meta.client || !isLoaded.value) return
+
+    let removedItems = false
+    const adjustments: Array<{ product: HomepageProduct; quantity: number }> = []
+    const reconciledItems = items.value
+      .map((item): CartItem | undefined => {
+        const product = products.find((candidate) => candidate.slug === item.slug)
+        const colour = product ? normalizeColour(product, item.colour) : undefined
+        const stockLimit = product && colour ? getLiveStockLimit(product, colour) : 0
+
+        if (!product || !colour || stockLimit < 1) {
+          removedItems = true
+          return undefined
+        }
+
+        const quantityResult = clampCartQuantity(item.quantity, stockLimit)
+        if (quantityResult.wasAdjusted) {
+          adjustments.push({ product, quantity: quantityResult.quantity })
+        }
+
+        return {
+          ...item,
+          quantity: quantityResult.quantity,
+          colour,
+        }
+      })
+      .filter((item): item is CartItem => Boolean(item))
+
+    if (!removedItems && !adjustments.length) return
+
+    items.value = reconciledItems
+    persistCart()
+
+    if (removedItems) {
+      notifyHydratedCartUpdate()
+    }
+    for (const adjustment of adjustments) {
+      notifyQuantityAdjustment(adjustment.product, adjustment.quantity)
+    }
   }
 
   const lines = computed<CartLine[]>(() =>
@@ -362,6 +502,7 @@ export const useCart = () => {
 
   if (import.meta.client) {
     onMounted(hydrateCart)
+    watch(inventory, reconcileCartStock)
   }
 
   return {

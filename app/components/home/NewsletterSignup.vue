@@ -6,7 +6,7 @@
       </div>
       <form @submit.prevent="subscribe">
         <label for="newsletter-email">Email address</label>
-        <div>
+        <div class="newsletter__fields">
           <input
             id="newsletter-email"
             v-model.trim="email"
@@ -19,31 +19,57 @@
             {{ isSubmitting ? 'Signing up…' : 'Sign up' }}
           </button>
         </div>
-        <p v-if="message" class="newsletter__message" role="status">{{ message }}</p>
-        <p v-if="errorMessage" class="newsletter__error" role="alert">{{ errorMessage }}</p>
+        <AppNotification
+          v-if="notification"
+          class="newsletter__notification"
+          :notification="notification"
+          inline
+        />
       </form>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import AppNotification from '../shared/AppNotification.vue'
+
+type NewsletterNotification = {
+  id: string
+  type: 'success' | 'error'
+  title: string
+  message: string
+  dismissible: false
+  duration: null
+}
+
 const email = ref('')
 const isSubmitting = ref(false)
-const message = ref('')
-const errorMessage = ref('')
+const notification = ref<NewsletterNotification | null>(null)
 
 const subscribe = async () => {
   isSubmitting.value = true
-  message.value = ''
-  errorMessage.value = ''
+  notification.value = null
 
   try {
     await $fetch('/api/newsletter/subscribe', { method: 'POST', body: { email: email.value } })
     email.value = ''
-    message.value = 'You’re on the list. Watch your inbox for the next drop.'
-  } catch (error) {
-    const fetchError = error as { data?: { statusMessage?: string }; statusMessage?: string }
-    errorMessage.value = fetchError.data?.statusMessage || fetchError.statusMessage || 'Signup failed. Please try again.'
+    notification.value = {
+      id: 'newsletter-signup-success',
+      type: 'success',
+      title: 'You’re on the list',
+      message: 'Watch your inbox for the next Anai drop.',
+      dismissible: false,
+      duration: null,
+    }
+  } catch {
+    notification.value = {
+      id: 'newsletter-signup-error',
+      type: 'error',
+      title: 'Signup unsuccessful',
+      message: 'We couldn’t add your email right now. Please try again.',
+      dismissible: false,
+      duration: null,
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -93,7 +119,7 @@ label {
   text-transform: uppercase;
 }
 
-form div {
+.newsletter__fields {
   display: flex;
   gap: var(--space-sm);
 }
@@ -109,7 +135,7 @@ input {
 
 button {
   border: 1px solid var(--colour-black);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   padding: 1.2rem 1.6rem;
   color: var(--colour-white);
   background: var(--colour-black);
@@ -122,16 +148,8 @@ button:disabled {
   opacity: 0.65;
 }
 
-.newsletter__message,
-.newsletter__error {
+.newsletter__notification {
   margin-top: var(--space-sm);
-  font-size: var(--copy-font-size);
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-.newsletter__error {
-  color: var(--colour-plum);
 }
 
 @media (max-width: 760px) {
@@ -139,7 +157,7 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  form div {
+  .newsletter__fields {
     flex-direction: column;
   }
 }

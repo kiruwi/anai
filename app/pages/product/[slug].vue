@@ -134,6 +134,7 @@ import { getCollectionPathForCategory } from '#shared/lib/catalogNavigation'
 
 const route = useRoute()
 const { addToCart } = useCart()
+const { notify } = useNotifications()
 const { toggleWishlist, isInWishlist } = useWishlist()
 const { getProductStock, getStockLabel } = useInventory()
 const requestedSlug = Array.isArray(route.params.slug)
@@ -356,8 +357,22 @@ const handleAddToCart = () => {
     return
   }
 
-  addToCart(product, 1, { colour: selectedColourName.value })
+  const result = addToCart(product, 1, { colour: selectedColourName.value })
+
+  if (!result.added) {
+    return
+  }
+
   hasJustAdded.value = true
+  notify({
+    type: 'success',
+    title: 'Added to your bag',
+    message: `${product.name} · ${selectedColourName.value}`,
+    action: {
+      label: 'View bag',
+      to: '/cart',
+    },
+  })
 
   if (addedTimer) {
     window.clearTimeout(addedTimer)
@@ -370,7 +385,13 @@ const handleAddToCart = () => {
 }
 
 const handleWishlistToggle = () => {
+  const wasSaved = isWishlistSaved.value
   toggleWishlist(product)
+  notify({
+    type: wasSaved ? 'info' : 'success',
+    title: wasSaved ? 'Removed from wishlist' : 'Saved to wishlist',
+    message: product.name,
+  })
 }
 
 onMounted(async () => {
@@ -635,7 +656,7 @@ h1 {
   aspect-ratio: 1;
   box-sizing: border-box;
   border: 1px solid var(--colour-border);
-  border-radius: 50%;
+  border-radius: 0;
   padding: 0;
   cursor: pointer;
 }
