@@ -1,0 +1,4 @@
+Contact: mailto:support@anaibymurda.com
+Expires: 2027-08-25T23:59:59Z
+Canonical: https://anaibymurda.com/.well-known/security.txt
+Preferred-Languages: en
