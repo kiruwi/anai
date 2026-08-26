@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Typecheck and build
+  application:
+    name: Application checks and Amplify build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -32,8 +32,43 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Run application checks
+        run: npm run check
 
-      - name: Build
+      - name: Build Amplify artifact
         run: npm run build
+        env:
+          NITRO_PRESET: aws_amplify
+
+  database:
+    name: Database migrations and pgTAP tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_TELEMETRY_DISABLED: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start local Supabase
+        run: npx supabase start
+
+      - name: Rebuild database from migrations
+        run: npx supabase db reset --local
+
+      - name: Run database tests
+        run: npm run test:db
+
+      - name: Stop local Supabase
+        if: always()
+        run: npx supabase stop --no-backup
