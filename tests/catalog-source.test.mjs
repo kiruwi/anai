@@ -106,3 +106,31 @@ test('all catalogue consumers use the shared database-backed path', async () => 
   assert.match(catalogue, /\.not\('public_slug', 'is', null\)/)
   assert.match(catalogue, /fallbackProducts[\s\S]*protected public URL/)
 })
+
+test('catalogue cleanup removes obsolete galleries without touching unrelated products', async () => {
+  const migration = await readProjectFile(
+    'supabase/migrations/20260826115612_remove_obsolete_product_images.sql',
+  )
+
+  for (const canonicalDirectory of [
+    'Nuru Zip-up',
+    'Reya Long sleeve, round neck',
+    'Reya Long sleeve, swirl neck',
+    'Aya Mini tee',
+    'Nia jogger set',
+    'Lela set',
+    'Mvua flannel',
+    'Zuri bra',
+    'Terra skirt - Padel tennis bubble set',
+    'Jua jogger set',
+    "Mia cropped t''S",
+  ]) {
+    assert.match(migration, new RegExp(canonicalDirectory.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  }
+
+  assert.match(migration, /using catalogue_products as products/i)
+  assert.match(migration, /canonical_images\.product_slug = products\.slug/i)
+  assert.match(migration, /canonical_images\.image_url = images\.image_url/i)
+  assert.doesNotMatch(migration, /select id from public\.products/i)
+  assert.doesNotMatch(migration, /ANAI Crew Socks|images\.unsplash\.com/i)
+})

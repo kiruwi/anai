@@ -56,7 +56,6 @@ ol {
   font-size: 1.2rem;
   letter-spacing: 0.055em;
   list-style: none;
-  text-transform: uppercase;
 }
 
 li {
