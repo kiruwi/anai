@@ -47,7 +47,6 @@
 </template>
 
 <script setup lang="ts">
-import { products } from '../../data/homeContent'
 import {
   allProductsDefinition,
   collectionDefinitions,
@@ -60,25 +59,26 @@ const props = defineProps<{
   collection?: CollectionSlug
 }>()
 
+const products = useCatalogProducts()
 const route = useRoute()
 const definition = computed(() => props.collection
   ? collectionDefinitions[props.collection]
   : allProductsDefinition)
 
 const baseProducts = computed(() => {
-  if (!props.collection) return products
+  if (!props.collection) return products.value
 
   const collection = collectionDefinitions[props.collection]
 
   if (collection.filter === 'new') {
-    return products.filter((product) => product.isNew)
+    return products.value.filter((product) => product.isNew)
   }
 
   if (collection.filter === 'women') {
-    return products
+    return products.value
   }
 
-  return products.filter((product) =>
+  return products.value.filter((product) =>
     product.category.toLowerCase() === collection.category?.toLowerCase(),
   )
 })

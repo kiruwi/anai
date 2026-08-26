@@ -39,7 +39,7 @@ values
   (
     'Nuru Zip-up',
     'jackets',
-    'Everyday active jacket for training, travel, and layering.',
+    'A fitted cropped zip-up jacket with a high collar, paneled front, and contrast sleeve stripes.',
     (select id from public.categories where slug = 'outerwear'),
     (select id from public.collections where slug = 'everyday-active'),
     'Training / Travel',
@@ -53,7 +53,7 @@ values
   (
     'Reya Long sleeve, round neck',
     'long-sleeve-round-neck',
-    'Long sleeve round-neck active top.',
+    'A cropped long-sleeve top with a round neckline, smooth fitted body, and flared wrist cuffs.',
     (select id from public.categories where slug = 'tops'),
     (select id from public.collections where slug = 'core-tops'),
     'Everyday / Training',
@@ -67,7 +67,7 @@ values
   (
     'Reya Long sleeve, swirl neck',
     'long-sleeve-swirl-neck',
-    'Long sleeve swirl-neck active top.',
+    'A cropped long-sleeve top with a high neckline, smooth fitted body, and clean minimal finish.',
     (select id from public.categories where slug = 'tops'),
     (select id from public.collections where slug = 'core-tops'),
     'Everyday / Training',
@@ -81,7 +81,7 @@ values
   (
     'Aya Mini tee',
     'minit-t-shirt',
-    'Mini cropped t-shirt.',
+    'A fitted cropped mini tee with cap sleeves, a round neckline, and subtle contour seam details.',
     (select id from public.categories where slug = 'tops'),
     (select id from public.collections where slug = 'core-tops'),
     'Everyday',
@@ -95,7 +95,7 @@ values
   (
     'Nia jogger set',
     'sahara-corsage-set',
-    'Corsage-style active set.',
+    'A two-piece set with a layered-look crop top and high-waist biker shorts finished with contrast trim.',
     (select id from public.categories where slug = 'sets'),
     (select id from public.collections where slug = 'statement-sets'),
     'Studio / Lounge',
@@ -109,7 +109,7 @@ values
   (
     'Zuri bra',
     'strappy-bra',
-    'Strappy training bra.',
+    'A minimal square-neck bra top with slim straps and a clean cropped band.',
     (select id from public.categories where slug = 'tops'),
     (select id from public.collections where slug = 'core-tops'),
     'Training / Studio',
@@ -132,12 +132,12 @@ values
     null,
     false,
     true,
-    true
+    false
   ),
   (
     'Jua jogger set',
     'nuru-short-set',
-    'Short set for training, warm weather, and lounge.',
+    'A two-piece set with a scoop-neck crop top and high-waist biker shorts finished with contrast trim.',
     (select id from public.categories where slug = 'sets'),
     (select id from public.collections where slug = 'short-sets'),
     'Training / Lounge',
@@ -145,13 +145,13 @@ values
     'linear-gradient(135deg, #d7c1a9, #4a481d)',
     null,
     false,
-    false,
+    true,
     true
   ),
   (
     'Mia cropped t''S',
     'mia-cropped-tee',
-    'Cropped tee for everyday and studio wear.',
+    'A short-sleeve cropped tee with a relaxed boxy shape and clean round neckline.',
     (select id from public.categories where slug = 'tops'),
     (select id from public.collections where slug = 'core-tops'),
     'Everyday / Studio',
@@ -159,7 +159,7 @@ values
     'linear-gradient(135deg, #111111, #e8ddcd)',
     null,
     false,
-    false,
+    true,
     true
   )
 on conflict (slug) do update
@@ -236,7 +236,7 @@ select
   seed_variants.sku,
   seed_variants.color,
   seed_variants.color_value,
-  'One size',
+  'M/10',
   seed_variants.price_kes,
   seed_variants.stock_quantity,
   true
@@ -292,9 +292,14 @@ with seed_images (
   ('sahara-corsage-set', '/images/products/Nia jogger set/navy blue.webp', 0),
   ('sahara-corsage-set', '/images/products/Nia jogger set/grey.webp', 1),
   ('sahara-corsage-set', '/images/products/Nia jogger set/black.webp', 2),
+  ('lela-set', '/images/products/Lela set/white.webp', 0),
+  ('lela-set', '/images/products/Lela set/brown.webp', 1),
+  ('lela-set', '/images/products/Lela set/black.webp', 2),
+  ('mvua-flannel', '/images/products/Mvua flannel/black.webp', 0),
   ('strappy-bra', '/images/products/Zuri bra/white.webp', 0),
   ('strappy-bra', '/images/products/Zuri bra/brown.webp', 1),
   ('strappy-bra', '/images/products/Zuri bra/black.webp', 2),
+  ('terra-skirt', '/images/products/Terra skirt - Padel tennis bubble set/brown.webp', 0),
   ('cropped-training-tee', '/images/products/Mia cropped t''S/burgandy.webp', 0),
   ('cropped-training-tee', '/images/products/Mia cropped t''S/white.webp', 1),
   ('cropped-training-tee', '/images/products/Mia cropped t''S/black.webp', 2),
@@ -334,9 +339,14 @@ where product_id in (select id from public.products)
     '/images/products/Nia jogger set/navy blue.webp',
     '/images/products/Nia jogger set/grey.webp',
     '/images/products/Nia jogger set/black.webp',
+    '/images/products/Lela set/white.webp',
+    '/images/products/Lela set/brown.webp',
+    '/images/products/Lela set/black.webp',
+    '/images/products/Mvua flannel/black.webp',
     '/images/products/Zuri bra/white.webp',
     '/images/products/Zuri bra/brown.webp',
     '/images/products/Zuri bra/black.webp',
+    '/images/products/Terra skirt - Padel tennis bubble set/brown.webp',
     '/images/products/Mia cropped t''S/burgandy.webp',
     '/images/products/Mia cropped t''S/white.webp',
     '/images/products/Mia cropped t''S/black.webp',

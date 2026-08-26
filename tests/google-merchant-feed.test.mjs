@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
-import { products } from '../app/data/homeContent.ts'
+import { fallbackProducts } from '../app/data/homeContent.ts'
 import {
   buildGoogleMerchantFeed,
   createGoogleMerchantItem,
@@ -20,7 +20,7 @@ test('Google Merchant route always uses the verified canonical store domain', as
 })
 
 test('Google Merchant items use live variant price, stock and a colour landing URL', () => {
-  const product = products.find((item) => item.slug === 'strappy-bra')
+  const product = fallbackProducts.find((item) => item.slug === 'strappy-bra')
   assert.ok(product)
 
   const item = createGoogleMerchantItem({
@@ -49,7 +49,7 @@ test('Google Merchant items use live variant price, stock and a colour landing U
 })
 
 test('Google Merchant XML contains apparel attributes and does not invent a GTIN', () => {
-  const product = products.find((item) => item.slug === 'strappy-bra')
+  const product = fallbackProducts.find((item) => item.slug === 'strappy-bra')
   assert.ok(product)
 
   const item = createGoogleMerchantItem({

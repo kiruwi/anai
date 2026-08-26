@@ -195,7 +195,7 @@ const hasMissingSizes = computed(() =>
   lines.value.some((line) => line.product.sizeOptions?.length && !line.size),
 )
 const hasUnavailableSizes = computed(() =>
-  lines.value.some((line) => line.size && !isSizeLabelInStock(line.size)),
+  lines.value.some((line) => line.size && !isSizeLabelInStock(line.product, line.size)),
 )
 const deliveryFeeKes = computed(() => (deliveryMethod.value === 'nairobi-delivery' ? 300 : 0))
 const orderTotalKes = computed(() => subtotalKes.value + deliveryFeeKes.value)

@@ -1,4 +1,4 @@
-import { products, type HomepageProduct } from '../data/homeContent'
+import type { HomepageProduct } from '../data/homeContent'
 
 export type WishlistLine = {
   slug: string
@@ -7,7 +7,7 @@ export type WishlistLine = {
 
 const WISHLIST_STORAGE_KEY = 'anai-wishlist'
 
-const getStoredWishlist = () => {
+const getStoredWishlist = (products: HomepageProduct[]) => {
   if (!import.meta.client) {
     return []
   }
@@ -36,6 +36,7 @@ const getStoredWishlist = () => {
 }
 
 export const useWishlist = () => {
+  const products = useCatalogProducts()
   const items = useState<string[]>('anai-wishlist-items', () => [])
   const isLoaded = useState('anai-wishlist-loaded', () => false)
 
@@ -52,7 +53,7 @@ export const useWishlist = () => {
       return
     }
 
-    items.value = getStoredWishlist()
+    items.value = getStoredWishlist(products.value)
     isLoaded.value = true
   }
 
@@ -89,7 +90,7 @@ export const useWishlist = () => {
   const lines = computed<WishlistLine[]>(() =>
     items.value
       .map((slug) => {
-        const product = products.find((productItem) => productItem.slug === slug)
+        const product = products.value.find((productItem) => productItem.slug === slug)
 
         if (!product) {
           return undefined

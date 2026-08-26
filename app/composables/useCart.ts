@@ -2,7 +2,6 @@ import {
   getProductColourName,
   getProductColourStockLimit,
   getProductDefaultColourName,
-  products,
   type HomepageProduct,
 } from '../data/homeContent'
 import {
@@ -82,6 +81,7 @@ const emptyStoredCart = (removedItems = false): StoredCartResult => ({
 })
 
 const getStoredCart = (
+  products: HomepageProduct[],
   getStockLimit: (product: HomepageProduct, colour?: string) => number = getProductStockLimit,
 ): StoredCartResult => {
   if (!import.meta.client) {
@@ -164,11 +164,13 @@ const getStoredCart = (
 }
 
 export const useCart = () => {
+  const products = useCatalogProducts()
   const items = useState<CartItem[]>('anai-cart-items', () => [])
   const isLoaded = useState('anai-cart-loaded', () => false)
   const hasShownHydrationWarning = useState('anai-cart-hydration-warning-shown', () => false)
   const { inventory, getProductStock } = useInventory()
   const { notify } = useNotifications()
+  const findProduct = (slug: string) => products.value.find((product) => product.slug === slug)
   const getLiveStockLimit = (product: HomepageProduct, colour?: string) =>
     getProductStock(product, colour)
   const clampLiveQuantity = (product: HomepageProduct, quantity: number, colour?: string) =>
@@ -197,7 +199,7 @@ export const useCart = () => {
       return
     }
 
-    const storedCart = getStoredCart(getLiveStockLimit)
+    const storedCart = getStoredCart(products.value, getLiveStockLimit)
     items.value = storedCart.items
     isLoaded.value = true
 
@@ -273,7 +275,7 @@ export const useCart = () => {
     hydrateCart()
     const itemToUpdate = items.value.find((item) => getCartItemKey(item) === key)
     const product = itemToUpdate
-      ? products.find((productItem) => productItem.slug === itemToUpdate.slug)
+      ? findProduct(itemToUpdate.slug)
       : undefined
 
     const colour = product && itemToUpdate ? normalizeColour(product, itemToUpdate.colour) : undefined
@@ -305,7 +307,7 @@ export const useCart = () => {
     const nextItems = [...items.value]
     const itemIndex = nextItems.findIndex((item) => getCartItemKey(item) === key)
     const item = nextItems[itemIndex]
-    const product = item ? products.find((candidate) => candidate.slug === item.slug) : undefined
+    const product = item ? findProduct(item.slug) : undefined
     if (!item || !product) return
 
     const nextSize = normalizeSize(product, size)
@@ -353,7 +355,7 @@ export const useCart = () => {
       return
     }
 
-    const product = products.find((productItem) => productItem.slug === item.slug)
+    const product = findProduct(item.slug)
 
     if (!product) {
       return
@@ -429,7 +431,7 @@ export const useCart = () => {
     const adjustments: Array<{ product: HomepageProduct; quantity: number }> = []
     const reconciledItems = items.value
       .map((item): CartItem | undefined => {
-        const product = products.find((candidate) => candidate.slug === item.slug)
+        const product = findProduct(item.slug)
         const colour = product ? normalizeColour(product, item.colour) : undefined
         const stockLimit = product && colour ? getLiveStockLimit(product, colour) : 0
 
@@ -467,7 +469,7 @@ export const useCart = () => {
   const lines = computed<CartLine[]>(() =>
     items.value
       .map((item): CartLine | undefined => {
-        const product = products.find((productItem) => productItem.slug === item.slug)
+        const product = findProduct(item.slug)
 
         if (!product) {
           return undefined
@@ -503,6 +505,7 @@ export const useCart = () => {
   if (import.meta.client) {
     onMounted(hydrateCart)
     watch(inventory, reconcileCartStock)
+    watch(products, reconcileCartStock)
   }
 
   return {

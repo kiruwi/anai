@@ -127,7 +127,6 @@ import {
   getProductDefaultColourName,
   getProductPath,
   getProductUrlSlug,
-  products,
   type ProductColour,
 } from '../../data/homeContent'
 import { getCollectionPathForCategory } from '#shared/lib/catalogNavigation'
@@ -137,10 +136,11 @@ const { addToCart } = useCart()
 const { notify } = useNotifications()
 const { toggleWishlist, isInWishlist } = useWishlist()
 const { getProductStock, getStockLabel } = useInventory()
+const products = useCatalogProducts()
 const requestedSlug = Array.isArray(route.params.slug)
   ? route.params.slug[0] ?? ''
   : String(route.params.slug ?? '')
-const legacyProduct = products.find((item) =>
+const legacyProduct = products.value.find((item) =>
   item.slug === requestedSlug && getProductUrlSlug(item) !== requestedSlug,
 )
 
@@ -148,7 +148,7 @@ if (legacyProduct) {
   await navigateTo(getProductPath(legacyProduct), { redirectCode: 301, replace: true })
 }
 
-const product = legacyProduct ?? products.find((item) => getProductUrlSlug(item) === requestedSlug)
+const product = legacyProduct ?? products.value.find((item) => getProductUrlSlug(item) === requestedSlug)
 
 if (!product) {
   throw createError({
