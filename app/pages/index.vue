@@ -20,15 +20,15 @@ import ShopByCategory from '../components/home/ShopByCategory.vue'
 import ShopTheLook from '../components/home/ShopTheLook.vue'
 import {
   categoryTiles,
-  products,
   shopLooks,
 } from '../data/homeContent'
 
+const products = useCatalogProducts()
 const homepageProductSlugsWithoutPhotos = new Set<string>()
-const photographedProducts = products.filter((product) =>
+const photographedProducts = computed(() => products.value.filter((product) =>
   product.imageUrl?.startsWith('/images/products/') || homepageProductSlugsWithoutPhotos.has(product.slug),
-)
-const newReleaseProducts = photographedProducts
+))
+const newReleaseProducts = computed(() => photographedProducts.value)
 
 useSeoMeta({
   title: 'AÑAI | Activewear and Athleisure in Kenya',

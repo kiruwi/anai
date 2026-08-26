@@ -1,7 +1,7 @@
 import { createError, setResponseHeader } from 'h3'
-import { products } from '../../app/data/homeContent'
 import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
 import { getSupabaseAdmin } from '../utils/supabaseAdmin'
+import { getCatalogProducts } from '../utils/catalog'
 import {
   buildGoogleMerchantFeed,
   createGoogleMerchantItem,
@@ -17,6 +17,7 @@ const getProductRecord = (variant: VariantRecord) =>
   Array.isArray(variant.products) ? variant.products[0] : variant.products
 
 export default defineEventHandler(async (event) => {
+  const { products } = await getCatalogProducts()
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
     .from('product_variants')

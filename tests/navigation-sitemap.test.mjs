@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 import {
   getProductUrlSlug,
-  products,
+  fallbackProducts,
 } from '../app/data/homeContent.ts'
 import {
   canonicalSiteUrl,
@@ -73,7 +73,7 @@ test('public product URLs use corrected slugs without changing inventory IDs', (
   }
 
   for (const [inventorySlug, routeSlug] of Object.entries(expectedRoutesByInventorySlug)) {
-    const product = products.find((item) => item.slug === inventorySlug)
+    const product = fallbackProducts.find((item) => item.slug === inventorySlug)
     assert.ok(product, `Expected inventory product ${inventorySlug}`)
     assert.equal(getProductUrlSlug(product), routeSlug)
   }
@@ -127,7 +127,7 @@ test('sitemap uses canonical collection and public product routes', async () => 
   const sitemap = await readProjectFile('server/routes/sitemap.xml.ts')
   const robots = await readProjectFile('server/routes/robots.txt.ts')
 
-  assert.match(sitemap, /collectionSlugs[\s\S]*filter\(hasProductsForCollection\)/)
+  assert.match(sitemap, /getCatalogProducts\(\)[\s\S]*collectionSlugs[\s\S]*hasProductsForCollection\(products, slug\)/)
   assert.match(sitemap, /getProductUrlSlug\(product\)/)
   assert.doesNotMatch(sitemap, /\/lookbook|\/shop-the-look|\/wishlist|\/checkout|\/cart/)
   assert.match(robots, /canonicalSiteUrl.*\/sitemap\.xml/s)

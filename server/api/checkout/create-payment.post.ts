@@ -48,8 +48,6 @@ type CheckoutRpcRow = {
 
 const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 const createReference = () => `ANAI-${Date.now()}-${randomBytes(4).toString('hex').toUpperCase()}`
-const validSizeLabels = new Set(['XS/6', 'S/8', 'M/10', 'L/12', 'XL/14'])
-const inStockSizeLabels = new Set(['M/10'])
 const validDeliveryMethods = new Set(['nairobi-delivery', 'town-pickup'])
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const idempotencyPattern = /^[A-Za-z0-9_-]{16,100}$/
@@ -69,14 +67,8 @@ const normalizeItems = (items: CheckoutItemInput[] | undefined) => {
     const color = cleanString(item.color || item.colour)
 
     if (!slug || slug.length > 120 || !Number.isFinite(quantity) || quantity < 1) continue
-    if (!validSizeLabels.has(size)) {
+    if (!size || size.length > 40) {
       throw createError({ statusCode: 400, statusMessage: `Choose a valid size for ${slug}.` })
-    }
-    if (!inStockSizeLabels.has(size)) {
-      throw createError({
-        statusCode: 409,
-        statusMessage: `${size} is not in stock. More sizes will be restocked in a few months.`,
-      })
     }
 
     const itemKey = `${slug}:${size}:${color.toLowerCase()}`
@@ -167,13 +159,17 @@ export default defineEventHandler(async (event) => {
 
   const orderLines = items.map((item) => {
     const variantsForProduct = variantsBySlug.get(item.slug)
-    const variant = item.color
-      ? variantsForProduct?.find((entry) => cleanString(entry.color).toLowerCase() === item.color.toLowerCase())
-      : variantsForProduct?.[0]
+    const variant = variantsForProduct?.find((entry) =>
+      cleanString(entry.size).toLowerCase() === item.size.toLowerCase()
+      && (!item.color || cleanString(entry.color).toLowerCase() === item.color.toLowerCase()),
+    )
     const product = variant ? getVariantProduct(variant) : undefined
 
     if (!variant || !product) {
-      throw createError({ statusCode: 409, statusMessage: `${item.slug} is no longer available in the selected colour.` })
+      throw createError({
+        statusCode: 409,
+        statusMessage: `${item.slug} is no longer available in the selected colour and size.`,
+      })
     }
 
     return {

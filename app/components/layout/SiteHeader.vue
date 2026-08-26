@@ -163,7 +163,6 @@
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { products } from '../../data/homeContent'
 
 const props = withDefaults(defineProps<{
   overHero?: boolean
@@ -189,9 +188,12 @@ const shopDropdownElement = ref<HTMLElement | null>(null)
 const mobileShopTriggerElement = ref<HTMLButtonElement | null>(null)
 const mobileShopDialogElement = ref<HTMLElement | null>(null)
 const firstMobileShopLinkElement = ref<HTMLElement | null>(null)
+const products = useCatalogProducts()
 let introAnimation: { kill: () => void } | undefined
 
-const hasAccessories = products.some((product) => product.category.toLowerCase() === 'accessories')
+const hasAccessories = computed(() =>
+  products.value.some((product) => product.category.toLowerCase() === 'accessories'),
+)
 const baseShopLinks = [
   { label: 'All products', to: '/shop' },
   { label: 'Sets', to: '/shop/sets' },
@@ -201,14 +203,14 @@ const baseShopLinks = [
 ]
 const desktopShopLinks = computed(() => [
   ...baseShopLinks,
-  ...(hasAccessories ? [{ label: 'Accessories', to: '/shop/accessories' }] : []),
+  ...(hasAccessories.value ? [{ label: 'Accessories', to: '/shop/accessories' }] : []),
 ])
 const mobileShopLinks = computed(() => [
   { label: 'All products', to: '/shop' },
   { label: 'New in', to: '/shop/new-in' },
   { label: 'Women', to: '/shop/women' },
   ...baseShopLinks.slice(1),
-  ...(hasAccessories ? [{ label: 'Accessories', to: '/shop/accessories' }] : []),
+  ...(hasAccessories.value ? [{ label: 'Accessories', to: '/shop/accessories' }] : []),
 ])
 
 const updateHeaderState = () => {

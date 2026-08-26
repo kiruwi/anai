@@ -1,0 +1,108 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { test } from 'node:test'
+import { mapCatalogProductRecord } from '../server/utils/catalog.ts'
+
+const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
+
+test('database catalogue mapping preserves public URLs and derives availability from variants', () => {
+  const product = mapCatalogProductRecord({
+    id: 'product-id',
+    name: 'Zuri bra',
+    slug: 'strappy-bra',
+    public_slug: 'zuri-bra',
+    description: 'A minimal square-neck bra top.',
+    image_url: '/images/products/Zuri bra/white.webp',
+    hover_image_url: '/images/products/Zuri bra/brown.webp',
+    image_tone: 'linear-gradient(135deg, #111111, #f6f1ea)',
+    size_guide_text: null,
+    size_options: [{ label: 'S/8' }, { label: 'M/10' }],
+    image_revision: 'catalogue-test',
+    is_new: true,
+    display_order: 10,
+    updated_at: '2026-08-26T00:00:00.000Z',
+    category: { name: 'Tops' },
+    variants: [
+      {
+        id: 'black-medium',
+        sku: 'ANAI-BRA-BLACK-M',
+        color: 'Black',
+        color_value: '#111111',
+        size: 'M/10',
+        price_kes: 1499,
+        stock_quantity: 2,
+        is_active: true,
+      },
+      {
+        id: 'black-small',
+        sku: 'ANAI-BRA-BLACK-S',
+        color: 'Black',
+        color_value: '#111111',
+        size: 'S/8',
+        price_kes: 1499,
+        stock_quantity: 0,
+        is_active: true,
+      },
+    ],
+    images: [
+      {
+        id: 'image-id',
+        variant_id: 'black-medium',
+        image_url: '/images/products/Zuri bra/black.webp',
+        sort_order: 0,
+      },
+    ],
+  })
+
+  assert.ok(product)
+  assert.equal(product.slug, 'strappy-bra')
+  assert.equal(product.urlSlug, 'zuri-bra')
+  assert.equal(product.priceKes, 1499)
+  assert.equal(product.stockQuantity, 2)
+  assert.equal(product.colours[0].stockQuantity, 2)
+  assert.match(product.imageUrl, /\?v=catalogue-test$/)
+  assert.equal(product.sizeOptions.find((size) => size.label === 'M/10').available, true)
+  assert.equal(product.sizeOptions.find((size) => size.label === 'S/8').available, false)
+})
+
+test('catalogue migration protects indexed slugs and makes sizes variant-driven', async () => {
+  const migration = await readProjectFile(
+    'supabase/migrations/20260826102514_consolidate_catalogue_authority.sql',
+  )
+  const checkout = await readProjectFile('server/api/checkout/create-payment.post.ts')
+
+  for (const publicSlug of [
+    'nuru-zip-up',
+    'long-sleeve-round-neck',
+    'long-sleeve-swirl-neck',
+    'aya-mini-tee',
+    'nia-jogger-set',
+    'lela-set',
+    'mvua-flannel',
+    'zuri-bra',
+    'terra-skirt',
+    'jua-jogger-set',
+    'mia-cropped-tee',
+  ]) {
+    assert.match(migration, new RegExp(`'${publicSlug}'`))
+  }
+
+  assert.match(migration, /create unique index if not exists products_public_slug_idx/i)
+  assert.match(migration, /set size = 'M\/10'/i)
+  assert.doesNotMatch(migration, /products_active_public_slug_check/)
+  assert.match(checkout, /cleanString\(entry\.size\).*item\.size/is)
+  assert.doesNotMatch(checkout, /inStockSizeLabels|validSizeLabels/)
+})
+
+test('all catalogue consumers use the shared database-backed path', async () => {
+  const app = await readProjectFile('app/app.vue')
+  const sitemap = await readProjectFile('server/routes/sitemap.xml.ts')
+  const merchantFeed = await readProjectFile('server/routes/google-merchant.xml.ts')
+  const catalogue = await readProjectFile('server/utils/catalog.ts')
+
+  assert.match(app, /\/api\/catalog\/products/)
+  assert.match(sitemap, /await getCatalogProducts\(\)/)
+  assert.match(merchantFeed, /await getCatalogProducts\(\)/)
+  assert.match(catalogue, /\.not\('public_slug', 'is', null\)/)
+  assert.match(catalogue, /fallbackProducts[\s\S]*protected public URL/)
+})

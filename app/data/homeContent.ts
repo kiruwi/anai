@@ -1,40 +1,11 @@
-export type ProductColour =
-  | string
-  | {
-      name: string
-      value: string
-      imageUrl?: string
-      stockQuantity?: number
-    }
+import type {
+  CatalogProduct,
+  ProductColour,
+  ProductSizeOption,
+} from '../../shared/types/catalog'
 
-export type HomepageProduct = {
-  name: string
-  slug: string
-  urlSlug?: string
-  priceKes: number
-  stockQuantity: number
-  category: string
-  colours: ProductColour[]
-  isNew?: boolean
-  imageUrl?: string
-  hoverImageUrl?: string
-  imageTone: string
-  galleryImages?: string[]
-  description?: string
-  sizeGuideText?: string
-  sizeOptions?: ProductSizeOption[]
-}
-
-export type ProductSizeOption = {
-  label: string
-  coatLengthCm?: number
-  shoulderCm?: number
-  sleeveLengthCm?: number
-  bustCm?: number
-  bottomCm?: number
-}
-
-export const inStockSizeLabel = 'M/10'
+export type HomepageProduct = CatalogProduct
+export type { ProductColour, ProductSizeOption }
 
 export type ImageTile = {
   title: string
@@ -53,11 +24,11 @@ export type ShopLook = {
 }
 
 export const commonSizeOptions: ProductSizeOption[] = [
-  { label: 'XS/6' },
-  { label: 'S/8', coatLengthCm: 44, shoulderCm: 35, sleeveLengthCm: 60, bustCm: 72, bottomCm: 58 },
-  { label: 'M/10', coatLengthCm: 45, shoulderCm: 36.2, sleeveLengthCm: 61, bustCm: 76, bottomCm: 62 },
-  { label: 'L/12', coatLengthCm: 46, shoulderCm: 37.4, sleeveLengthCm: 62, bustCm: 80, bottomCm: 66 },
-  { label: 'XL/14', coatLengthCm: 47, shoulderCm: 38.6, sleeveLengthCm: 63, bustCm: 84, bottomCm: 70 },
+  { label: 'XS/6', available: false },
+  { label: 'S/8', available: false, coatLengthCm: 44, shoulderCm: 35, sleeveLengthCm: 60, bustCm: 72, bottomCm: 58 },
+  { label: 'M/10', available: true, coatLengthCm: 45, shoulderCm: 36.2, sleeveLengthCm: 61, bustCm: 76, bottomCm: 62 },
+  { label: 'L/12', available: false, coatLengthCm: 46, shoulderCm: 37.4, sleeveLengthCm: 62, bustCm: 80, bottomCm: 66 },
+  { label: 'XL/14', available: false, coatLengthCm: 47, shoulderCm: 38.6, sleeveLengthCm: 63, bustCm: 84, bottomCm: 70 },
 ]
 
 export const getProductColourName = (colour: ProductColour) =>
@@ -161,10 +132,10 @@ export const getProductDefaultColourName = (product: HomepageProduct) => {
       : undefined
 }
 
-export const isSizeLabelInStock = (sizeLabel: string) => sizeLabel === inStockSizeLabel
+export const isSizeLabelInStock = (product: HomepageProduct, sizeLabel: string) =>
+  product.sizeOptions?.some((option) => option.label === sizeLabel && option.available) ?? false
 
-export const isSizeOptionInStock = (sizeOption: ProductSizeOption) =>
-  isSizeLabelInStock(sizeOption.label)
+export const isSizeOptionInStock = (sizeOption: ProductSizeOption) => sizeOption.available === true
 
 export const getProductBadgeLabel = (product: HomepageProduct) => {
   if (isProductOutOfStock(product)) {
@@ -174,7 +145,7 @@ export const getProductBadgeLabel = (product: HomepageProduct) => {
   return product.isNew ? 'New' : ''
 }
 
-export const products: HomepageProduct[] = [
+export const fallbackProducts: HomepageProduct[] = [
   {
     name: 'Nuru Zip-up',
     slug: 'jackets',

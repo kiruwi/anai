@@ -19,6 +19,7 @@ import SiteFooter from './components/layout/SiteFooter.vue'
 import SiteHeader from './components/layout/SiteHeader.vue'
 import MouseCursor from './components/shared/MouseCursor.vue'
 import NotificationStack from './components/shared/NotificationStack.vue'
+import type { CatalogResponse } from '../shared/types/catalog'
 import type { InventoryResponse } from '../shared/types/inventory'
 import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
 
@@ -39,14 +40,24 @@ useHead({
     },
   ],
 })
-let removeInventoryRouteHook: (() => void) | undefined
+let removeCatalogueRefreshHook: (() => void) | undefined
+const catalogProducts = useCatalogProducts()
 const inventory = useState<InventoryResponse | null>('anai-live-inventory', () => null)
 const isInventoryOutage = useState('anai-inventory-outage', () => false)
 const { notify, dismissNotification } = useNotifications()
 const inventoryOutageNotificationId = 'inventory-refresh-outage'
+const { data: liveCatalogue } = await useFetch<CatalogResponse>('/api/catalog/products', {
+  key: 'anai-catalog-products-request',
+})
 const { data: liveInventory, error: liveInventoryError } = await useFetch<InventoryResponse>('/api/catalog/inventory', {
   key: 'anai-live-inventory-request',
 })
+
+watch(liveCatalogue, (catalogue) => {
+  if (catalogue?.products.length) {
+    catalogProducts.value = catalogue.products
+  }
+}, { immediate: true })
 
 watch([liveInventory, liveInventoryError], ([value, error]) => {
   if (value) {
@@ -70,10 +81,11 @@ watch([liveInventory, liveInventoryError], ([value, error]) => {
 }, { immediate: true })
 
 onMounted(() => {
-  removeInventoryRouteHook = router.afterEach(() => {
+  removeCatalogueRefreshHook = router.afterEach(() => {
+    void refreshNuxtData('anai-catalog-products-request')
     void refreshNuxtData('anai-live-inventory-request')
   })
 })
 
-onBeforeUnmount(() => removeInventoryRouteHook?.())
+onBeforeUnmount(() => removeCatalogueRefreshHook?.())
 </script>

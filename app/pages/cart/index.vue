@@ -153,7 +153,7 @@ const hasMissingSizes = computed(() =>
   lines.value.some((line) => line.product.sizeOptions?.length && !line.size),
 )
 const hasUnavailableSizes = computed(() =>
-  lines.value.some((line) => line.size && !isSizeLabelInStock(line.size)),
+  lines.value.some((line) => line.size && !isSizeLabelInStock(line.product, line.size)),
 )
 const canCheckout = computed(() => !hasMissingSizes.value && !hasUnavailableSizes.value)
 const checkoutBlockedLabel = computed(() =>

@@ -1,9 +1,10 @@
 import { setHeader } from 'h3'
 import {
   getProductUrlSlug,
-  products,
+  type HomepageProduct,
 } from '../../app/data/homeContent'
 import { legalPaths } from '../../app/data/legalContent'
+import { getCatalogProducts } from '../utils/catalog'
 import {
   canonicalSiteUrl,
   collectionDefinitions,
@@ -20,7 +21,10 @@ const staticPaths = [
   ...legalPaths,
 ]
 
-const hasProductsForCollection = (slug: (typeof collectionSlugs)[number]) => {
+const hasProductsForCollection = (
+  products: HomepageProduct[],
+  slug: (typeof collectionSlugs)[number],
+) => {
   const collection = collectionDefinitions[slug]
 
   if (collection.filter === 'new') return products.some((product) => product.isNew)
@@ -39,9 +43,10 @@ const escapeXml = (value: string) =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;')
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
+  const { products } = await getCatalogProducts()
   const collectionPaths = collectionSlugs
-    .filter(hasProductsForCollection)
+    .filter((slug) => hasProductsForCollection(products, slug))
     .map((slug) => `/shop/${slug}`)
   const productPaths = products.map((product) => `/product/${getProductUrlSlug(product)}`)
   const paths = [...new Set([...staticPaths, ...collectionPaths, ...productPaths])]

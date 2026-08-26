@@ -4,17 +4,19 @@ select plan(9);
 insert into public.categories(id, name, slug)
 values ('11111111-1111-4111-8111-111111111111', 'Callback tests', 'callback-tests');
 
-insert into public.products(id, name, slug, category_id)
+insert into public.products(id, name, slug, public_slug, category_id)
 values
   (
     '22222222-2222-4222-8222-222222222221',
     'Late payment with stock',
+    'late-payment-with-stock',
     'late-payment-with-stock',
     '11111111-1111-4111-8111-111111111111'
   ),
   (
     '22222222-2222-4222-8222-222222222222',
     'Late payment without stock',
+    'late-payment-without-stock',
     'late-payment-without-stock',
     '11111111-1111-4111-8111-111111111111'
   );
