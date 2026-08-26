@@ -94,10 +94,12 @@ test('mobile Shop navigation is a dialog trigger with complete close behavior', 
 
 test('navigation labels use sentence case and contact areas show the support number', async () => {
   const header = await readProjectFile('app/components/layout/SiteHeader.vue')
+  const breadcrumbs = await readProjectFile('app/components/shared/BreadcrumbTrail.vue')
   const footer = await readProjectFile('app/components/layout/SiteFooter.vue')
   const contactPage = await readProjectFile('app/pages/contact/index.vue')
 
   assert.doesNotMatch(header, /\.site-header__desktop-links\s*\{[^}]*text-transform:\s*uppercase/s)
+  assert.doesNotMatch(breadcrumbs, /text-transform:\s*uppercase/i)
   assert.match(footer, /href="tel:\+254758807077">\+254 758 807 077<\/a>/)
   assert.match(footer, /<section class="site-footer__address"[^>]*>[\s\S]*<h2>Address<\/h2>[\s\S]*<address>9 Sumba Rd, Sumba Rd, Nairobi, Langata District, Nairobi West\.<\/address>/)
   assert.doesNotMatch(footer, /site-footer__contact[\s\S]*Nairobi West\.<\/li>/)
