@@ -1,24 +1,22 @@
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const supabaseUrl = process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const supabasePublishableKey =
-  process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.SUPABASE_PUBLISHABLE_KEY ||
-  process.env.NUXT_PUBLIC_SUPABASE_KEY ||
-  process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_KEY ||
-  process.env.SUPABASE_ANON_KEY
+const databaseUrl = process.env.NUXT_DATABASE_URL || ''
+const brevoApiKey = process.env.NUXT_BREVO_API_KEY || process.env.BREVO_API_KEY || ''
+const brevoSenderEmail = process.env.NUXT_BREVO_SENDER_EMAIL || process.env.BREVO_SENDER_EMAIL || ''
+const salesNotificationEmail =
+  process.env.NUXT_SALES_NOTIFICATION_EMAIL ||
+  process.env.SALES_NOTIFICATION_EMAIL ||
+  process.env.NUXT_SUPPORT_NOTIFICATION_EMAIL ||
+  process.env.SUPPORT_NOTIFICATION_EMAIL ||
+  ''
+const supportNotificationEmail =
+  process.env.NUXT_SUPPORT_NOTIFICATION_EMAIL || process.env.SUPPORT_NOTIFICATION_EMAIL || ''
 const googleTagId =
   process.env.NUXT_PUBLIC_GOOGLE_TAG_ID ||
   process.env.NUXT_PUBLIC_GTAG_ID ||
   process.env.GOOGLE_TAG_ID ||
   ''
-const supabaseSecretKey =
-  process.env.NUXT_SUPABASE_SECRET_KEY ||
-  process.env.SUPABASE_SECRET_KEY ||
-  process.env.NUXT_SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY
 const hasNuxtImage = (() => {
   try {
     require.resolve('@nuxt/image')
@@ -70,8 +68,6 @@ const contentSecurityPolicy = [
     'https://*.g.doubleclick.net',
     'https://*.google.com',
     'https://pagead2.googlesyndication.com',
-    'https://*.supabase.co',
-    'wss://*.supabase.co',
   ].join(' '),
   [
     "frame-src",
@@ -233,7 +229,11 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
-    supabaseSecretKey,
+    databaseUrl,
+    brevoApiKey,
+    brevoSenderEmail,
+    salesNotificationEmail,
+    supportNotificationEmail,
     mpesaEnvironment: process.env.NUXT_MPESA_ENVIRONMENT || 'sandbox',
     mpesaConsumerKey: process.env.NUXT_MPESA_CONSUMER_KEY || '',
     mpesaConsumerSecret: process.env.NUXT_MPESA_CONSUMER_SECRET || '',
@@ -244,13 +244,8 @@ export default defineNuxtConfig({
     mpesaCallbackToken: process.env.NUXT_MPESA_CALLBACK_TOKEN || '',
     mpesaTransactionType: process.env.NUXT_MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline',
     mpesaTransactionDescription: process.env.NUXT_MPESA_TRANSACTION_DESCRIPTION || 'ANAI payment',
-    emailApiKey: '',
-    adminOrderEmail: '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://anaibymurda.com',
-      supabaseUrl,
-      supabasePublishableKey,
-      supabaseAnonKey: supabasePublishableKey,
       googleTagId,
     },
   },

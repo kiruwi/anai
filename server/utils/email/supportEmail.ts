@@ -21,7 +21,7 @@ const displayValue = (value: string | null) => value?.trim() || "Not provided";
 
 export const buildSupportEmail = (request: SupportRequest) => {
   const subject = `[${request.request_number}] New ${request.category} support request`;
-  const fields = [
+  const fields: Array<[string, string]> = [
     ["Request", request.request_number],
     ["Category", request.category],
     ["Name", request.full_name],

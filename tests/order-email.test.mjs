@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
-import { buildPaidOrderEmails } from '../supabase/functions/notify-paid-order/orderEmail.ts'
+import { sendBrevoEmail } from '../server/utils/email/brevo.ts'
+import { createPaidOrderEmailPayload } from '../server/utils/email/notifyPaidOrder.ts'
+import { buildPaidOrderEmails } from '../server/utils/email/orderEmail.ts'
 
 const order = {
   id: '3f6534dc-4af8-4a22-a70e-99ce94ffb3ae',
@@ -54,14 +56,40 @@ test('paid order emails escape customer and product HTML', () => {
   assert.match(emails.customer.htmlContent, /&lt;img src=x&gt;/)
 })
 
+test('paid order notification sends the expected Brevo payload through a mock', async () => {
+  let request
+  const payload = createPaidOrderEmailPayload(order, 'sender@example.com', 'sales@example.com')
+  const fetchImpl = async (url, init) => {
+    request = { url, init }
+    return new Response(JSON.stringify({ messageIds: ['mock-customer', 'mock-sales'] }), {
+      status: 201,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  const { response, result } = await sendBrevoEmail({ apiKey: 'test-key', payload, fetchImpl })
+  const submitted = JSON.parse(request.init.body)
+
+  assert.equal(response.status, 201)
+  assert.deepEqual(result.messageIds, ['mock-customer', 'mock-sales'])
+  assert.equal(request.url, 'https://api.brevo.com/v3/smtp/email')
+  assert.equal(request.init.headers['api-key'], 'test-key')
+  assert.equal(submitted.headers['Idempotency-Key'], order.id)
+  assert.equal(submitted.messageVersions[0].to[0].email, order.customer_email)
+  assert.equal(submitted.messageVersions[1].to[0].email, 'sales@example.com')
+})
+
 test('paid payment paths invoke the idempotent order notifier', async () => {
   const recordPayment = await readFile(new URL('../server/utils/recordMpesaPayment.ts', import.meta.url), 'utf8')
   const paymentStatus = await readFile(new URL('../server/api/checkout/payment-status.post.ts', import.meta.url), 'utf8')
-  const notifier = await readFile(new URL('../supabase/functions/notify-paid-order/index.ts', import.meta.url), 'utf8')
+  const notifier = await readFile(new URL('../server/utils/email/notifyPaidOrder.ts', import.meta.url), 'utf8')
 
-  assert.match(recordPayment, /result\.paid[\s\S]*notify-paid-order/)
-  assert.match(paymentStatus, /status === 'paid'[\s\S]*notify-paid-order/)
+  assert.match(recordPayment, /result\.paid[\s\S]*notifyPaidOrder/)
+  assert.match(paymentStatus, /status === 'paid'[\s\S]*notifyPaidOrder/)
   assert.match(notifier, /order_email_notifications/)
   assert.match(notifier, /Idempotency-Key/)
   assert.match(notifier, /messageVersions/)
+  assert.match(notifier, /claim\.status === 'sent'/)
+  assert.match(notifier, /claimIsStale/)
+  assert.match(notifier, /and updated_at = \$\{claim\.updated_at\}::timestamptz/)
 })

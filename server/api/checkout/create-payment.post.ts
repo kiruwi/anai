@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createError, getRequestIP, readBody } from 'h3'
+import { getDatabase } from '../../utils/db'
 import { initiateMpesaStkPush, normalizeKenyanPhone } from '../../utils/mpesa'
 import { recordStoredMpesaCallback } from '../../utils/recordMpesaPayment'
-import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
 
 type CheckoutItemInput = {
   slug?: unknown
@@ -33,7 +33,9 @@ type VariantRecord = {
   size: string | null
   price_kes: number
   stock_quantity: number
-  products: ProductRecord | ProductRecord[]
+  product_id: string
+  product_name: string
+  product_slug: string
 }
 
 type ProductRecord = { id: string; name: string; slug: string }
@@ -52,8 +54,11 @@ const validDeliveryMethods = new Set(['nairobi-delivery', 'town-pickup'])
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const idempotencyPattern = /^[A-Za-z0-9_-]{16,100}$/
 
-const getVariantProduct = (variant: VariantRecord): ProductRecord | undefined =>
-  Array.isArray(variant.products) ? variant.products[0] : variant.products
+const getVariantProduct = (variant: VariantRecord): ProductRecord => ({
+  id: variant.product_id,
+  name: variant.product_name,
+  slug: variant.product_slug,
+})
 
 const normalizeItems = (items: CheckoutItemInput[] | undefined) => {
   if (!Array.isArray(items)) return []
@@ -136,23 +141,30 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Enter a valid Kenyan M-Pesa phone number.' })
   }
 
-  const supabase = getSupabaseAdmin()
+  const sql = getDatabase()
   const slugs = [...new Set(items.map((item) => item.slug))]
-  const { data: variants, error: variantsError } = await supabase
-    .from('product_variants')
-    .select('id, sku, color, size, price_kes, stock_quantity, products!inner(id, name, slug)')
-    .eq('is_active', true)
-    .eq('products.is_active', true)
-    .in('products.slug', slugs)
-    .order('created_at', { ascending: true })
-
-  if (variantsError) {
+  let variants: VariantRecord[]
+  try {
+    variants = await sql`
+      select variants.id, variants.sku, variants.color, variants.size,
+        variants.price_kes, variants.stock_quantity,
+        products.id as product_id, products.name as product_name, products.slug as product_slug
+      from public.product_variants as variants
+      join public.products as products on products.id = variants.product_id
+      where variants.is_active
+        and products.is_active
+        and products.slug in (
+          select jsonb_array_elements_text(${JSON.stringify(slugs)}::jsonb)
+        )
+      order by variants.created_at asc
+    ` as unknown as VariantRecord[]
+  } catch (variantsError) {
     console.error('[ANAI] Could not load checkout variants:', variantsError)
     throw createError({ statusCode: 500, statusMessage: 'Checkout inventory is temporarily unavailable.' })
   }
 
   const variantsBySlug = new Map<string, VariantRecord[]>()
-  for (const variant of (variants || []) as VariantRecord[]) {
+  for (const variant of variants) {
     const product = getVariantProduct(variant)
     if (product) variantsBySlug.set(product.slug, [...(variantsBySlug.get(product.slug) || []), variant])
   }
@@ -186,25 +198,28 @@ export default defineEventHandler(async (event) => {
     .digest('hex')
   const reference = createReference()
 
-  const { data: checkoutData, error: checkoutError } = await supabase.rpc('create_checkout_order', {
-    p_order_number: reference,
-    p_idempotency_key: idempotencyKey,
-    p_fingerprint_hash: fingerprintHash,
-    p_email: email,
-    p_full_name: fullName,
-    p_phone: phone,
-    p_address: address,
-    p_delivery_method: deliveryMethod,
-    p_lines: orderLines,
-    p_checkout_payload: { customer: { email, fullName, phone, address, deliveryMethod }, items },
-  })
-
-  if (checkoutError) {
+  let checkoutData: CheckoutRpcRow[]
+  try {
+    checkoutData = await sql`
+      select * from public.create_checkout_order(
+        ${reference}::text,
+        ${idempotencyKey}::text,
+        ${fingerprintHash}::text,
+        ${email}::text,
+        ${fullName}::text,
+        ${phone}::text,
+        ${address}::text,
+        ${deliveryMethod}::text,
+        ${JSON.stringify(orderLines)}::jsonb,
+        ${JSON.stringify({ customer: { email, fullName, phone, address, deliveryMethod }, items })}::jsonb
+      )
+    ` as unknown as CheckoutRpcRow[]
+  } catch (checkoutError) {
     console.error('[ANAI] Atomic checkout creation failed:', checkoutError)
-    throw getRpcError(checkoutError.message)
+    throw getRpcError((checkoutError as Error).message)
   }
 
-  const order = (Array.isArray(checkoutData) ? checkoutData[0] : checkoutData) as CheckoutRpcRow | undefined
+  const order = checkoutData[0]
   if (!order) throw createError({ statusCode: 500, statusMessage: 'Checkout could not be prepared. Please try again.' })
 
   if (!order.created) {
@@ -230,16 +245,20 @@ export default defineEventHandler(async (event) => {
 
     let initiationUpdateError: unknown
     for (let attempt = 0; attempt < 4; attempt += 1) {
-      const { data: updated, error } = await supabase.rpc('set_mpesa_checkout_request', {
-        p_order_id: order.order_id,
-        p_checkout_request_id: initiation.checkoutRequestId,
-        p_merchant_request_id: initiation.merchantRequestId,
-        p_initiation_payload: initiation.raw,
-      })
-      initiationUpdateError = error
-      if (!error && updated) {
+      try {
+        const updatedRows = await sql`
+          select public.set_mpesa_checkout_request(
+            ${order.order_id}::uuid,
+            ${initiation.checkoutRequestId}::text,
+            ${initiation.merchantRequestId}::text,
+            ${JSON.stringify(initiation.raw)}::jsonb
+          ) as updated
+        ` as unknown as Array<{ updated: boolean }>
         initiationUpdateError = undefined
-        break
+        if (updatedRows[0]?.updated) break
+        initiationUpdateError = new Error('M-Pesa checkout request was not updated')
+      } catch (error) {
+        initiationUpdateError = error
       }
       await wait(200 * (attempt + 1))
     }
@@ -262,11 +281,16 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     const statusCode = (error as { statusCode?: number }).statusCode
     if (statusCode !== 503) {
-      const { error: failError } = await supabase.rpc('fail_checkout_order', {
-        p_order_id: order.order_id,
-        p_reason: (error as Error)?.message || 'M-Pesa initiation failed',
-      })
-      if (failError) console.error('[ANAI] Could not release a failed checkout reservation:', failError)
+      try {
+        await sql`
+          select public.fail_checkout_order(
+            ${order.order_id}::uuid,
+            ${(error as Error)?.message || 'M-Pesa initiation failed'}::text
+          )
+        `
+      } catch (failError) {
+        console.error('[ANAI] Could not release a failed checkout reservation:', failError)
+      }
     }
     throw error
   }

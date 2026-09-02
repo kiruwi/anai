@@ -6,7 +6,7 @@ import {
   type ProductSizeOption,
 } from '../../app/data/homeContent.ts'
 import type { CatalogResponse } from '../../shared/types/catalog'
-import { getSupabaseAdmin } from './supabaseAdmin.ts'
+import { getDatabase } from './db.ts'
 
 type CategoryRecord = { name: string }
 type VariantRecord = {
@@ -196,45 +196,58 @@ export const getCatalogProducts = async (): Promise<CatalogResult> => {
   }
 
   try {
-    const supabase = getSupabaseAdmin()
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        slug,
-        public_slug,
-        description,
-        image_url,
-        hover_image_url,
-        image_tone,
-        size_guide_text,
-        size_options,
-        image_revision,
-        is_new,
-        display_order,
-        updated_at,
-        category:categories(name),
-        variants:product_variants!inner(
-          id,
-          sku,
-          color,
-          color_value,
-          size,
-          price_kes,
-          stock_quantity,
-          is_active
-        ),
-        images:product_images(id, variant_id, image_url, sort_order)
-      `)
-      .eq('is_active', true)
-      .not('public_slug', 'is', null)
-      .eq('variants.is_active', true)
-      .order('display_order', { ascending: true })
-
-    if (error) throw error
-
-    const records = (data || []) as unknown as CatalogProductRecord[]
+    const sql = getDatabase()
+    const records = await sql`
+      select
+        products.id,
+        products.name,
+        products.slug,
+        products.public_slug,
+        products.description,
+        products.image_url,
+        products.hover_image_url,
+        products.image_tone,
+        products.size_guide_text,
+        products.size_options,
+        products.image_revision,
+        products.is_new,
+        products.display_order,
+        products.updated_at::text as updated_at,
+        jsonb_build_object('name', categories.name) as category,
+        coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'id', variants.id,
+            'sku', variants.sku,
+            'color', variants.color,
+            'color_value', variants.color_value,
+            'size', variants.size,
+            'price_kes', variants.price_kes,
+            'stock_quantity', variants.stock_quantity,
+            'is_active', variants.is_active
+          ) order by variants.sku)
+          from public.product_variants as variants
+          where variants.product_id = products.id and variants.is_active
+        ), '[]'::jsonb) as variants,
+        coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'id', images.id,
+            'variant_id', images.variant_id,
+            'image_url', images.image_url,
+            'sort_order', images.sort_order
+          ) order by images.sort_order, images.id)
+          from public.product_images as images
+          where images.product_id = products.id
+        ), '[]'::jsonb) as images
+      from public.products as products
+      join public.categories as categories on categories.id = products.category_id
+      where products.is_active
+        and products.public_slug is not null
+        and exists (
+          select 1 from public.product_variants as active_variants
+          where active_variants.product_id = products.id and active_variants.is_active
+        )
+      order by products.display_order, products.id
+    ` as unknown as CatalogProductRecord[]
     const products = mapCatalogProductRecords(records)
     const updatedAt = records.reduce(
       (latest, record) => record.updated_at > latest ? record.updated_at : latest,

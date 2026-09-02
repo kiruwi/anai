@@ -1,5 +1,6 @@
 import { createError } from 'h3'
-import { getSupabaseAdmin } from './supabaseAdmin'
+import { getDatabase } from './db'
+import { notifyPaidOrder } from './email/notifyPaidOrder'
 
 type CallbackItem = { Name?: string; Value?: string | number }
 
@@ -37,12 +38,14 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
     throw createError({ statusCode: 400, statusMessage: 'M-Pesa callback has no checkout request ID.' })
   }
 
-  const supabase = getSupabaseAdmin()
-  const { error: inboxError } = await supabase.from('mpesa_callback_events').upsert(
-    { checkout_request_id: checkoutRequestId, payload: rawPayload },
-    { onConflict: 'checkout_request_id' },
-  )
-  if (inboxError) {
+  const sql = getDatabase()
+  try {
+    await sql`
+      insert into public.mpesa_callback_events (checkout_request_id, payload)
+      values (${checkoutRequestId}, ${JSON.stringify(rawPayload)}::jsonb)
+      on conflict (checkout_request_id) do update set payload = excluded.payload
+    `
+  } catch (inboxError) {
     console.error('[ANAI] Could not persist M-Pesa callback inbox event:', inboxError)
     throw createError({ statusCode: 500, statusMessage: 'Payment callback could not be recorded.' })
   }
@@ -52,59 +55,67 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
   const amount = Number.isFinite(amountValue) ? amountValue : null
   const receipt = getStringValue(getMetadataValue(callback, 'MpesaReceiptNumber'))
 
-  const { data, error } = await supabase.rpc('finalize_mpesa_payment', {
-    p_checkout_request_id: checkoutRequestId,
-    p_result_code: Number.isInteger(resultCode) ? resultCode : -1,
-    p_result_description: getStringValue(callback.ResultDesc),
-    p_amount: amount,
-    p_receipt: receipt,
-    p_merchant_request_id: getStringValue(callback.MerchantRequestID),
-    p_phone_number: getStringValue(getMetadataValue(callback, 'PhoneNumber')),
-    p_transaction_date: getStringValue(getMetadataValue(callback, 'TransactionDate')),
-    p_raw_payload: rawPayload,
-  })
-
-  if (error) {
+  let results: FinalizeResult[]
+  try {
+    results = await sql`
+      select * from public.finalize_mpesa_payment(
+        ${checkoutRequestId}::text,
+        ${Number.isInteger(resultCode) ? resultCode : -1}::integer,
+        ${getStringValue(callback.ResultDesc)}::text,
+        ${amount}::numeric,
+        ${receipt}::text,
+        ${getStringValue(callback.MerchantRequestID)}::text,
+        ${getStringValue(getMetadataValue(callback, 'PhoneNumber'))}::text,
+        ${getStringValue(getMetadataValue(callback, 'TransactionDate'))}::text,
+        ${JSON.stringify(rawPayload)}::jsonb
+      )
+    ` as unknown as FinalizeResult[]
+  } catch (error) {
     console.error('[ANAI] Atomic M-Pesa finalization failed:', error)
     throw createError({ statusCode: 500, statusMessage: 'Payment callback could not be finalized.' })
   }
 
-  const result = (Array.isArray(data) ? data[0] : data) as FinalizeResult | undefined
+  const result = results[0]
   if (!result?.recorded) return { recorded: false, checkoutRequestId, paid: false, failed: false }
 
   if (result.paid) {
-    const { error: notificationError } = await supabase.functions.invoke('notify-paid-order', {
-      body: { checkoutRequestId },
-    })
-    if (notificationError) {
+    try {
+      await notifyPaidOrder(checkoutRequestId)
+    } catch (notificationError) {
       console.error('[ANAI] Payment was recorded but paid-order email notification failed:', notificationError)
     }
   }
 
-  const { error: processedError } = await supabase
-    .from('mpesa_callback_events')
-    .update({ processed_at: new Date().toISOString() })
-    .eq('checkout_request_id', checkoutRequestId)
-  if (processedError) console.error('[ANAI] Could not mark M-Pesa callback as processed:', processedError)
+  try {
+    const processedAt = new Date().toISOString()
+    await sql`
+      update public.mpesa_callback_events
+      set processed_at = ${processedAt}::timestamptz
+      where checkout_request_id = ${checkoutRequestId}
+    `
+  } catch (processedError) {
+    console.error('[ANAI] Could not mark M-Pesa callback as processed:', processedError)
+  }
 
   return { ...result, checkoutRequestId }
 }
 
 export const recordStoredMpesaCallback = async (checkoutRequestId: string) => {
-  const supabase = getSupabaseAdmin()
-  const { data, error } = await supabase
-    .from('mpesa_callback_events')
-    .select('payload, processed_at')
-    .eq('checkout_request_id', checkoutRequestId)
-    .is('processed_at', null)
-    .maybeSingle()
-
-  if (error) {
+  const sql = getDatabase()
+  let rows: Array<{ payload: unknown; processed_at: string | null }>
+  try {
+    rows = await sql`
+      select payload, processed_at::text as processed_at
+      from public.mpesa_callback_events
+      where checkout_request_id = ${checkoutRequestId} and processed_at is null
+      limit 1
+    ` as unknown as Array<{ payload: unknown; processed_at: string | null }>
+  } catch (error) {
     console.error('[ANAI] Could not check the M-Pesa callback inbox:', error)
     return false
   }
 
-  const payload = data?.payload
+  const payload = rows[0]?.payload
   const callback = getStoredCallback(payload)
   if (!callback) return false
   const result = await recordMpesaPayment(callback, payload)

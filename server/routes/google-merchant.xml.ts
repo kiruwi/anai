@@ -1,6 +1,6 @@
 import { createError, setResponseHeader } from 'h3'
 import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
-import { getSupabaseAdmin } from '../utils/supabaseAdmin'
+import { getDatabase } from '../utils/db'
 import { getCatalogProducts } from '../utils/catalog'
 import {
   buildGoogleMerchantFeed,
@@ -8,25 +8,22 @@ import {
   type MerchantVariant,
 } from '../utils/googleMerchantFeed'
 
-type ProductRecord = { slug: string }
-type VariantRecord = MerchantVariant & {
-  products: ProductRecord | ProductRecord[]
-}
-
-const getProductRecord = (variant: VariantRecord) =>
-  Array.isArray(variant.products) ? variant.products[0] : variant.products
+type VariantRecord = MerchantVariant & { product_slug: string }
 
 export default defineEventHandler(async (event) => {
   const { products } = await getCatalogProducts()
-  const supabase = getSupabaseAdmin()
-  const { data, error } = await supabase
-    .from('product_variants')
-    .select('id, sku, color, size, price_kes, stock_quantity, products!inner(slug)')
-    .eq('is_active', true)
-    .eq('products.is_active', true)
-    .order('sku', { ascending: true })
-
-  if (error) {
+  const sql = getDatabase()
+  let variants: VariantRecord[]
+  try {
+    variants = await sql`
+      select variants.id, variants.sku, variants.color, variants.size,
+        variants.price_kes, variants.stock_quantity, products.slug as product_slug
+      from public.product_variants as variants
+      join public.products as products on products.id = variants.product_id
+      where variants.is_active and products.is_active
+      order by variants.sku asc
+    ` as unknown as VariantRecord[]
+  } catch (error) {
     console.error('[ANAI] Google Merchant feed lookup failed:', error)
     throw createError({
       statusCode: 503,
@@ -35,10 +32,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const catalogBySlug = new Map(products.map((product) => [product.slug, product]))
-  const items = ((data || []) as VariantRecord[])
+  const items = variants
     .map((variant) => {
-      const productRecord = getProductRecord(variant)
-      const product = productRecord ? catalogBySlug.get(productRecord.slug) : undefined
+      const product = catalogBySlug.get(variant.product_slug)
 
       return product
         ? createGoogleMerchantItem({ product, variant, siteUrl: canonicalSiteUrl })

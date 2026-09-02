@@ -49,7 +49,7 @@ The application adds a private `token` query parameter to that URL automatically
 
    `NUXT_MPESA_SHORTCODE` must be the shortcode paired with the production passkey issued during Go Live. `NUXT_MPESA_TILL_NUMBER` is sent as the payment destination (`PartyB`). A PayBill deployment does not need `NUXT_MPESA_TILL_NUMBER`.
 
-5. Keep the Consumer Secret, passkey, Supabase secret key, and callback token private. Never use `NUXT_PUBLIC_` for any of them.
+5. Keep the Consumer Secret, passkey, Neon database URL, Brevo key, and callback token private. Never use `NUXT_PUBLIC_` for any of them.
 6. Redeploy, make one low-value real payment, and verify the callback/payment/order status before announcing the new payment method.
 
 The `ProductionCertificate.cer` and `SandboxCertificate.cer` files are not required for this STK Push checkout. They are used by other Daraja products such as B2C/B2B security-credential flows.

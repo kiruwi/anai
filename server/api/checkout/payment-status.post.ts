@@ -1,13 +1,21 @@
 import { createError, readBody } from 'h3'
 import { isMpesaCancellation } from '../../../shared/lib/mpesaStatus'
+import { getDatabase } from '../../utils/db'
+import { notifyPaidOrder } from '../../utils/email/notifyPaidOrder'
 import { enforceRequestRateLimit } from '../../utils/requestRateLimit'
-import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
 
 type PaymentStatusBody = { reference?: unknown; idempotencyKey?: unknown }
 
 type MpesaPaymentStatus = {
   mpesa_result_code: number | null
   mpesa_result_description: string | null
+}
+
+type OrderStatusRow = {
+  id: string
+  order_number: string
+  payment_status: string
+  checkout_expires_at: string | null
 }
 
 const referencePattern = /^ANAI-\d{10,}-[A-F0-9]{8}$/
@@ -22,22 +30,23 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'A valid checkout session is required.' })
   }
 
-  const supabase = getSupabaseAdmin()
-  let orderQuery = supabase
-    .from('orders')
-    .select('id, order_number, payment_status, checkout_expires_at')
-
-  orderQuery = referencePattern.test(reference)
-    ? orderQuery.eq('order_number', reference)
-    : orderQuery.eq('idempotency_key', idempotencyKey)
-
-  const { data: order, error } = await orderQuery
-    .maybeSingle()
-
-  if (error) {
+  const sql = getDatabase()
+  let orders: OrderStatusRow[]
+  try {
+    orders = referencePattern.test(reference)
+      ? await sql`
+          select id, order_number, payment_status, checkout_expires_at::text as checkout_expires_at
+          from public.orders where order_number = ${reference} limit 1
+        ` as unknown as OrderStatusRow[]
+      : await sql`
+          select id, order_number, payment_status, checkout_expires_at::text as checkout_expires_at
+          from public.orders where idempotency_key = ${idempotencyKey} limit 1
+        ` as unknown as OrderStatusRow[]
+  } catch (error) {
     console.error('[ANAI] Payment status lookup failed:', error)
     throw createError({ statusCode: 500, statusMessage: 'Payment status is temporarily unavailable.' })
   }
+  const order = orders[0]
   if (!order) throw createError({ statusCode: 404, statusMessage: 'Order was not found.' })
 
   const orderReference = order.order_number
@@ -47,29 +56,31 @@ export default defineEventHandler(async (event) => {
     order.checkout_expires_at &&
     new Date(order.checkout_expires_at).getTime() < Date.now()
   ) {
-    const { error: expiryError } = await supabase.rpc('fail_checkout_order', {
-      p_order_id: order.id,
-      p_reason: 'Payment request expired',
-    })
-    if (expiryError) console.error('[ANAI] Could not expire pending checkout:', expiryError)
-    else return { reference: orderReference, status: 'failed', paid: false }
+    try {
+      await sql`
+        select public.fail_checkout_order(${order.id}::uuid, ${'Payment request expired'}::text)
+      `
+      return { reference: orderReference, status: 'failed', paid: false }
+    } catch (expiryError) {
+      console.error('[ANAI] Could not expire pending checkout:', expiryError)
+    }
   }
 
-  const { data: payment, error: paymentError } = await supabase
-    .from('payments')
-    .select('mpesa_result_code, mpesa_result_description')
-    .eq('order_id', order.id)
-    .eq('provider', 'mpesa')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (paymentError) {
+  let payments: MpesaPaymentStatus[]
+  try {
+    payments = await sql`
+      select mpesa_result_code, mpesa_result_description
+      from public.payments
+      where order_id = ${order.id}::uuid and lower(provider) = 'mpesa'
+      order by created_at desc
+      limit 1
+    ` as unknown as MpesaPaymentStatus[]
+  } catch (paymentError) {
     console.error('[ANAI] M-Pesa payment status lookup failed:', paymentError)
     throw createError({ statusCode: 500, statusMessage: 'Payment status is temporarily unavailable.' })
   }
 
-  const mpesaPayment = payment as MpesaPaymentStatus | null
+  const mpesaPayment = payments[0] || null
   const wasCanceled = order.payment_status === 'failed' && isMpesaCancellation(
     mpesaPayment?.mpesa_result_code,
     mpesaPayment?.mpesa_result_description,
@@ -77,23 +88,20 @@ export default defineEventHandler(async (event) => {
   const status = wasCanceled ? 'cancelled' : order.payment_status
 
   if (status === 'paid') {
-    const { data: paidPayment } = await supabase
-      .from('payments')
-      .select('mpesa_checkout_request_id')
-      .eq('order_id', order.id)
-      .eq('provider', 'mpesa')
-      .eq('status', 'paid')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (paidPayment?.mpesa_checkout_request_id) {
-      const { error: notificationError } = await supabase.functions.invoke('notify-paid-order', {
-        body: { checkoutRequestId: paidPayment.mpesa_checkout_request_id },
-      })
-      if (notificationError) {
-        console.error('[ANAI] Paid-order email retry failed:', notificationError)
+    try {
+      const paidPayments = await sql`
+        select mpesa_checkout_request_id
+        from public.payments
+        where order_id = ${order.id}::uuid and lower(provider) = 'mpesa' and status = 'paid'
+        order by created_at desc
+        limit 1
+      ` as unknown as Array<{ mpesa_checkout_request_id: string | null }>
+      const paidPayment = paidPayments[0]
+      if (paidPayment?.mpesa_checkout_request_id) {
+        await notifyPaidOrder(paidPayment.mpesa_checkout_request_id)
       }
+    } catch (notificationError) {
+      console.error('[ANAI] Paid-order email retry failed:', notificationError)
     }
   }
 

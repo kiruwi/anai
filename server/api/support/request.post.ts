@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { createError, readBody } from 'h3'
 import { enforceRequestRateLimit } from '../../utils/requestRateLimit'
-import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
+import { getDatabase } from '../../utils/db'
+import { notifySupportRequest } from '../../utils/email/notifySupportRequest'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const allowedCategories = new Set(['order', 'payment', 'delivery', 'return', 'product', 'general'])
@@ -31,30 +32,28 @@ export default defineEventHandler(async (event) => {
   }
 
   const requestNumber = `SUP-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`
-  const supabase = getSupabaseAdmin()
-  const { data: supportRequest, error } = await supabase
-    .from('support_requests')
-    .insert({
-      request_number: requestNumber,
-      full_name: fullName,
-      email,
-      phone: phone || null,
-      category,
-      order_reference: orderReference || null,
-      message,
-    })
-    .select('id')
-    .single()
-
-  if (error) {
+  const sql = getDatabase()
+  let supportRequest: { id: string }
+  try {
+    const rows = await sql`
+      insert into public.support_requests (
+        request_number, full_name, email, phone, category, order_reference, message
+      ) values (
+        ${requestNumber}, ${fullName}, ${email}, ${phone || null}, ${category},
+        ${orderReference || null}, ${message}
+      )
+      returning id
+    ` as unknown as Array<{ id: string }>
+    supportRequest = rows[0] as { id: string }
+    if (!supportRequest) throw new Error('Support request insert returned no row')
+  } catch (error) {
     console.error('[ANAI] Support request failed:', error)
     throw createError({ statusCode: 500, statusMessage: 'Support requests are temporarily unavailable.' })
   }
 
-  const { error: notificationError } = await supabase.functions.invoke('notify-support-request', {
-    body: { requestId: supportRequest.id },
-  })
-  if (notificationError) {
+  try {
+    await notifySupportRequest(supportRequest.id)
+  } catch (notificationError) {
     console.error('[ANAI] Support request was saved but its email notification failed:', notificationError)
   }
 
