@@ -41,11 +41,9 @@ jobs:
           NITRO_PRESET: aws_amplify
 
   database:
-    name: Database migrations and pgTAP tests
+    name: Neon database integrity checks
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      SUPABASE_TELEMETRY_DISABLED: '1'
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -60,15 +58,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Start local Supabase
-        run: npx supabase start
-
-      - name: Rebuild database from migrations
-        run: npx supabase db reset --local
-
-      - name: Run database tests
+      - name: Verify disposable Neon test branch
         run: npm run test:db
-
-      - name: Stop local Supabase
-        if: always()
-        run: npx supabase stop --no-backup
+        env:
+          NEON_TEST_DATABASE_URL: ${{ secrets.NEON_TEST_DATABASE_URL }}
+          NEON_TEST_ENDPOINT: ${{ vars.NEON_TEST_ENDPOINT }}

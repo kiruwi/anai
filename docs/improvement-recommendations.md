@@ -79,16 +79,16 @@ Create a testing pyramid:
 
 ### Finding
 
-`.github/workflows/ci.yml` runs type checking and a production build, but does not run `npm test`, `npm run check`, Supabase migrations, or the pgTAP test. Consequently, the repository's existing 49 tests can fail without blocking a pull request.
+Resolved on 2 September 2026. `.github/workflows/ci.yml` now runs `npm run check`, builds with the Amplify preset, and has a separate Neon integrity job locked to the disposable test endpoint.
 
 ### Recommendation
 
-Update CI to:
+Keep CI configured to:
 
 1. Run `npm ci` on the Node version used by production.
 2. Run lint/format checks once introduced.
 3. Run `npm run check` rather than type checking alone.
-4. Start local Supabase, reset from migrations, and run database tests.
+4. Run database integrity tests only against the approved disposable Neon branch.
 5. Run a production build with the same Nitro preset as Amplify.
 6. Add dependency caching only where it does not bypass the lockfile.
 7. Protect `main` so these checks are required.
@@ -97,8 +97,8 @@ Also investigate the current npm warning for the unsupported `min-release-age` n
 
 ### Completion criteria
 
-- Every test in `tests/` and `supabase/tests/` runs on pull requests.
-- A migration failure from an empty database blocks merging.
+- Every test in `tests/` runs on pull requests.
+- Missing Neon CI credentials or an integrity mismatch blocks merging.
 - The CI build uses the Amplify preset and a clean output directory.
 
 ## P0 — Replace process-local rate limiting

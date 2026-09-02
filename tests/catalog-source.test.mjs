@@ -103,7 +103,7 @@ test('all catalogue consumers use the shared database-backed path', async () => 
   assert.match(app, /\/api\/catalog\/products/)
   assert.match(sitemap, /await getCatalogProducts\(\)/)
   assert.match(merchantFeed, /await getCatalogProducts\(\)/)
-  assert.match(catalogue, /\.not\('public_slug', 'is', null\)/)
+  assert.match(catalogue, /products\.public_slug is not null/)
   assert.match(catalogue, /fallbackProducts[\s\S]*protected public URL/)
 })
 

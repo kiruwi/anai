@@ -1,6 +1,6 @@
 import { createError, readBody } from 'h3'
 import { enforceRequestRateLimit } from '../../utils/requestRateLimit'
-import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
+import { getDatabase } from '../../utils/db'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -13,13 +13,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Enter a valid email address.' })
   }
 
-  const supabase = getSupabaseAdmin()
-  const { error } = await supabase.from('newsletter_subscribers').upsert(
-    { email, status: 'active', subscribed_at: new Date().toISOString() },
-    { onConflict: 'email' },
-  )
-
-  if (error) {
+  const sql = getDatabase()
+  try {
+    const subscribedAt = new Date().toISOString()
+    await sql`
+      insert into public.newsletter_subscribers (email, status, subscribed_at)
+      values (${email}, 'active', ${subscribedAt}::timestamptz)
+      on conflict (email) do update
+      set status = excluded.status, subscribed_at = excluded.subscribed_at
+    `
+  } catch (error) {
     console.error('[ANAI] Newsletter signup failed:', error)
     throw createError({ statusCode: 500, statusMessage: 'Signup is temporarily unavailable.' })
   }

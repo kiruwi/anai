@@ -47,7 +47,7 @@ test('checkout recovers a dropped creation response by its idempotency key', asy
 
   assert.match(checkoutPage, /recoverPaymentStatus\(idempotencyKey\.value\)/)
   assert.match(checkoutPage, /createCheckoutNotice\('cancelled'\)/)
-  assert.match(paymentStatusApi, /\.eq\('idempotency_key', idempotencyKey\)/)
+  assert.match(paymentStatusApi, /where idempotency_key = \$\{idempotencyKey\}/)
   assert.match(paymentStatusApi, /status = wasCanceled \? 'cancelled'/)
 })
 
@@ -63,17 +63,17 @@ test('success page verifies payment status instead of trusting the URL', async (
   assert.match(successPage, /This page is not proof of payment/)
 })
 
-test('storefront stock is read from active Supabase variants', async () => {
+test('storefront stock is read from active Neon variants', async () => {
   const inventoryApi = await readProjectFile('server/api/catalog/inventory.get.ts')
   const inventoryComposable = await readProjectFile('app/composables/useInventory.ts')
 
-  assert.match(inventoryApi, /from\('product_variants'\)/)
+  assert.match(inventoryApi, /from public\.product_variants as variants/)
   assert.match(inventoryApi, /stock_quantity/)
-  assert.match(inventoryApi, /products!inner\(slug\)/)
+  assert.match(inventoryApi, /join public\.products as products on products\.id = variants\.product_id/)
   assert.match(inventoryComposable, /resolveInventoryStock/)
 })
 
-test('loaded inventory fails closed for products and colours omitted by Supabase', () => {
+test('loaded inventory fails closed for products and colours omitted by Neon', () => {
   const inventory = {
     updatedAt: '2026-07-16T12:00:00.000Z',
     products: {
