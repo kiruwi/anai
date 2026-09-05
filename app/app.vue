@@ -54,7 +54,7 @@ const { data: liveInventory, error: liveInventoryError } = await useFetch<Invent
 })
 
 watch(liveCatalogue, (catalogue) => {
-  if (catalogue?.products.length) {
+  if (catalogue) {
     catalogProducts.value = catalogue.products
   }
 }, { immediate: true })

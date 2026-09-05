@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
-import { mapCatalogProductRecord } from '../server/utils/catalog.ts'
+import { mapCatalogProductRecord, mapCatalogProductRecords } from '../server/utils/catalog.ts'
+import { fallbackProducts, getProductUrlSlug } from '../app/data/homeContent.ts'
+
+test('retiring products, including the last one, does not invalidate the active catalogue', () => {
+  const records = fallbackProducts.map((product, index) => ({
+    id: String(index), name: product.name, slug: product.slug, public_slug: getProductUrlSlug(product),
+    category: { name: product.category }, display_order: index,
+    variants: [{ id: String(index), sku: String(index), color: 'Black', size: 'M', price_kes: 1500, stock_quantity: 1, is_active: true }],
+  }))
+  assert.equal(mapCatalogProductRecords(records).length, records.length)
+  records.shift()
+  records[0].variants[0].price_kes = 1700
+  assert.equal(mapCatalogProductRecords(records)[0].priceKes, 1700)
+  assert.deepEqual(mapCatalogProductRecords([]), [])
+  records[0].public_slug = 'changed-indexed-url'
+  assert.throws(() => mapCatalogProductRecords(records), /protected public URL/)
+})
 
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 

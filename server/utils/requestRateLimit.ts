@@ -1,34 +1,32 @@
 import { createHash } from 'node:crypto'
-import { createError, getRequestIP, setResponseHeader, type H3Event } from 'h3'
+import { isIP } from 'node:net'
+import { createError, getRequestHeader, getRequestIP, setResponseHeader, type H3Event } from 'h3'
+import { getDatabase } from './db.ts'
 
-type RateEntry = { count: number; resetAt: number }
+/** Trust only a header overwritten by the configured ingress, never an arbitrary forwarded chain. */
+export const getRateLimitIdentity = (event: H3Event) => {
+  const header = String(useRuntimeConfig().trustedClientIpHeader || '').toLowerCase()
+  const candidate = header ? getRequestHeader(event, header)?.trim() : getRequestIP(event)
+  return candidate && isIP(candidate) ? candidate : 'unknown'
+}
 
-const rateLimitStore = new Map<string, RateEntry>()
-
-export const enforceRequestRateLimit = (
+export const enforceRequestRateLimit = async (
   event: H3Event,
   scope: string,
   { max, windowMs }: { max: number; windowMs: number },
 ) => {
-  const now = Date.now()
-  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
-  const fingerprint = createHash('sha256').update(`${scope}|${ip}`).digest('hex')
-  const entry = rateLimitStore.get(fingerprint)
-
-  if (!entry || entry.resetAt <= now) {
-    rateLimitStore.set(fingerprint, { count: 1, resetAt: now + windowMs })
-  } else {
-    entry.count += 1
-    if (entry.count > max) {
-      const retryAfterSeconds = Math.max(1, Math.ceil((entry.resetAt - now) / 1000))
-      setResponseHeader(event, 'retry-after', retryAfterSeconds)
-      throw createError({ statusCode: 429, statusMessage: 'Too many requests. Please wait and try again.' })
-    }
+  const fingerprint = createHash('sha256').update(`${scope}|${getRateLimitIdentity(event)}`).digest('hex')
+  let rows: Array<{ allowed: boolean; retry_after: number }>
+  try {
+    rows = await getDatabase()`
+      select * from public.consume_request_limit(${fingerprint}::text, ${max}::integer, ${windowMs}::integer)
+    ` as unknown as typeof rows
+  } catch (error) {
+    console.error('[ANAI] Request limit storage is unavailable:', error)
+    throw createError({ statusCode: 503, statusMessage: 'Service temporarily unavailable. Please try again shortly.' })
   }
-
-  if (rateLimitStore.size > 1_000) {
-    for (const [key, value] of rateLimitStore) {
-      if (value.resetAt <= now) rateLimitStore.delete(key)
-    }
+  if (!rows[0]?.allowed) {
+    setResponseHeader(event, 'retry-after', rows[0]?.retry_after || 60)
+    throw createError({ statusCode: 429, statusMessage: 'Too many requests. Please wait and try again.' })
   }
 }

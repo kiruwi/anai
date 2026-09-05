@@ -22,7 +22,7 @@ const referencePattern = /^ANAI-\d{10,}-[A-F0-9]{8}$/
 const idempotencyPattern = /^[A-Za-z0-9_-]{16,100}$/
 
 export default defineEventHandler(async (event) => {
-  enforceRequestRateLimit(event, 'payment-status', { max: 60, windowMs: 10 * 60_000 })
+  await enforceRequestRateLimit(event, 'payment-status', { max: 120, windowMs: 10 * 60_000 })
   const body = (await readBody(event)) as PaymentStatusBody
   const reference = typeof body.reference === 'string' ? body.reference.trim() : ''
   const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim() : ''
@@ -58,9 +58,10 @@ export default defineEventHandler(async (event) => {
   ) {
     try {
       await sql`
-        select public.fail_checkout_order(${order.id}::uuid, ${'Payment request expired'}::text)
+        select public.expire_checkout_reservations(${order.id}::uuid)
       `
-      return { reference: orderReference, status: 'failed', paid: false }
+      // Expiry releases stock; it cannot prove that payment failed.
+      return { reference: orderReference, status: 'pending', paid: false }
     } catch (expiryError) {
       console.error('[ANAI] Could not expire pending checkout:', expiryError)
     }

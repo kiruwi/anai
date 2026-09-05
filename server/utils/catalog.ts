@@ -160,14 +160,14 @@ export const mapCatalogProductRecords = (records: CatalogProductRecord[]) => {
     .map(mapCatalogProductRecord)
     .filter((product): product is HomepageProduct => Boolean(product))
 
-  if (!products.length || products.length !== records.length) {
+  if (products.length !== records.length) {
     throw new Error('The database catalogue contains an incomplete active product record.')
   }
 
   const productsByInternalSlug = new Map(products.map((product) => [product.slug, product]))
   for (const fallbackProduct of fallbackProducts) {
     const databaseProduct = productsByInternalSlug.get(fallbackProduct.slug)
-    if (!databaseProduct || getProductUrlSlug(databaseProduct) !== getProductUrlSlug(fallbackProduct)) {
+    if (databaseProduct && getProductUrlSlug(databaseProduct) !== getProductUrlSlug(fallbackProduct)) {
       throw new Error(`The database catalogue changed the protected public URL for ${fallbackProduct.slug}.`)
     }
   }

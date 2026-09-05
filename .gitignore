@@ -14,3 +14,4 @@ npm-debug.log*
 desktop.ini
 public/images/products-original-backup/
 .neon
+.idea/

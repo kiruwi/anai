@@ -1,4 +1,5 @@
 import { createError } from 'h3'
+import { PaymentInitiationRejected } from './paymentInitiation.ts'
 
 type MpesaRuntimeConfig = {
   environment: 'sandbox' | 'production'
@@ -101,9 +102,10 @@ const getConfig = (): MpesaRuntimeConfig => {
 const getBaseUrl = (environment: MpesaRuntimeConfig['environment']) =>
   environment === 'production' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke'
 
-const getCallbackUrl = (config: MpesaRuntimeConfig) => {
+const getCallbackUrl = (config: MpesaRuntimeConfig, orderId: string) => {
   const callbackUrl = new URL(config.callbackUrl)
   callbackUrl.searchParams.set('token', config.callbackToken)
+  callbackUrl.searchParams.set('orderId', orderId)
   return callbackUrl.toString()
 }
 
@@ -160,18 +162,27 @@ export const initiateMpesaStkPush = async ({
   amountKes,
   phoneNumber,
   accountReference,
+  orderId,
 }: {
   amountKes: number
   phoneNumber: string
   accountReference: string
+  orderId: string
 }) => {
-  const config = getConfig()
+  let config: MpesaRuntimeConfig
+  let token: string
+  try {
+    config = getConfig()
+    token = await getAccessToken(config)
+  } catch (error) {
+    throw new PaymentInitiationRejected((error as Error).message)
+  }
   const timestamp = getTimestamp()
   const password = Buffer.from(`${config.shortcode}${config.passkey}${timestamp}`).toString('base64')
   const response = await fetch(`${getBaseUrl(config.environment)}/mpesa/stkpush/v1/processrequest`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${await getAccessToken(config)}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -183,13 +194,17 @@ export const initiateMpesaStkPush = async ({
       PartyA: phoneNumber,
       PartyB: config.transactionType === 'CustomerBuyGoodsOnline' ? config.tillNumber : config.shortcode,
       PhoneNumber: phoneNumber,
-      CallBackURL: getCallbackUrl(config),
+      CallBackURL: getCallbackUrl(config, orderId),
       AccountReference: accountReference,
       TransactionDesc: config.transactionDescription.slice(0, 13),
     }),
     signal: AbortSignal.timeout(20_000),
   })
   const payload = (await response.json()) as MpesaStkResponse
+
+  if (response.ok && typeof payload.ResponseCode === 'string' && payload.ResponseCode !== '0' && !payload.CheckoutRequestID) {
+    throw new PaymentInitiationRejected(payload.ResponseDescription || 'M-Pesa rejected the request')
+  }
 
   if (!response.ok || payload.ResponseCode !== '0' || !payload.CheckoutRequestID) {
     throw createError({

@@ -47,24 +47,33 @@ export const notifySupportRequest = async (
   }
 
   const sql = getDatabase()
-  const rows = await sql`
-    select id, request_number, full_name, email, phone, category,
-      order_reference, message, created_at::text as created_at
-    from public.support_requests
-    where id = ${normalizedRequestId}::uuid
-    limit 1
-  ` as unknown as SupportRequest[]
-  const supportRequest = rows[0]
-  if (!supportRequest) throw new Error('Support request was not found')
+  const claims = await sql`select public.claim_support_email(${normalizedRequestId}::uuid) as token` as unknown as Array<{ token: string | null }>
+  const claimToken = claims[0]?.token
+  if (!claimToken) return { sent: false, processing: true }
+  try {
+    const rows = await sql`
+      select id, request_number, full_name, email, phone, category,
+        order_reference, message, created_at::text as created_at
+      from public.support_requests
+      where id = ${normalizedRequestId}::uuid
+      limit 1
+    ` as unknown as SupportRequest[]
+    const supportRequest = rows[0]
+    if (!supportRequest) throw new Error('Support request was not found')
 
-  const { response, result } = await sendBrevoEmail({
-    apiKey: brevoApiKey,
-    payload: createSupportEmailPayload(supportRequest, senderEmail, notificationEmail),
-    fetchImpl,
-  })
-  if (!response.ok || !result.messageId) {
-    throw new Error(result.message || `Brevo returned ${response.status}`)
+    const { response, result } = await sendBrevoEmail({
+      apiKey: brevoApiKey,
+      payload: createSupportEmailPayload(supportRequest, senderEmail, notificationEmail),
+      fetchImpl,
+    })
+    if ((!response.ok || !result.messageId) && result.code !== 'duplicate_parameter') {
+      throw new Error(result.message || `Brevo returned ${response.status}`)
+    }
+
+    await sql`select public.finish_support_email(${normalizedRequestId}::uuid, ${claimToken}::uuid, ${null}::text)`
+    return { sent: true, messageId: result.messageId }
+  } catch (error) {
+    await sql`select public.finish_support_email(${normalizedRequestId}::uuid, ${claimToken}::uuid, ${(error as Error).message}::text)`
+    throw error
   }
-
-  return { sent: true, messageId: result.messageId }
 }

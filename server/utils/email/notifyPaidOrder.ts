@@ -104,7 +104,8 @@ export const notifyPaidOrder = async (
     if (claim.status === 'sent') return { sent: true, alreadySent: true }
 
     const claimIsStale = Date.now() - new Date(claim.claimed_at).getTime() >= staleClaimMilliseconds
-    if (claim.status === 'processing' && !claimIsStale) {
+    if (claim.attempts >= 10) return { sent: false, exhausted: true }
+    if (!claimIsStale) {
       return { sent: false, processing: true }
     }
 
@@ -129,6 +130,7 @@ export const notifyPaidOrder = async (
       update public.order_email_notifications
       set status = 'failed', last_error = ${message.slice(0, 1_000)}, updated_at = ${failedAt}::timestamptz
       where order_id = ${payment.order_id}::uuid
+        and claimed_at = ${now}::timestamptz and status = 'processing'
     `
   }
 
@@ -213,6 +215,7 @@ export const notifyPaidOrder = async (
           ),
           last_error = null, updated_at = ${sentAt}::timestamptz
       where order_id = ${paidOrder.id}::uuid
+        and claimed_at = ${now}::timestamptz and status = 'processing'
     `
   } catch (statusError) {
     console.error('[ANAI] Paid-order email was sent but its delivery status could not be recorded:', statusError)

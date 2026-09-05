@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { createError, getRequestIP, readBody } from 'h3'
+import { createError, readBody } from 'h3'
 import { getDatabase } from '../../utils/db'
 import { initiateMpesaStkPush, normalizeKenyanPhone } from '../../utils/mpesa'
+import { preparePayment } from '../../utils/paymentInitiation'
+import { enforceRequestRateLimit, getRateLimitIdentity } from '../../utils/requestRateLimit'
 import { recordStoredMpesaCallback } from '../../utils/recordMpesaPayment'
 
 type CheckoutItemInput = {
@@ -109,6 +111,7 @@ const getRpcError = (message = '') => {
 const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds))
 
 export default defineEventHandler(async (event) => {
+  await enforceRequestRateLimit(event, 'checkout', { max: 10, windowMs: 10 * 60_000 })
   const body = (await readBody(event)) as CheckoutRequestBody
   const customer = body.customer || {}
   const items = normalizeItems(body.items)
@@ -192,9 +195,9 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  const requestIp = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+  const requestIp = getRateLimitIdentity(event)
   const fingerprintHash = createHash('sha256')
-    .update(`${requestIp}|${event.node.req.headers['user-agent'] || 'unknown'}`)
+    .update(requestIp)
     .digest('hex')
   const reference = createReference()
 
@@ -236,62 +239,52 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  try {
-    const initiation = await initiateMpesaStkPush({
+  const initiation = await preparePayment({
+    initiate: () => initiateMpesaStkPush({
       amountKes: order.total_kes,
       phoneNumber: phone,
-      accountReference: `ANAI${order.order_number.replace(/[^A-Za-z0-9]/g, '').slice(-8)}`,
-    })
-
-    let initiationUpdateError: unknown
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      try {
-        const updatedRows = await sql`
-          select public.set_mpesa_checkout_request(
-            ${order.order_id}::uuid,
-            ${initiation.checkoutRequestId}::text,
-            ${initiation.merchantRequestId}::text,
-            ${JSON.stringify(initiation.raw)}::jsonb
-          ) as updated
-        ` as unknown as Array<{ updated: boolean }>
-        initiationUpdateError = undefined
-        if (updatedRows[0]?.updated) break
-        initiationUpdateError = new Error('M-Pesa checkout request was not updated')
-      } catch (error) {
-        initiationUpdateError = error
-      }
-      await wait(200 * (attempt + 1))
-    }
-
-    if (initiationUpdateError) {
-      console.error('[ANAI] M-Pesa started but its request ID could not be persisted:', initiationUpdateError)
-      throw createError({ statusCode: 503, statusMessage: 'Payment started but confirmation is delayed. Do not retry yet; contact support.' })
-    }
-
-    await recordStoredMpesaCallback(initiation.checkoutRequestId)
-
-    return {
       orderId: order.order_id,
-      reference: order.order_number,
-      amountKes: order.total_kes,
-      currency: 'KES' as const,
-      checkoutRequestId: initiation.checkoutRequestId,
-      customerMessage: initiation.customerMessage,
-    }
-  } catch (error) {
-    const statusCode = (error as { statusCode?: number }).statusCode
-    if (statusCode !== 503) {
-      try {
-        await sql`
-          select public.fail_checkout_order(
-            ${order.order_id}::uuid,
-            ${(error as Error)?.message || 'M-Pesa initiation failed'}::text
-          )
-        `
-      } catch (failError) {
-        console.error('[ANAI] Could not release a failed checkout reservation:', failError)
+      accountReference: `ANAI${order.order_number.replace(/[^A-Za-z0-9]/g, '').slice(-8)}`,
+    }),
+    persist: async (initiation) => {
+      let initiationUpdateError: unknown
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+          const updatedRows = await sql`
+            select public.set_mpesa_checkout_request(
+              ${order.order_id}::uuid,
+              ${initiation.checkoutRequestId}::text,
+              ${initiation.merchantRequestId}::text,
+              ${JSON.stringify(initiation.raw)}::jsonb
+            ) as updated
+          ` as unknown as Array<{ updated: boolean }>
+          initiationUpdateError = undefined
+          if (updatedRows[0]?.updated) break
+          initiationUpdateError = new Error('M-Pesa checkout request was not updated')
+        } catch (error) {
+          initiationUpdateError = error
+        }
+        await wait(200 * (attempt + 1))
       }
-    }
-    throw error
+
+      if (initiationUpdateError) {
+        console.error('[ANAI] M-Pesa started but its request ID could not be persisted:', initiationUpdateError)
+        throw createError({ statusCode: 503, statusMessage: 'Payment started but confirmation is delayed. Do not retry yet; contact support.' })
+      }
+
+    },
+    replay: (payment) => recordStoredMpesaCallback(payment.checkoutRequestId),
+    fail: (reason) => sql`
+      select public.fail_checkout_order(${order.order_id}::uuid, ${reason}::text)
+    `,
+  })
+
+  return {
+    orderId: order.order_id,
+    reference: order.order_number,
+    amountKes: order.total_kes,
+    currency: 'KES' as const,
+    checkoutRequestId: initiation.checkoutRequestId,
+    customerMessage: initiation.customerMessage,
   }
 })

@@ -17,5 +17,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid M-Pesa callback payload.' })
   }
 
-  return recordMpesaPayment(callback, payload)
+  const orderId = getQuery(event).orderId
+  if (orderId !== undefined && (typeof orderId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId))) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid order ID.' })
+  }
+  return recordMpesaPayment(callback, payload, typeof orderId === 'string' ? orderId : null)
 })
