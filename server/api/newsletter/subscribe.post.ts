@@ -5,7 +5,7 @@ import { getDatabase } from '../../utils/db'
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default defineEventHandler(async (event) => {
-  enforceRequestRateLimit(event, 'newsletter', { max: 5, windowMs: 10 * 60_000 })
+  await enforceRequestRateLimit(event, 'newsletter', { max: 5, windowMs: 10 * 60_000 })
   const body = (await readBody(event)) as { email?: unknown }
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
 

@@ -54,7 +54,7 @@ begin
     trigger_count, function_count, invalid_foreign_key_count;
 
   if (table_count, column_count, constraint_count, index_count, trigger_count, function_count, invalid_foreign_key_count)
-    <> (14, 141, 55, 42, 9, 6, 0) then
+    <> (14, 149, 56, 44, 9, 6, 0) then
     raise exception 'Database integrity mismatch: tables %, columns %, constraints %, indexes %, triggers %, functions %, invalid FKs %',
       table_count, column_count, constraint_count, index_count, trigger_count, function_count,
       invalid_foreign_key_count;
@@ -77,9 +77,8 @@ begin
     (select count(*) from public.order_email_notifications)
   into total_rows;
 
-  if total_rows <> 161 then
-    raise exception 'Application row count mismatch: expected 161, got %', total_rows;
-  end if;
+  -- Row counts change during normal checkout and recovery operations.
+  raise notice 'Application row count: %', total_rows;
 
   select count(*) into vault_dependency_count
   from pg_proc as functions
@@ -102,7 +101,8 @@ begin
     )
     and (
       not functions.prosecdef
-      or not coalesce('search_path=public, pg_temp' = any(functions.proconfig), false)
+      or not (coalesce('search_path=public, pg_temp' = any(functions.proconfig), false)
+        or coalesce('search_path=""' = any(functions.proconfig), false))
     );
 
   if unsafe_definer_count <> 0 then
@@ -123,7 +123,7 @@ begin
     raise exception 'The database owner cannot execute % required functions', missing_owner_execute_count;
   end if;
 
-  raise notice 'Integrity verified: 14 tables, 161 rows, 141 columns, 55 constraints, 42 indexes, 6 functions, 9 triggers';
+  raise notice 'Integrity verified: 14 tables, 149 columns, 56 constraints, 44 indexes, 6 functions, 9 triggers';
 end
 $$;
 

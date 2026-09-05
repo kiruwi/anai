@@ -25,7 +25,9 @@ begin
   where schemas.nspname = 'public'
     and functions.proname in (
       'create_checkout_order', 'set_mpesa_checkout_request', 'finalize_mpesa_payment',
-      'fail_checkout_order', 'release_checkout_inventory', 'set_updated_at', 'show_db_tree'
+      'fail_checkout_order', 'release_checkout_inventory', 'set_updated_at', 'show_db_tree',
+      'consume_request_limit', 'expire_checkout_reservations', 'claim_support_email',
+      'finish_support_email', 'claim_recovery_job', 'finish_recovery_job'
     )
     and privileges.grantee = 0
     and privileges.privilege_type = 'EXECUTE';
@@ -40,7 +42,13 @@ begin
     'public.set_mpesa_checkout_request(uuid,text,text,jsonb)'::regprocedure,
     'public.finalize_mpesa_payment(text,integer,text,numeric,text,text,text,text,jsonb)'::regprocedure,
     'public.fail_checkout_order(uuid,text)'::regprocedure,
-    'public.release_checkout_inventory(uuid)'::regprocedure
+    'public.release_checkout_inventory(uuid)'::regprocedure,
+    'public.consume_request_limit(text,integer,integer)'::regprocedure,
+    'public.expire_checkout_reservations(uuid)'::regprocedure,
+    'public.claim_support_email(uuid)'::regprocedure,
+    'public.finish_support_email(uuid,uuid,text)'::regprocedure,
+    'public.claim_recovery_job()'::regprocedure,
+    'public.finish_recovery_job(uuid)'::regprocedure
   ]) as required(function_oid)
   where not has_function_privilege('anai_app', required.function_oid, 'EXECUTE');
 
@@ -50,7 +58,7 @@ begin
 
   if has_function_privilege('anai_app', 'public.set_updated_at()', 'EXECUTE')
     or has_function_privilege('anai_app', 'public.show_db_tree()', 'EXECUTE') then
-    raise exception 'anai_app can execute a function outside its required five-function set';
+    raise exception 'anai_app can execute a function outside its required function set';
   end if;
 end
 $$;

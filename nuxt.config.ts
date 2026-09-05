@@ -229,6 +229,8 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    recoveryToken: process.env.NUXT_RECOVERY_TOKEN || '',
+    trustedClientIpHeader: process.env.NUXT_TRUSTED_CLIENT_IP_HEADER || '',
     databaseUrl,
     brevoApiKey,
     brevoSenderEmail,

@@ -1,3 +1,4 @@
+import { useCheckoutSession } from './useCheckoutSession'
 import {
   getProductColourName,
   getProductColourStockLimit,
@@ -164,6 +165,7 @@ const getStoredCart = (
 }
 
 export const useCart = () => {
+  const { hasPendingCheckout, hydrateCheckoutSession } = useCheckoutSession()
   const products = useCatalogProducts()
   const items = useState<CartItem[]>('anai-cart-items', () => [])
   const isLoaded = useState('anai-cart-loaded', () => false)
@@ -199,7 +201,10 @@ export const useCart = () => {
       return
     }
 
-    const storedCart = getStoredCart(products.value, getLiveStockLimit)
+    hydrateCheckoutSession()
+    // Available inventory excludes this customer's reservation while payment is pending.
+    const storedCart = getStoredCart(products.value, (product, colour) =>
+      hasPendingCheckout.value ? 99 : getLiveStockLimit(product, colour))
     items.value = storedCart.items
     isLoaded.value = true
 
@@ -426,6 +431,7 @@ export const useCart = () => {
 
   const reconcileCartStock = () => {
     if (!import.meta.client || !isLoaded.value) return
+    if (hasPendingCheckout.value) return
 
     let removedItems = false
     const adjustments: Array<{ product: HomepageProduct; quantity: number }> = []
@@ -477,11 +483,11 @@ export const useCart = () => {
 
         const colour = normalizeColour(product, item.colour)
 
-        if (!colour || getLiveStockLimit(product, colour) < 1) {
+        if (!colour || (!hasPendingCheckout.value && getLiveStockLimit(product, colour) < 1)) {
           return undefined
         }
 
-        const quantity = clampLiveQuantity(product, item.quantity, colour)
+        const quantity = hasPendingCheckout.value ? item.quantity : clampLiveQuantity(product, item.quantity, colour)
 
         return {
           ...item,

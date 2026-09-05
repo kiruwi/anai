@@ -32,7 +32,7 @@ const getStoredCallback = (payload: unknown): MpesaStkCallback | undefined => {
   return callback && typeof callback === 'object' ? (callback as MpesaStkCallback) : undefined
 }
 
-export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload: unknown) => {
+export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload: unknown, orderId: string | null = null) => {
   const checkoutRequestId = getStringValue(callback.CheckoutRequestID)
   if (!checkoutRequestId) {
     throw createError({ statusCode: 400, statusMessage: 'M-Pesa callback has no checkout request ID.' })
@@ -41,9 +41,12 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
   const sql = getDatabase()
   try {
     await sql`
-      insert into public.mpesa_callback_events (checkout_request_id, payload)
-      values (${checkoutRequestId}, ${JSON.stringify(rawPayload)}::jsonb)
-      on conflict (checkout_request_id) do update set payload = excluded.payload
+      insert into public.mpesa_callback_events (checkout_request_id, payload, order_id)
+      values (${checkoutRequestId}, ${JSON.stringify(rawPayload)}::jsonb, ${orderId}::uuid)
+      on conflict (checkout_request_id) do update
+      set payload = excluded.payload,
+          order_id = coalesce(public.mpesa_callback_events.order_id, excluded.order_id),
+          processed_at = null
     `
   } catch (inboxError) {
     console.error('[ANAI] Could not persist M-Pesa callback inbox event:', inboxError)
@@ -57,6 +60,14 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
 
   let results: FinalizeResult[]
   try {
+    if (orderId) {
+      await sql`
+        select public.set_mpesa_checkout_request(
+          ${orderId}::uuid, ${checkoutRequestId}::text,
+          ${getStringValue(callback.MerchantRequestID)}::text, ${'{}'}::jsonb
+        )
+      `
+    }
     results = await sql`
       select * from public.finalize_mpesa_payment(
         ${checkoutRequestId}::text,
@@ -92,6 +103,7 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
       update public.mpesa_callback_events
       set processed_at = ${processedAt}::timestamptz
       where checkout_request_id = ${checkoutRequestId}
+        and payload = ${JSON.stringify(rawPayload)}::jsonb
     `
   } catch (processedError) {
     console.error('[ANAI] Could not mark M-Pesa callback as processed:', processedError)
@@ -102,14 +114,14 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
 
 export const recordStoredMpesaCallback = async (checkoutRequestId: string) => {
   const sql = getDatabase()
-  let rows: Array<{ payload: unknown; processed_at: string | null }>
+  let rows: Array<{ payload: unknown; processed_at: string | null; order_id: string | null }>
   try {
     rows = await sql`
-      select payload, processed_at::text as processed_at
+      select payload, processed_at::text as processed_at, order_id
       from public.mpesa_callback_events
       where checkout_request_id = ${checkoutRequestId} and processed_at is null
       limit 1
-    ` as unknown as Array<{ payload: unknown; processed_at: string | null }>
+    ` as unknown as Array<{ payload: unknown; processed_at: string | null; order_id: string | null }>
   } catch (error) {
     console.error('[ANAI] Could not check the M-Pesa callback inbox:', error)
     return false
@@ -118,6 +130,6 @@ export const recordStoredMpesaCallback = async (checkoutRequestId: string) => {
   const payload = rows[0]?.payload
   const callback = getStoredCallback(payload)
   if (!callback) return false
-  const result = await recordMpesaPayment(callback, payload)
+  const result = await recordMpesaPayment(callback, payload, rows[0]?.order_id)
   return result.recorded
 }

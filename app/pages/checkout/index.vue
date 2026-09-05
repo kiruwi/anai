@@ -8,6 +8,16 @@
       <p>Loading your bag…</p>
     </div>
 
+    <div v-else-if="hasPendingCheckout && !canResumeCheckout" class="checkout-page__pending" aria-live="polite">
+      <AppNotification v-if="paymentNotice" :notification="paymentNotice" inline />
+      <p v-if="pendingReference">Order {{ pendingReference }}</p>
+      <p>Your payment is being checked. Please do not submit another payment request.</p>
+      <button class="checkout-form__submit" type="button" :disabled="isPaymentLoading" @click="checkPendingPayment">
+        {{ isPaymentLoading ? 'Checking payment…' : 'Check payment status' }}
+      </button>
+      <NuxtLink to="/contact">Contact support</NuxtLink>
+    </div>
+
     <div v-else-if="lines.length" class="checkout-page__layout">
       <form class="checkout-form" @submit.prevent="startPayment">
         <fieldset>
@@ -145,6 +155,7 @@
 
 <script setup lang="ts">
 import AppNotification from '../../components/shared/AppNotification.vue'
+import { useCheckoutSession } from '../../composables/useCheckoutSession'
 import type { AppNotification as AppNotificationModel } from '../../composables/useNotifications'
 import {
   getProductImageUrlForColour,
@@ -171,10 +182,12 @@ const customer = reactive({
 })
 const deliveryMethod = ref<'nairobi-delivery' | 'town-pickup'>('nairobi-delivery')
 const isPaymentLoading = ref(false)
+const canResumeCheckout = ref(false)
 const paymentNotice = ref<AppNotificationModel | null>(null)
-const pendingReference = ref('')
-const idempotencyKey = ref('')
-const checkoutSessionStorageKey = 'anai-checkout-session'
+const {
+  pendingReference, idempotencyKey, hasPendingCheckout,
+  persistCheckoutSession, clearCheckoutSession, hydrateCheckoutSession,
+} = useCheckoutSession()
 
 type CreatePaymentResponse = {
   orderId: string
@@ -249,20 +262,6 @@ const createCheckoutFormNotice = (title: string, message: string): AppNotificati
   duration: null,
 })
 
-const persistCheckoutSession = () => {
-  if (!import.meta.client) return
-  window.localStorage.setItem(
-    checkoutSessionStorageKey,
-    JSON.stringify({ idempotencyKey: idempotencyKey.value, reference: pendingReference.value }),
-  )
-}
-
-const clearCheckoutSession = () => {
-  pendingReference.value = ''
-  idempotencyKey.value = ''
-  if (import.meta.client) window.localStorage.removeItem(checkoutSessionStorageKey)
-}
-
 const getIdempotencyKey = () => {
   if (!idempotencyKey.value) {
     idempotencyKey.value = globalThis.crypto.randomUUID()
@@ -300,12 +299,14 @@ const handlePaymentStatus = async (
   }
 
   if (payment.status === 'cancelled') {
+    await refreshNuxtData('anai-live-inventory-request')
     clearCheckoutSession()
     paymentNotice.value = createCheckoutNotice('cancelled')
     return true
   }
 
   if (payment.status === 'failed') {
+    await refreshNuxtData('anai-live-inventory-request')
     clearCheckoutSession()
     paymentNotice.value = createCheckoutNotice('failed')
     return true
@@ -330,6 +331,8 @@ const waitForPaymentConfirmation = async (reference: string) => {
 
 const startPayment = async () => {
   paymentNotice.value = null
+
+  if (hasPendingCheckout.value && !canResumeCheckout.value) return checkPendingPayment()
 
   if (!lines.value.length) {
     paymentNotice.value = createCheckoutFormNotice(
@@ -356,24 +359,9 @@ const startPayment = async () => {
   }
 
   isPaymentLoading.value = true
+  canResumeCheckout.value = false
 
   try {
-    if (pendingReference.value) {
-      paymentNotice.value = createCheckoutNotice('checking', {
-        reference: pendingReference.value,
-      })
-      const status = await checkPaymentStatus(pendingReference.value)
-
-      if (await handlePaymentStatus(status, pendingReference.value)) {
-        return
-      }
-
-      paymentNotice.value = createCheckoutNotice('processing', {
-        reference: pendingReference.value,
-      })
-      return
-    }
-
     paymentNotice.value = createCheckoutNotice('sending')
     const payment = await $fetch<CreatePaymentResponse>('/api/checkout/create-payment', {
       method: 'POST',
@@ -423,27 +411,36 @@ const startPayment = async () => {
       reference: pendingReference.value,
       paymentMayHaveStarted,
     })
+    if (!paymentMayHaveStarted && (!recoveryIsNeeded || getCheckoutErrorStatus(error) === 404)) clearCheckoutSession()
+  } finally {
+    isPaymentLoading.value = false
+  }
+}
+
+const checkPendingPayment = async () => {
+  isPaymentLoading.value = true
+  paymentNotice.value = createCheckoutNotice('checking', { reference: pendingReference.value })
+  try {
+    const payment = pendingReference.value
+      ? await checkPaymentStatus(pendingReference.value)
+      : await recoverPaymentStatus(idempotencyKey.value)
+    pendingReference.value = payment.reference
+    persistCheckoutSession()
+    if (!await handlePaymentStatus(payment, payment.reference)) {
+      paymentNotice.value = createCheckoutNotice('processing', { reference: payment.reference })
+    }
+  } catch (error) {
+    // Reuse the same key if creation never arrived; SQL serializes concurrent retries.
+    if (getCheckoutErrorStatus(error) === 404 && !pendingReference.value) canResumeCheckout.value = true
+    paymentNotice.value = mapCheckoutError(error, { reference: pendingReference.value, paymentMayHaveStarted: true })
   } finally {
     isPaymentLoading.value = false
   }
 }
 
 onMounted(() => {
-  try {
-    const storedSession = JSON.parse(window.localStorage.getItem(checkoutSessionStorageKey) || '{}') as {
-      idempotencyKey?: unknown
-      reference?: unknown
-    }
-    if (typeof storedSession.idempotencyKey === 'string') idempotencyKey.value = storedSession.idempotencyKey
-    if (typeof storedSession.reference === 'string') {
-      pendingReference.value = storedSession.reference
-      paymentNotice.value = createCheckoutNotice('processing', {
-        reference: storedSession.reference,
-      })
-    }
-  } catch {
-    window.localStorage.removeItem(checkoutSessionStorageKey)
-  }
+  hydrateCheckoutSession()
+  if (hasPendingCheckout.value) void checkPendingPayment()
 })
 </script>
 

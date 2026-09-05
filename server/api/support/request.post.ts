@@ -9,7 +9,7 @@ const allowedCategories = new Set(['order', 'payment', 'delivery', 'return', 'pr
 const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
 export default defineEventHandler(async (event) => {
-  enforceRequestRateLimit(event, 'support', { max: 5, windowMs: 30 * 60_000 })
+  await enforceRequestRateLimit(event, 'support', { max: 5, windowMs: 30 * 60_000 })
   const body = (await readBody(event)) as Record<string, unknown>
   const fullName = cleanString(body.fullName)
   const email = cleanString(body.email).toLowerCase()
