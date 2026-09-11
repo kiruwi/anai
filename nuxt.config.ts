@@ -229,6 +229,9 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    ga4PropertyId: '',
+    ga4ClientEmail: '',
+    ga4PrivateKey: '',
     recoveryToken: process.env.NUXT_RECOVERY_TOKEN || '',
     trustedClientIpHeader: process.env.NUXT_TRUSTED_CLIENT_IP_HEADER || '',
     databaseUrl,
