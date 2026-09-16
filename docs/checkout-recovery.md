@@ -28,7 +28,7 @@ select id, order_number, created_at from public.orders
 where payment_status = 'pending' and inventory_released_at is not null;
 
 -- Callbacks awaiting a match or processing.
-select checkout_request_id, order_id, created_at
+select checkout_request_id, order_id, received_at
 from public.mpesa_callback_events where processed_at is null;
 
 -- Notifications needing operator attention after automatic retries.
