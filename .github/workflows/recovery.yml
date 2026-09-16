@@ -17,8 +17,15 @@ jobs:
       - name: Run bounded recovery batch
         env:
           RECOVERY_URL: ${{ vars.RECOVERY_URL }}
+          RECOVERY_CONNECT_TO: ${{ vars.RECOVERY_CONNECT_TO }}
           RECOVERY_TOKEN: ${{ secrets.RECOVERY_TOKEN }}
         run: |
           test -n "$RECOVERY_TOKEN"
+          connection_args=()
+          if [ -n "$RECOVERY_CONNECT_TO" ]; then
+            # Route this job to the origin while preserving Host, TLS SNI, and certificate checks.
+            connection_args=(--connect-to "$RECOVERY_CONNECT_TO")
+          fi
           curl --fail-with-body --silent --show-error --max-time 90 \
+            "${connection_args[@]}" \
             --request POST --header "Authorization: Bearer $RECOVERY_TOKEN" "$RECOVERY_URL"
