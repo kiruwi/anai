@@ -20,7 +20,7 @@ export const runRecoveryBatch = async () => {
             and (events.order_id is not null or exists (
               select 1 from public.payments where mpesa_checkout_request_id = events.checkout_request_id
             ))
-          order by events.last_retry_at nulls first, events.created_at
+          order by events.last_retry_at nulls first, events.received_at
           limit 3 for update skip locked
         )
         update public.mpesa_callback_events as events
