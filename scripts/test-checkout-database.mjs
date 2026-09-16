@@ -156,4 +156,26 @@ assert.equal(await query('select public.claim_recovery_job()'), '')
 await query(`select public.finish_recovery_job('${lease}')`)
 assert.ok(await query('select public.claim_recovery_job()'))
 
-console.log('Passed: migration replay, competing purchases, idempotent checkout, expiry, late/duplicate callbacks, shared rate limits, email retries, and recovery leases.')
+// Plan every query from the actual recovery batch against the migrated schema as the app role.
+// EXPLAIN (without ANALYZE) validates columns and permissions without dispatching real work.
+const recoverySource = (await readFile(new URL('../server/utils/recoverCheckout.ts', import.meta.url), 'utf8'))
+  .replace(/^import[\s\S]*?from\s+['"][^'"]+['"]\s*;?/gm, '').replaceAll('export ', '')
+let recoveryQueries = 0
+const recoverySql = async (strings, ...values) => {
+  const literal = (value) => value == null ? 'null' : `'${String(value).replaceAll("'", "''")}'`
+  const statement = strings.reduce((text, part, index) => text + part + (index < values.length ? literal(values[index]) : ''), '').trim()
+  await query(`set role anai_app; explain ${statement}`)
+  recoveryQueries += 1
+  return /select public\.claim_recovery_job\(\)/.test(statement)
+    ? [{ token: '11111111-1111-4111-8111-111111111111' }]
+    : []
+}
+const unexpectedDispatch = () => assert.fail('Planning recovery queries must not dispatch notifications or payments')
+const runRecoveryBatch = Function('getDatabase', 'recordStoredMpesaCallback', 'notifyPaidOrder', 'notifySupportRequest',
+  stripTypeScriptTypes(recoverySource) + '\nreturn runRecoveryBatch')(
+  () => recoverySql, unexpectedDispatch, unexpectedDispatch, unexpectedDispatch,
+)
+assert.deepEqual(await runRecoveryBatch(), { attempted: 0, failed: 0 })
+assert.equal(recoveryQueries, 6, 'Validate the lease, expiry, three candidate queries, and lease release')
+
+console.log('Passed: migration replay, competing purchases, idempotent checkout, expiry, late/duplicate callbacks, shared rate limits, email retries, recovery leases, and recovery query planning.')

@@ -1,5 +1,15 @@
 # Checkout recovery rollout
 
+## Scheduler connection
+
+Cloudflare Bot Fight Mode on the Free plan challenges this automated request and does not support endpoint-specific skip rules. Keep the public site's protection enabled and route only the recovery job to the existing AWS origin. Set the repository variable `RECOVERY_CONNECT_TO` to `anaibymurda.com:443:d20r53srukqy2v.cloudfront.net:443`, keeping `RECOVERY_URL` as `https://anaibymurda.com/api/internal/recover`.
+
+The workflow passes this optional mapping to curl's `--connect-to`: only the network destination changes. The original HTTP Host, TLS SNI, certificate validation, and bearer-token authentication remain in effect. Do not use `--insecure`. Update the mapping if the AWS distribution changes. Clearing `RECOVERY_CONNECT_TO` restores the normal Cloudflare route; with Bot Fight Mode enabled, that route will challenge the job again.
+
+Validate with a manual workflow run and confirm the recovery endpoint returns JSON successfully. A request through the origin without a token must return `401 Unauthorized`. References: [Cloudflare Bot Fight Mode limitations](https://developers.cloudflare.com/bots/get-started/bot-fight-mode/#limitations), [curl connection routing](https://curl.se/docs/manpage.html#--connect-to).
+
+## Application rollout
+
 Apply `database/neon/20260905_checkout_recovery.sql` with the direct owner connection after the existing access-control migration, before deploying this application version. The migration is transactional and can be rerun. It adds private rate-limit counters, callback-to-order correlation, support-email retry claims, and revised checkout functions. Historical support requests are not automatically emailed again.
 
 Set `NUXT_RECOVERY_TOKEN` to at least 32 random characters on the application. Set the repository secret `RECOVERY_TOKEN` to the same value and the repository variable `RECOVERY_URL` to `https://anaibymurda.com/api/internal/recover`. The recovery workflow runs every five minutes and can also be dispatched manually. GitHub schedules can run late; use an external scheduler with the same authenticated POST if a strict cadence is required. The endpoint takes a database lease to prevent overlapping workers.
@@ -18,7 +28,7 @@ select id, order_number, created_at from public.orders
 where payment_status = 'pending' and inventory_released_at is not null;
 
 -- Callbacks awaiting a match or processing.
-select checkout_request_id, order_id, created_at
+select checkout_request_id, order_id, received_at
 from public.mpesa_callback_events where processed_at is null;
 
 -- Notifications needing operator attention after automatic retries.
