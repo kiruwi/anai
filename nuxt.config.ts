@@ -51,6 +51,7 @@ const contentSecurityPolicy = [
     "'unsafe-inline'",
     'https://*.googletagmanager.com',
     'https://*.google-analytics.com',
+    'https://static.cloudflareinsights.com',
   ].join(' '),
   [
     "script-src-elem",
@@ -58,6 +59,7 @@ const contentSecurityPolicy = [
     "'unsafe-inline'",
     'https://*.googletagmanager.com',
     'https://*.google-analytics.com',
+    'https://static.cloudflareinsights.com',
   ].join(' '),
   [
     "connect-src",
@@ -68,6 +70,7 @@ const contentSecurityPolicy = [
     'https://*.g.doubleclick.net',
     'https://*.google.com',
     'https://pagead2.googlesyndication.com',
+    'https://cloudflareinsights.com',
   ].join(' '),
   [
     "frame-src",
