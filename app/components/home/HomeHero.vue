@@ -122,6 +122,7 @@ const hasPlayedIntro = useCookie<boolean>('anai-logo-intro-played', {
   default: () => false,
   path: '/',
   sameSite: 'lax',
+  secure: !import.meta.dev,
 })
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const isIntroDisabled = false

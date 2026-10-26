@@ -49,8 +49,11 @@ const inventoryOutageNotificationId = 'inventory-refresh-outage'
 const { data: liveCatalogue } = await useFetch<CatalogResponse>('/api/catalog/products', {
   key: 'anai-catalog-products-request',
 })
-const { data: liveInventory, error: liveInventoryError } = await useFetch<InventoryResponse>('/api/catalog/inventory', {
+// Render catalogue stock first, then refresh availability after hydration.
+const { data: liveInventory, error: liveInventoryError } = useFetch<InventoryResponse>('/api/catalog/inventory', {
   key: 'anai-live-inventory-request',
+  server: false,
+  lazy: true,
 })
 
 watch(liveCatalogue, (catalogue) => {

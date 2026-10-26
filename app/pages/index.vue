@@ -29,7 +29,11 @@ const homepageProductSlugsWithoutPhotos = new Set<string>()
 const photographedProducts = computed(() => products.value.filter((product) =>
   product.imageUrl?.startsWith('/images/products/') || homepageProductSlugsWithoutPhotos.has(product.slug),
 ))
-const { data: popularity } = await useFetch<ProductPopularity>('/api/catalog/popularity')
+// Popularity changes the order only; it must not delay rendering the catalogue.
+const { data: popularity } = useFetch<ProductPopularity>('/api/catalog/popularity', {
+  server: false,
+  lazy: true,
+})
 const newReleaseProducts = computed(() => sortProductsByViews(
   photographedProducts.value,
   popularity.value?.viewsBySlug ?? {},
