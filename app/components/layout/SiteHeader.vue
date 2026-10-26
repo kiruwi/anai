@@ -174,6 +174,7 @@ const hasPlayedIntro = useCookie<boolean>('site-header-intro-played', {
   default: () => false,
   path: '/',
   sameSite: 'lax',
+  secure: !import.meta.dev,
 })
 const isLogoDocked = useState('anai-logo-docked', () => false)
 const hasMobileNavRevealed = ref(!props.overHero)
