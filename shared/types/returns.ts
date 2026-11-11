@@ -9,7 +9,7 @@ export const returnActionLabels: Record<ReturnAction, string> = {
   offer: 'Offer replacement variants',
   receive: 'Confirm return received',
   cancel: 'Cancel request',
-  begin_refund: 'Begin manual refund',
+  begin_refund: 'Review refund',
   refund_unknown: 'Mark refund for reconciliation',
   refund_failed: 'Confirm refund failed',
   record_refund: 'Record refund',
@@ -61,6 +61,7 @@ export type ReturnRequest = {
 
 export type OwnerReturn = ReturnRequest & {
   action: ReturnAction
+  automaticRefund?: boolean
   deliveredAt: string | null
   orderedAt: string
   deliveryFeeKes: number

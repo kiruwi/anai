@@ -99,7 +99,7 @@ const getConfig = (): MpesaRuntimeConfig => {
   }
 }
 
-const getBaseUrl = (environment: MpesaRuntimeConfig['environment']) =>
+export const getMpesaBaseUrl = (environment: MpesaRuntimeConfig['environment']) =>
   environment === 'production' ? 'https://api.safaricom.co.ke' : 'https://sandbox.safaricom.co.ke'
 
 const getCallbackUrl = (config: MpesaRuntimeConfig, orderId: string) => {
@@ -127,13 +127,13 @@ const getTimestamp = () => {
   return `${part('year')}${part('month')}${part('day')}${part('hour')}${part('minute')}${part('second')}`
 }
 
-const getAccessToken = async (config: MpesaRuntimeConfig) => {
+export const getMpesaAccessToken = async (config: Pick<MpesaRuntimeConfig, 'environment' | 'consumerKey' | 'consumerSecret'>) => {
   if (accessToken && Date.now() < accessTokenExpiresAt) {
     return accessToken
   }
 
   const credentials = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString('base64')
-  const response = await fetch(`${getBaseUrl(config.environment)}/oauth/v1/generate?grant_type=client_credentials`, {
+  const response = await fetch(`${getMpesaBaseUrl(config.environment)}/oauth/v1/generate?grant_type=client_credentials`, {
     headers: { Authorization: `Basic ${credentials}` },
     signal: AbortSignal.timeout(15_000),
   })
@@ -173,13 +173,13 @@ export const initiateMpesaStkPush = async ({
   let token: string
   try {
     config = getConfig()
-    token = await getAccessToken(config)
+    token = await getMpesaAccessToken(config)
   } catch (error) {
     throw new PaymentInitiationRejected((error as Error).message)
   }
   const timestamp = getTimestamp()
   const password = Buffer.from(`${config.shortcode}${config.passkey}${timestamp}`).toString('base64')
-  const response = await fetch(`${getBaseUrl(config.environment)}/mpesa/stkpush/v1/processrequest`, {
+  const response = await fetch(`${getMpesaBaseUrl(config.environment)}/mpesa/stkpush/v1/processrequest`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

@@ -32,6 +32,8 @@ const returnErrors: Record<string, string> = {
   RETURN_DUPLICATE_RECEIPT: 'This payment reference has already been recorded.',
   RETURN_RESERVATION_EXPIRED: 'The replacement reservation expired. Ask AÑAI to confirm stock before paying.',
   RETURN_PAYMENT_RECONCILIATION: 'Verify the payment discrepancy before proceeding.',
+  RETURN_REVERSAL_INELIGIBLE: 'This refund is not eligible for automatic M-Pesa reversal. Reopen the request to review the manual option.',
+  RETURN_REVERSAL_PENDING: 'M-Pesa is processing the reversal. If it is still unresolved after 15 minutes, mark it for reconciliation and verify the transaction before taking another action.',
 }
 
 export async function runReturnQuery<T>(work: () => Promise<T>): Promise<T> {

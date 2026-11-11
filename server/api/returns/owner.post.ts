@@ -2,6 +2,8 @@ import { createError } from 'h3'
 import { getDatabase } from '../../utils/db'
 import { invalidateCatalogueCache } from '../../utils/catalog'
 import { deliverReturnMail } from '../../utils/email/notifyReturns'
+import { prepareMpesaReversal, reversalConfig } from '../../utils/mpesaReversal'
+import { recordMpesaReversal } from '../../utils/recordMpesaReversal'
 import { enforceRequestRateLimit } from '../../utils/requestRateLimit'
 import { readReturnBody, requireOwnerToken, returnConfig, returnUuid } from '../../utils/returnAccess'
 import { cleanReturnText, getReplacementVariants, returnId, runReturnQuery } from '../../utils/returns'
@@ -31,9 +33,19 @@ export default defineEventHandler(async (event) => {
     const [row] = await runReturnQuery(async () => sql`
       select public.get_return_action(${hash},${config.owner}) as details
     ` as unknown as Array<{ details: OwnerReturn | null }>)
-    if (row?.details) return {
-      request: row.details,
-      variants: row.details.action === 'offer' ? await runReturnQuery(getReplacementVariants) : [],
+    if (row?.details) {
+      const details = row.details
+      let automaticRefund = false
+      if (details.action === 'begin_refund' && reversalConfig()) {
+        const [eligibility] = await runReturnQuery(async () => sql`
+          select public.can_reverse_return(${details.id}::uuid) as eligible
+        ` as unknown as Array<{ eligible: boolean }>)
+        automaticRefund = eligibility?.eligible === true
+      }
+      return {
+        request: { ...details, automaticRefund },
+        variants: details.action === 'offer' ? await runReturnQuery(getReplacementVariants) : [],
+      }
     }
   } else if (body.operation === 'photo') {
     const [row] = await runReturnQuery(async () => sql`
@@ -52,6 +64,35 @@ export default defineEventHandler(async (event) => {
     }
     if (data.amount != null && (!Number.isSafeInteger(data.amount) || Number(data.amount) < 0 || Number(data.amount) > 2_147_483_647)) {
       throw createError({ statusCode: 400, statusMessage: 'Enter a valid amount in KES.' })
+    }
+    if (data.automaticRefund === true) {
+      const reversal = reversalConfig()
+      if (!reversal) throw createError({ statusCode: 409, statusMessage: 'Automatic M-Pesa refunds are unavailable. Reopen the request to continue.' })
+      if (!Number.isSafeInteger(data.amount) || Number(data.amount) <= 0) {
+        throw createError({ statusCode: 400, statusMessage: 'Enter a valid refund amount.' })
+      }
+      const action = await runReturnQuery(async () => sql`
+        select public.get_return_action(${hash},${config.owner}) as details
+      ` as unknown as Array<{ details: OwnerReturn | null }>)
+      if (action[0]?.details?.action !== 'begin_refund') {
+        throw createError({ statusCode: 404, statusMessage: 'This action link has expired or is no longer current.' })
+      }
+      // Authenticate before consuming Vivian's approval, so OAuth failures leave the action usable.
+      const send = await prepareMpesaReversal(reversal).catch(() => {
+        throw createError({ statusCode: 503, statusMessage: 'M-Pesa could not be reached. The refund has not been submitted.' })
+      })
+      const [pending] = await runReturnQuery(async () => sql`
+        select public.begin_return_reversal(${hash},${config.owner},${Number(data.amount)}::integer) as attempt
+      ` as unknown as Array<{ attempt: Parameters<typeof send>[0] }>)
+      if (!pending?.attempt) throw createError({ statusCode: 503, statusMessage: 'The refund could not be prepared.' })
+      const update = await send(pending.attempt)
+      await recordMpesaReversal(pending.attempt.id, update).catch(() => {
+        console.error('[ANAI] Could not save the M-Pesa reversal acknowledgement.')
+      })
+      await deliverReturnMail(pending.attempt.requestId).catch(() => {})
+      return { message: update.outcome === 'accepted'
+        ? 'Refund submitted to M-Pesa. You’ll receive an update when the result is confirmed.'
+        : 'M-Pesa did not confirm the submission. Check the transaction before taking any further refund action.' }
     }
     const [row] = await runReturnQuery(async () => sql`
       select public.confirm_return_action(${hash},${config.owner},${JSON.stringify(data)}::jsonb) as id

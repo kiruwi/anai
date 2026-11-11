@@ -71,7 +71,9 @@ async function sendOneReturnMail(row: ReturnMail, owner: string, secret: string)
 
   const title = details ? (details.kind === 'refund' ? 'Refund request' : 'Exchange request') + ' · ' + details.reference : 'View your AÑAI order'
   const approvalSuperseded = row.event_name === 'approve' && details?.decision !== 'approved'
-  const message = (!approvalSuperseded && messages[row.event_name])
+  const refundUpdateSuperseded = (row.event_name === 'begin_refund' && details?.refundState !== 'processing')
+    || (row.event_name === 'refund_unknown' && details?.refundState !== 'unknown')
+  const message = (!approvalSuperseded && !refundUpdateSuperseded && messages[row.event_name])
     || (details ? 'Review the latest status of this request.' : 'Use the secure link below to view your order.')
   const paragraphs = [message]
   const links: Array<{ label: string; href: string }> = []
@@ -147,5 +149,9 @@ export async function recoverReturnWork() {
   if (!returnConfig().enabled) return { attempted: 0, failed: 0 }
   const sql = getDatabase()
   await sql`select public.process_return_link_requests(), public.note_return_expiries()`
+  // Keep reconciling outstanding reversals if new submissions are switched off.
+  if (String(useRuntimeConfig().mpesaReversalCallbackSecret || '').trim().length >= 32) {
+    await sql`select public.note_stale_return_reversals()`
+  }
   return deliverReturnMail()
 }

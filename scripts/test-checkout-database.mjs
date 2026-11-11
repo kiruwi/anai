@@ -46,6 +46,8 @@ await file('database/neon/20260905_checkout_recovery.sql')
 await file('database/neon/20260905_checkout_recovery.sql') // Migration replay must be safe.
 await file('database/neon/20261111_returns.sql')
 await file('database/neon/20261111_returns.sql')
+await file('database/neon/20261112_mpesa_reversals.sql')
+await file('database/neon/20261112_mpesa_reversals.sql')
 
 const variant = '33333333-3333-4333-8333-333333333333'
 await query(`

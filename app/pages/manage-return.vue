@@ -86,7 +86,8 @@
           <textarea v-model="note" required rows="3" maxlength="1200"></textarea>
         </label>
         <template v-if="request.action === 'begin_refund'">
-          <p>Confirm {{ formatReturnKes(request.refundKes) }} to the verified original payer. This records that the manual refund is in progress.</p>
+          <p v-if="request.automaticRefund">This submits {{ formatReturnKes(request.refundKes) }} to M-Pesa for refund to the original payer.</p>
+          <p v-else>Confirm {{ formatReturnKes(request.refundKes) }} to the verified original payer. Then send the refund from the business M-Pesa account and record the receipt here.</p>
         </template>
         <template v-if="request.action === 'record_refund' || request.action === 'record_payment'">
           <p>Verify the amount and reference against the business M-Pesa record first.</p>
@@ -107,7 +108,9 @@
         <p v-if="request.action === 'renew_stock'">This checks and reserves the exact replacement variants again.</p>
         <label><input v-model="confirmed" type="checkbox" required> Confirm this action for {{ request.reference }}</label>
         <button type="submit" class="order-returns__button" :disabled="busy">
-          Confirm {{ returnActionLabels[request.action].toLowerCase() }}
+          {{ request.action === 'begin_refund'
+            ? (request.automaticRefund ? 'Send M-Pesa refund' : 'Begin manual refund')
+            : 'Confirm ' + returnActionLabels[request.action].toLowerCase() }}
         </button>
       </form>
     </section>
@@ -195,6 +198,7 @@ async function confirmAction() {
           note: note.value, deliveredAt: asEAT(deliveredAt.value), deliveryMethod: deliveryMethod.value,
           refundDelivery: refundDelivery.value, policyVerified: policyVerified.value, inspection: inspection.value,
           amount: action === 'approve' ? (request.value?.kind === 'exchange' ? approvalTotal.value : approvalCredit.value) : amount.value,
+          automaticRefund: action === 'begin_refund' && request.value?.automaticRefund === true,
           reference: paymentReference.value, paidAt: asEAT(paidAt.value), replacements: replacements.value,
         },
       },

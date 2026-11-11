@@ -259,6 +259,11 @@ export default defineNuxtConfig({
     mpesaPasskey: process.env.NUXT_MPESA_PASSKEY || '',
     mpesaCallbackUrl: process.env.NUXT_MPESA_CALLBACK_URL || '',
     mpesaCallbackToken: process.env.NUXT_MPESA_CALLBACK_TOKEN || '',
+    mpesaReversalEnabled: process.env.NUXT_MPESA_REVERSAL_ENABLED || '',
+    mpesaReversalInitiator: process.env.NUXT_MPESA_REVERSAL_INITIATOR || '',
+    mpesaReversalCredential: process.env.NUXT_MPESA_REVERSAL_CREDENTIAL || '',
+    mpesaReversalShortcode: process.env.NUXT_MPESA_REVERSAL_SHORTCODE || '',
+    mpesaReversalCallbackSecret: process.env.NUXT_MPESA_REVERSAL_CALLBACK_SECRET || '',
     mpesaTransactionType: process.env.NUXT_MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline',
     mpesaTransactionDescription: process.env.NUXT_MPESA_TRANSACTION_DESCRIPTION || 'ANAI payment',
     public: {
