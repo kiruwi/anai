@@ -221,6 +221,12 @@ export default defineNuxtConfig({
       '/checkout/**': {
         headers: { 'x-robots-tag': 'noindex, nofollow' },
       },
+      '/order': {
+        headers: { 'x-robots-tag': 'noindex, nofollow', 'referrer-policy': 'no-referrer', 'cache-control': 'private, no-store' },
+      },
+      '/manage-return': {
+        headers: { 'x-robots-tag': 'noindex, nofollow', 'referrer-policy': 'no-referrer', 'cache-control': 'private, no-store' },
+      },
       '/wishlist/**': {
         headers: { 'x-robots-tag': 'noindex, nofollow' },
       },
@@ -237,6 +243,8 @@ export default defineNuxtConfig({
     ga4ClientEmail: '',
     ga4PrivateKey: '',
     recoveryToken: process.env.NUXT_RECOVERY_TOKEN || '',
+    returnsLinkSecret: process.env.NUXT_RETURNS_LINK_SECRET || '',
+    returnsOwnerEmail: process.env.NUXT_RETURNS_OWNER_EMAIL || '',
     trustedClientIpHeader: process.env.NUXT_TRUSTED_CLIENT_IP_HEADER || '',
     databaseUrl,
     brevoApiKey,

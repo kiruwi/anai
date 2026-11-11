@@ -1,6 +1,8 @@
 import { createError } from 'h3'
 import { getDatabase } from './db'
 import { notifyPaidOrder } from './email/notifyPaidOrder'
+import { invalidateCatalogueCache } from './catalog'
+import { deliverReturnMail } from './email/notifyReturns'
 
 type CallbackItem = { Name?: string; Value?: string | number }
 
@@ -57,8 +59,11 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
   const amountValue = Number(getMetadataValue(callback, 'Amount'))
   const amount = Number.isFinite(amountValue) ? amountValue : null
   const receipt = getStringValue(getMetadataValue(callback, 'MpesaReceiptNumber'))
+  const phone = getStringValue(getMetadataValue(callback, 'PhoneNumber'))
+  const transactionDate = getStringValue(getMetadataValue(callback, 'TransactionDate'))
 
   let results: FinalizeResult[]
+  let exchange = false
   try {
     if (orderId) {
       await sql`
@@ -68,7 +73,19 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
         )
       `
     }
-    results = await sql`
+    const [linked] = await sql`
+      select orders.order_number like 'ANAI-X-%' as exchange
+      from public.payments join public.orders on orders.id = payments.order_id
+      where payments.mpesa_checkout_request_id = ${checkoutRequestId}
+    ` as unknown as Array<{ exchange: boolean }>
+    exchange = linked?.exchange === true
+    results = exchange ? await sql`
+      select * from public.finalize_exchange_topup(
+        ${checkoutRequestId}::text, ${Number.isInteger(resultCode) ? resultCode : -1}::integer,
+        ${amount}::numeric, ${receipt}::text, ${phone}::text,
+        ${transactionDate}::text, ${JSON.stringify(rawPayload)}::jsonb
+      )
+    ` as unknown as FinalizeResult[] : await sql`
       select * from public.finalize_mpesa_payment(
         ${checkoutRequestId}::text,
         ${Number.isInteger(resultCode) ? resultCode : -1}::integer,
@@ -76,8 +93,8 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
         ${amount}::numeric,
         ${receipt}::text,
         ${getStringValue(callback.MerchantRequestID)}::text,
-        ${getStringValue(getMetadataValue(callback, 'PhoneNumber'))}::text,
-        ${getStringValue(getMetadataValue(callback, 'TransactionDate'))}::text,
+        ${phone}::text,
+        ${transactionDate}::text,
         ${JSON.stringify(rawPayload)}::jsonb
       )
     ` as unknown as FinalizeResult[]
@@ -89,7 +106,10 @@ export const recordMpesaPayment = async (callback: MpesaStkCallback, rawPayload:
   const result = results[0]
   if (!result?.recorded) return { recorded: false, checkoutRequestId, paid: false, failed: false }
 
-  if (result.paid) {
+  if (exchange) {
+    invalidateCatalogueCache()
+    await deliverReturnMail().catch(() => {})
+  } else if (result.paid) {
     try {
       await notifyPaidOrder(checkoutRequestId)
     } catch (notificationError) {

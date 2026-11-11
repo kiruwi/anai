@@ -1,4 +1,5 @@
 import { getDatabase } from '../db.ts'
+import { createGuestOrderToken, privateReturnLink, returnConfig } from '../returnAccess.ts'
 import { sendBrevoEmail } from './brevo.ts'
 import { buildPaidOrderEmails, type PaidOrder, type PaidOrderItem } from './orderEmail.ts'
 
@@ -191,6 +192,10 @@ export const notifyPaidOrder = async (
     paid_at: payment.paid_at || now,
     mpesa_receipt_number: payment.mpesa_receipt_number || 'Not provided',
     items,
+  }
+  const returns = returnConfig()
+  if (returns.enabled) {
+    paidOrder.viewOrderUrl = privateReturnLink('order', createGuestOrderToken(order.id, returns.secret))
   }
   const { response, result } = await sendBrevoEmail({
     apiKey: brevoApiKey,

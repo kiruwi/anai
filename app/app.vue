@@ -8,7 +8,7 @@
     <SiteFooter />
     <MouseCursor />
     <ClientOnly>
-      <CookieBanner />
+      <CookieBanner v-if="!isPrivateOrderRoute" />
     </ClientOnly>
   </div>
 </template>
@@ -26,6 +26,7 @@ import { canonicalSiteUrl } from '#shared/lib/catalogNavigation'
 const route = useRoute()
 const router = useRouter()
 const isHomeRoute = computed(() => route.path === '/')
+const isPrivateOrderRoute = computed(() => /^\/(order|manage-return)\/?$/.test(route.path))
 const canonicalUrl = computed(() => {
   const path = route.path === '/' ? '/' : route.path.replace(/\/$/, '')
   return `${canonicalSiteUrl}${path}`

@@ -22,6 +22,7 @@ export type PaidOrder = {
   delivery_address: string | null;
   paid_at: string;
   mpesa_receipt_number: string;
+  viewOrderUrl?: string;
   items: PaidOrderItem[];
 };
 
@@ -101,6 +102,7 @@ export const buildPaidOrderEmails = (order: PaidOrder): {
     `Delivery / pickup: ${deliveryLabel}`,
     `M-Pesa receipt: ${order.mpesa_receipt_number}`,
     `Order reference: ${order.order_number}`,
+    ...(order.viewOrderUrl ? [`View order: ${order.viewOrderUrl}`] : []),
     "",
     "We will contact you with the next delivery or pickup update.",
   ].join("\n");
@@ -119,6 +121,7 @@ export const buildPaidOrderEmails = (order: PaidOrder): {
       <p><strong>Delivery / pickup:</strong> ${escapeHtml(deliveryLabel)}</p>
       <p><strong>M-Pesa receipt:</strong> ${escapeHtml(order.mpesa_receipt_number)}<br>
       <strong>Order reference:</strong> ${escapeHtml(order.order_number)}</p>
+      ${order.viewOrderUrl ? `<p><a href="${escapeHtml(order.viewOrderUrl)}">View order</a></p>` : ""}
       <p>We will contact you with the next delivery or pickup update.</p>
     </div>
   </body>

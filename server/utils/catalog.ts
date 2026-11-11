@@ -51,6 +51,10 @@ type CatalogCacheEntry = CatalogResult & { expiresAt: number }
 const catalogueCacheTtlMs = 60_000
 let catalogueCache: CatalogCacheEntry | undefined
 
+export const invalidateCatalogueCache = () => {
+  catalogueCache = undefined
+}
+
 const getRelatedRecord = <T>(record: T | T[] | null | undefined) =>
   Array.isArray(record) ? record[0] : record
 

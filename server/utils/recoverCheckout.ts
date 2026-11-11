@@ -2,6 +2,8 @@ import { getDatabase } from './db.ts'
 import { recordStoredMpesaCallback } from './recordMpesaPayment.ts'
 import { notifyPaidOrder } from './email/notifyPaidOrder.ts'
 import { notifySupportRequest } from './email/notifySupportRequest.ts'
+import { recoverReturnWork } from './email/notifyReturns.ts'
+import { invalidateCatalogueCache } from './catalog.ts'
 
 /** A bounded batch; individual failures stay durable and do not block other work. */
 export const runRecoveryBatch = async () => {
@@ -10,7 +12,8 @@ export const runRecoveryBatch = async () => {
   const token = leases[0]?.token
   if (!token) return { processing: true }
   try {
-    await sql`select public.expire_checkout_reservations(null::uuid)`
+    const [expiry] = await sql`select public.expire_checkout_reservations(null::uuid) as expired` as unknown as Array<{ expired: number }>
+    if (expiry?.expired) invalidateCatalogueCache()
     const [callbacks, orders, support] = await Promise.all([
       sql`
         with candidates as (
@@ -30,8 +33,10 @@ export const runRecoveryBatch = async () => {
       ` as unknown as Promise<Array<{ checkout_request_id: string }>>,
       sql`
         select payments.mpesa_checkout_request_id from public.payments
+        join public.orders as paid_order on paid_order.id = payments.order_id
         left join public.order_email_notifications as notifications on notifications.order_id = payments.order_id
         where payments.status = 'paid' and lower(payments.provider) = 'mpesa'
+          and paid_order.order_number not like 'ANAI-X-%'
           and payments.mpesa_checkout_request_id is not null
           and (notifications.order_id is null or (
             notifications.status <> 'sent' and notifications.attempts < 10
@@ -52,7 +57,8 @@ export const runRecoveryBatch = async () => {
     ])
     const failed = results.filter((result) => result.status === 'rejected')
     for (const result of failed) console.error('[ANAI] Recovery attempt failed:', result.reason)
-    return { attempted: results.length, failed: failed.length }
+    const returns = await recoverReturnWork().catch(() => ({ attempted: 0, failed: 1 }))
+    return { attempted: results.length + returns.attempted, failed: failed.length + returns.failed }
   } finally {
     await sql`select public.finish_recovery_job(${token}::uuid)`
   }

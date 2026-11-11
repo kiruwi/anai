@@ -4,6 +4,7 @@ import { promisify } from 'node:util'
 import { readFile, readdir } from 'node:fs/promises'
 import { stripTypeScriptTypes } from 'node:module'
 import { buildPaidOrderEmails } from '../server/utils/email/orderEmail.ts'
+import { verifyReturns } from './test-return-transactions.mjs'
 
 // This bootstraps schema and fixture data. Never point it at a hosted database.
 const url = new URL(process.env.CHECKOUT_TEST_DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5432/neondb')
@@ -43,6 +44,8 @@ for (const name of migrations) {
 await file('database/neon/20260902_access_control.sql')
 await file('database/neon/20260905_checkout_recovery.sql')
 await file('database/neon/20260905_checkout_recovery.sql') // Migration replay must be safe.
+await file('database/neon/20261111_returns.sql')
+await file('database/neon/20261111_returns.sql')
 
 const variant = '33333333-3333-4333-8333-333333333333'
 await query(`
@@ -171,11 +174,12 @@ const recoverySql = async (strings, ...values) => {
     : []
 }
 const unexpectedDispatch = () => assert.fail('Planning recovery queries must not dispatch notifications or payments')
-const runRecoveryBatch = Function('getDatabase', 'recordStoredMpesaCallback', 'notifyPaidOrder', 'notifySupportRequest',
+const runRecoveryBatch = Function('getDatabase', 'recordStoredMpesaCallback', 'notifyPaidOrder', 'notifySupportRequest', 'recoverReturnWork', 'invalidateCatalogueCache',
   stripTypeScriptTypes(recoverySource) + '\nreturn runRecoveryBatch')(
-  () => recoverySql, unexpectedDispatch, unexpectedDispatch, unexpectedDispatch,
+  () => recoverySql, unexpectedDispatch, unexpectedDispatch, unexpectedDispatch, async () => ({ attempted: 0, failed: 0 }), () => {},
 )
 assert.deepEqual(await runRecoveryBatch(), { attempted: 0, failed: 0 })
 assert.equal(recoveryQueries, 6, 'Validate the lease, expiry, three candidate queries, and lease release')
 
 console.log('Passed: migration replay, competing purchases, idempotent checkout, expiry, late/duplicate callbacks, shared rate limits, email retries, recovery leases, and recovery query planning.')
+await verifyReturns(query)
