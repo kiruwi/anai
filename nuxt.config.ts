@@ -200,6 +200,7 @@ export default defineNuxtConfig({
     typeCheck: false,
   },
   nitro: {
+    awsAmplify: { runtime: 'nodejs22.x' },
     compressPublicAssets: true,
     routeRules: {
       '/**': {
