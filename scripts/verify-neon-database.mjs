@@ -58,8 +58,8 @@ assert.deepEqual(integrity, {
   tables: 14,
   columns: 149,
   constraints: 56,
-  indexes: 44,
-  triggers: 9,
+  indexes: 45,
+  triggers: 11,
   invalid_foreign_keys: 0,
 })
 
@@ -94,6 +94,21 @@ assert.deepEqual(role, {
   rolcreaterole: false,
   rolreplication: false,
   rolbypassrls: false,
+})
+
+const [returnsAccess] = await sql`
+  select to_regclass('anai_private.return_requests') is not null as requests_exist,
+    has_schema_privilege('anai_app', 'anai_private', 'USAGE') as app_has_schema_access,
+    has_table_privilege('anai_app', 'anai_private.return_requests', 'SELECT') as app_has_direct_read,
+    has_function_privilege('anai_app', 'public.get_return_order(uuid)', 'EXECUTE') as app_can_load_orders,
+    has_function_privilege('anai_app', 'public.confirm_return_action(text,text,jsonb)', 'EXECUTE') as app_can_confirm_actions
+`
+assert.deepEqual(returnsAccess, {
+  requests_exist: true,
+  app_has_schema_access: false,
+  app_has_direct_read: false,
+  app_can_load_orders: true,
+  app_can_confirm_actions: true,
 })
 
 const [sequence] = await sql`select last_value, is_called from public.checkout_attempts_id_seq`

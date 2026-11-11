@@ -121,7 +121,7 @@ await query(`select public.finish_support_email('${supportId}','${retry}',null)`
 assert.equal(await query(`select public.claim_support_email('${supportId}')`), '')
 assert.equal(await query(`select email_attempts from support_requests where id = '${supportId}'`), '2')
 
-// Execute the actual notifier against PostgreSQL, with only the outbound email transport replaced.
+// Execute the actual notifier against PostgreSQL with returns disabled and email transport mocked.
 const sqlAdapter = async (strings, ...values) => {
   const literal = (value) => value == null ? 'null' : `'${String(value).replaceAll("'", "''")}'`
   let statement = strings.reduce((text, part, index) => text + part + (index < values.length ? literal(values[index]) : ''), '').trim()
@@ -131,7 +131,7 @@ const sqlAdapter = async (strings, ...values) => {
 const notifierSource = (await readFile(new URL('../server/utils/email/notifyPaidOrder.ts', import.meta.url), 'utf8'))
   .replace(/^import[\s\S]*?from\s+['"][^'"]+['"]\s*;?/gm, '').replaceAll('export ', '')
 let emailCalls = 0
-const notifyPaidOrder = Function('getDatabase', 'useRuntimeConfig', 'sendBrevoEmail', 'buildPaidOrderEmails',
+const notifyPaidOrder = Function('getDatabase', 'useRuntimeConfig', 'sendBrevoEmail', 'buildPaidOrderEmails', 'returnConfig',
   stripTypeScriptTypes(notifierSource) + '\nreturn notifyPaidOrder')(
   () => sqlAdapter,
   () => ({ brevoApiKey: 'test', brevoSenderEmail: 'sender@example.com', salesNotificationEmail: 'sales@example.com' }),
@@ -142,6 +142,7 @@ const notifyPaidOrder = Function('getDatabase', 'useRuntimeConfig', 'sendBrevoEm
       : { response: { ok: true }, result: { messageId: 'test-message' } }
   },
   buildPaidOrderEmails,
+  () => ({ enabled: false }),
 )
 await assert.rejects(notifyPaidOrder('ws_CO_TEST_RECOVERY'), /Temporary outage/)
 assert.equal(await query(`select status from order_email_notifications where order_id = '${order.order_id}'`), 'failed')
