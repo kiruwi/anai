@@ -5,7 +5,7 @@ The storefront uses the existing Neon orders, M-Pesa callback inbox, checkout in
 ## Enable on a test environment first
 
 1. Apply `database/neon/20261111_returns.sql` with the direct owner connection after the checkout recovery migration. The app role reaches the private tables through scoped functions.
-2. Set `NUXT_RETURNS_OWNER_EMAIL` to Vivian’s business mailbox and `NUXT_RETURNS_LINK_SECRET` to a new randomly generated secret of at least 32 characters. Keep the secret on the server. Changing it invalidates existing links.
+2. Set `NUXT_RETURNS_LINK_SECRET` to a new randomly generated secret of at least 32 characters. Keep the secret on the server. Changing it invalidates existing links. Return notifications use the same mailbox as paid-order notifications. Set `NUXT_RETURNS_OWNER_EMAIL` only if they should go to a different mailbox.
 3. Verify the canonical `NUXT_PUBLIC_SITE_URL`, the existing Brevo sender and key, and the scheduled checkout recovery endpoint. The recovery job handles fresh links, expired reservations and queued emails. Configure transactional link tracking so the provider does not rewrite the secure links.
 4. Test with synthetic orders and the M-Pesa sandbox before enabling the workflow with production credentials. Verify the hosted checkout callback can reach the site and confirm a top-up against the linked replacement order.
 

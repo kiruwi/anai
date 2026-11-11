@@ -9,7 +9,7 @@ const guestLinkLifetime = 14 * 24 * 60 * 60
 export function returnConfig() {
   const config = useRuntimeConfig()
   const secret = String(config.returnsLinkSecret || '')
-  const owner = String(config.returnsOwnerEmail || '').trim().toLowerCase()
+  const owner = String(config.returnsOwnerEmail || config.salesNotificationEmail || '').trim().toLowerCase()
   return { enabled: secret.length >= 32 && returnEmail.test(owner), secret, owner }
 }
 
