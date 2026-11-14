@@ -1,4 +1,5 @@
 import { useCheckoutSession } from './useCheckoutSession'
+import { toEcommerceItem, useEcommerceAnalytics } from './useEcommerceAnalytics'
 import {
   getProductColourName,
   getProductColourStockLimit,
@@ -172,6 +173,7 @@ export const useCart = () => {
   const hasShownHydrationWarning = useState('anai-cart-hydration-warning-shown', () => false)
   const { inventory, getProductStock } = useInventory()
   const { notify } = useNotifications()
+  const { trackShoppingEvent } = useEcommerceAnalytics()
   const findProduct = (slug: string) => products.value.find((product) => product.slug === slug)
   const getLiveStockLimit = (product: HomepageProduct, colour?: string) =>
     getProductStock(product, colour)
@@ -269,8 +271,13 @@ export const useCart = () => {
       notifyQuantityAdjustment(product, quantityResult.quantity)
     }
 
+    const addedQuantity = quantityResult.quantity - previousQuantity
+    if (addedQuantity > 0) {
+      trackShoppingEvent('add_to_cart', [toEcommerceItem(product, addedQuantity, colour, size)])
+    }
+
     return {
-      added: quantityResult.quantity > previousQuantity,
+      added: addedQuantity > 0,
       quantity: quantityResult.quantity,
       adjusted: quantityResult.wasAdjusted,
     }
@@ -285,10 +292,15 @@ export const useCart = () => {
 
     const colour = product && itemToUpdate ? normalizeColour(product, itemToUpdate.colour) : undefined
 
-    if (quantity < 1 || !product || !colour || getLiveStockLimit(product, colour) < 1) {
+    let addedItem: ReturnType<typeof toEcommerceItem> | undefined
+    if (quantity < 1 || !itemToUpdate || !product || !colour || getLiveStockLimit(product, colour) < 1) {
       items.value = items.value.filter((item) => getCartItemKey(item) !== key)
     } else {
       const quantityResult = clampCartQuantity(quantity, getLiveStockLimit(product, colour))
+      const addedQuantity = quantityResult.quantity - itemToUpdate.quantity
+      if (addedQuantity > 0) {
+        addedItem = toEcommerceItem(product, addedQuantity, colour, itemToUpdate.size)
+      }
       items.value = items.value.map((item) =>
         getCartItemKey(item) === key
           ? {
@@ -304,6 +316,7 @@ export const useCart = () => {
     }
 
     persistCart()
+    if (addedItem) trackShoppingEvent('add_to_cart', [addedItem])
   }
 
   const updateSize = (key: string, size: string) => {

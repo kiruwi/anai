@@ -1,10 +1,11 @@
 import { createError, readBody } from 'h3'
+import { ecommerceVariant, type EcommercePurchase } from '../../../shared/lib/ecommerceAnalytics'
 import { isMpesaCancellation } from '../../../shared/lib/mpesaStatus'
 import { getDatabase } from '../../utils/db'
 import { notifyPaidOrder } from '../../utils/email/notifyPaidOrder'
 import { enforceRequestRateLimit } from '../../utils/requestRateLimit'
 
-type PaymentStatusBody = { reference?: unknown; idempotencyKey?: unknown }
+type PaymentStatusBody = { reference?: unknown; idempotencyKey?: unknown; includePurchase?: unknown }
 
 type MpesaPaymentStatus = {
   mpesa_result_code: number | null
@@ -16,6 +17,17 @@ type OrderStatusRow = {
   order_number: string
   payment_status: string
   checkout_expires_at: string | null
+}
+
+type PurchaseLine = {
+  delivery_fee_kes: number
+  product_slug: string | null
+  product_name: string
+  sku: string | null
+  color: string | null
+  size: string | null
+  unit_price_kes: number
+  quantity: number
 }
 
 const referencePattern = /^ANAI-\d{10,}-[A-F0-9]{8}$/
@@ -87,6 +99,7 @@ export default defineEventHandler(async (event) => {
     mpesaPayment?.mpesa_result_description,
   )
   const status = wasCanceled ? 'cancelled' : order.payment_status
+  let purchase: EcommercePurchase | undefined
 
   if (status === 'paid') {
     try {
@@ -104,7 +117,39 @@ export default defineEventHandler(async (event) => {
     } catch (notificationError) {
       console.error('[ANAI] Paid-order email retry failed:', notificationError)
     }
+
+    if (body.includePurchase === true && idempotencyPattern.test(idempotencyKey)) {
+      try {
+        const items = await sql`
+          select orders.delivery_fee_kes, products.slug as product_slug, order_items.product_name,
+            order_items.sku, order_items.color, order_items.size, order_items.unit_price_kes,
+            order_items.quantity
+          from public.orders
+          join public.order_items on order_items.order_id = orders.id
+          left join public.product_variants on product_variants.id = order_items.variant_id
+          left join public.products on products.id = product_variants.product_id
+          where orders.id = ${order.id}::uuid and orders.idempotency_key = ${idempotencyKey}
+          order by order_items.created_at asc
+        ` as unknown as PurchaseLine[]
+
+        if (items.length) {
+          purchase = {
+            transaction_id: orderReference,
+            shipping: Number(items[0]!.delivery_fee_kes),
+            items: items.map((item) => ({
+              item_id: item.product_slug || item.sku || item.product_name,
+              item_name: item.product_name,
+              item_variant: ecommerceVariant(item.color, item.size),
+              price: Number(item.unit_price_kes),
+              quantity: Number(item.quantity),
+            })),
+          }
+        }
+      } catch (analyticsError) {
+        console.error('[ANAI] Paid-order analytics lookup failed:', analyticsError)
+      }
+    }
   }
 
-  return { reference: orderReference, status, paid: status === 'paid' }
+  return { reference: orderReference, status, paid: status === 'paid', ...(purchase && { purchase }) }
 })

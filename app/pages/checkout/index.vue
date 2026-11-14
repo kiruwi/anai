@@ -156,7 +156,9 @@
 <script setup lang="ts">
 import AppNotification from '../../components/shared/AppNotification.vue'
 import { useCheckoutSession } from '../../composables/useCheckoutSession'
+import { toEcommerceItem, useEcommerceAnalytics } from '../../composables/useEcommerceAnalytics'
 import type { AppNotification as AppNotificationModel } from '../../composables/useNotifications'
+import type { EcommercePurchase } from '#shared/lib/ecommerceAnalytics'
 import {
   getProductImageUrlForColour,
   getProductColourName,
@@ -173,6 +175,7 @@ import {
 
 const { lines, subtotalKes, clearCart, isLoaded: isCartLoaded } = useCart()
 const router = useRouter()
+const { analyticsReady, trackShoppingEvent, trackPurchase } = useEcommerceAnalytics()
 
 const customer = reactive({
   email: '',
@@ -202,6 +205,7 @@ type PaymentStatusResponse = {
   paid: boolean
   status: string
   reference: string
+  purchase?: EcommercePurchase
 }
 
 const hasMissingSizes = computed(() =>
@@ -273,13 +277,17 @@ const getIdempotencyKey = () => {
 const checkPaymentStatus = (reference: string) =>
   $fetch<PaymentStatusResponse>('/api/checkout/payment-status', {
     method: 'POST',
-    body: { reference },
+    body: {
+      reference,
+      idempotencyKey: analyticsReady.value ? idempotencyKey.value : undefined,
+      includePurchase: analyticsReady.value,
+    },
   })
 
 const recoverPaymentStatus = (checkoutIdempotencyKey: string) =>
   $fetch<PaymentStatusResponse>('/api/checkout/payment-status', {
     method: 'POST',
-    body: { idempotencyKey: checkoutIdempotencyKey },
+    body: { idempotencyKey: checkoutIdempotencyKey, includePurchase: analyticsReady.value },
   })
 
 const completePayment = async (reference: string) => {
@@ -294,6 +302,7 @@ const handlePaymentStatus = async (
   reference: string,
 ) => {
   if (payment.paid) {
+    if (payment.purchase) trackPurchase(payment.purchase)
     await completePayment(reference)
     return true
   }
@@ -441,6 +450,15 @@ const checkPendingPayment = async () => {
 onMounted(() => {
   hydrateCheckoutSession()
   if (hasPendingCheckout.value) void checkPendingPayment()
+
+  let checkoutTracked = false
+  const checkoutVisible = computed(() => isCartLoaded.value &&
+    (!hasPendingCheckout.value || canResumeCheckout.value) && lines.value.length > 0)
+  watch([analyticsReady, checkoutVisible], ([ready, visible]) => {
+    if (!ready || !visible || checkoutTracked) return
+    checkoutTracked = trackShoppingEvent('begin_checkout', lines.value.map((line) =>
+      toEcommerceItem(line.product, line.quantity, line.colour, line.size)))
+  }, { immediate: true })
 })
 </script>
 

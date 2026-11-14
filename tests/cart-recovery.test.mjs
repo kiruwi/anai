@@ -8,12 +8,14 @@ import { compile } from '@vue/compiler-dom'
 import { renderToString } from 'vue/server-renderer'
 import * as products from '../app/data/homeContent.ts'
 import * as notices from '../shared/lib/cartNotifications.ts'
+import * as ecommerce from '../shared/lib/ecommerceAnalytics.ts'
 
 // Execute the real composables with browser storage and Nuxt lifecycle boundaries supplied.
 const loadComposable = async (path, name, bindings) => {
   const source = (await readFile(new URL(path, import.meta.url), 'utf8'))
     .replace(/^import[\s\S]*?from\s+['"][^'"]+['"]\s*;?/gm, '')
     .replaceAll('import.meta.client', 'true')
+    .replace(/^export default /m, 'const handler = ')
     .replaceAll('export ', '')
   return Function(...Object.keys(bindings), stripTypeScriptTypes(source) + `\nreturn ${name}`)(...Object.values(bindings))
 }
@@ -63,6 +65,7 @@ test('refresh preserves a cart reserved by its pending order, then normal stock 
     ...bindings, ...products, ...notices, useCheckoutSession,
     useCatalogProducts: () => ref([product]),
     useNotifications: () => ({ notify: () => {} }),
+    useEcommerceAnalytics: () => ({ trackShoppingEvent: () => {} }),
     useInventory: () => ({ inventory: stock, getProductStock: () => stock.value }),
   })
   const cart = useCart()
@@ -81,4 +84,80 @@ test('refresh preserves a cart reserved by its pending order, then normal stock 
   stock.value = 0
   await nextTick()
   assert.equal(cart.items.value.length, 0, 'Normal stock enforcement resumes after the payment session')
+})
+
+test('purchase tracking requires analytics consent and queues a transaction only once', async () => {
+  const state = new Map()
+  const storage = new Map()
+  const sent = []
+  const bindings = {
+    ...ecommerce,
+    useState: (key, init) => {
+      if (!state.has(key)) state.set(key, ref(init()))
+      return state.get(key)
+    },
+    useRuntimeConfig: () => ({ public: { googleTagId: 'G-TEST' } }),
+    window: { gtag: (...args) => sent.push(args) },
+    localStorage: { getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value) },
+  }
+  const useEcommerceAnalytics = await loadComposable('../app/composables/useEcommerceAnalytics.ts', 'useEcommerceAnalytics', bindings)
+  const { analyticsReady, trackPurchase } = useEcommerceAnalytics()
+  const items = [{ item_id: 'test-item', item_name: 'Test item', price: 2500, quantity: 2 }]
+  const purchase = { transaction_id: 'ANAI-1234567890123-ABCDEF12', shipping: 300, items }
+
+  trackPurchase(purchase)
+  assert.equal(sent.length, 0)
+  assert.equal(storage.size, 0)
+
+  analyticsReady.value = true
+  trackPurchase(purchase)
+  trackPurchase(purchase)
+  state.clear()
+  const reloaded = useEcommerceAnalytics()
+  reloaded.analyticsReady.value = true
+  reloaded.trackPurchase(purchase)
+
+  assert.deepEqual(sent, [['event', 'purchase', {
+    send_to: 'G-TEST', currency: 'KES', value: 5000, items,
+    transaction_id: purchase.transaction_id, shipping: 300,
+  }]])
+})
+
+test('payment status returns analytics items only for a paid order with the matching checkout key', async () => {
+  const reference = 'ANAI-1234567890123-ABCDEF12'
+  const checkoutKey = 'test-session-key-1234'
+  let status = 'pending'
+  let analyticsQueries = 0
+  const handler = await loadComposable('../server/api/checkout/payment-status.post.ts', 'handler', {
+    ...ecommerce,
+    defineEventHandler: (fn) => fn,
+    readBody: async (body) => body,
+    enforceRequestRateLimit: async () => {},
+    getDatabase: () => async (strings, ...values) => {
+      const query = strings.join('?')
+      if (query.includes('join public.order_items')) {
+        analyticsQueries++
+        if (values[1] !== checkoutKey) return []
+        return [{
+          product_slug: 'test-item', product_name: 'Test item', color: 'Black', size: 'M',
+          unit_price_kes: '2500', quantity: 2, delivery_fee_kes: '300',
+        }]
+      }
+      if (query.includes('from public.orders')) return [{ id: 'order-id', order_number: reference, payment_status: status }]
+      if (query.includes('from public.payments')) return []
+      throw new Error(`Unexpected SQL: ${query}`)
+    },
+  })
+  const body = { reference, idempotencyKey: checkoutKey, includePurchase: true }
+  assert.equal((await handler(body)).purchase, undefined)
+  assert.equal(analyticsQueries, 0)
+  status = 'paid'
+  assert.equal((await handler({ reference, includePurchase: true })).purchase, undefined)
+  assert.equal((await handler({ ...body, includePurchase: false })).purchase, undefined)
+  assert.equal(analyticsQueries, 0)
+  assert.equal((await handler({ ...body, idempotencyKey: 'different-session-key' })).purchase, undefined)
+  assert.deepEqual((await handler(body)).purchase, {
+    transaction_id: reference, shipping: 300,
+    items: [{ item_id: 'test-item', item_name: 'Test item', item_variant: 'Black / M', price: 2500, quantity: 2 }],
+  })
 })
