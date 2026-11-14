@@ -57,6 +57,8 @@
 </template>
 
 <script setup lang="ts">
+import { useEcommerceAnalytics } from '../../composables/useEcommerceAnalytics'
+
 type AnalyticsWindow = Window & {
   dataLayer?: unknown[]
   gtag?: (...args: unknown[]) => void
@@ -85,6 +87,7 @@ const isPreferencesOpen = ref(false)
 const draftAnalytics = ref(false)
 const savedPreferences = ref<CookiePreferences | null>(null)
 const cookieSettingsRequested = useState('anai-cookie-settings-requested', () => false)
+const { analyticsReady } = useEcommerceAnalytics()
 
 const getAnalyticsWindow = (): InitializedAnalyticsWindow => {
   const analyticsWindow = window as AnalyticsWindow
@@ -130,13 +133,14 @@ const loadAnalytics = () => {
     analyticsWindow.anaiGoogleTagConfigured = true
   }
 
-  if (document.getElementById(googleTagScriptId)) return
-
-  const script = document.createElement('script')
-  script.id = googleTagScriptId
-  script.async = true
-  script.src = googleTagGatewayPath
-  document.head.appendChild(script)
+  if (!document.getElementById(googleTagScriptId)) {
+    const script = document.createElement('script')
+    script.id = googleTagScriptId
+    script.async = true
+    script.src = googleTagGatewayPath
+    document.head.appendChild(script)
+  }
+  analyticsReady.value = true
 }
 
 const parseStoredPreferences = (): CookiePreferences | null => {
@@ -161,6 +165,7 @@ const setCookiePreferences = (analytics: boolean) => {
   draftAnalytics.value = analytics
   localStorage.setItem(cookieConsentKey, JSON.stringify(preferences))
   updateAnalyticsConsent(analytics)
+  if (!analytics) analyticsReady.value = false
 
   if (analytics) {
     loadAnalytics()

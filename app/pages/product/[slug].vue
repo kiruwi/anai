@@ -120,6 +120,7 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import BreadcrumbTrail, { type BreadcrumbItem } from '../../components/shared/BreadcrumbTrail.vue'
+import { toEcommerceItem, useEcommerceAnalytics } from '../../composables/useEcommerceAnalytics'
 import {
   getProductColourImageUrl,
   getProductColourName,
@@ -198,6 +199,15 @@ const requestedColourName = requestedProductColour
 const selectedColourName = ref<string | undefined>(
   requestedColourName ?? getProductDefaultColourName(product),
 )
+const { analyticsReady, trackShoppingEvent } = useEcommerceAnalytics()
+onMounted(() => {
+  let viewed = false
+  watch(analyticsReady, (ready) => {
+    if (ready && !viewed) {
+      viewed = trackShoppingEvent('view_item', [toEcommerceItem(product, 1, selectedColourName.value)])
+    }
+  }, { immediate: true })
+})
 const requestedColourImageUrl = requestedProductColour
   ? getProductColourImageUrl(requestedProductColour)
   : undefined
